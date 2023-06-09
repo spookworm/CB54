@@ -29,9 +29,6 @@
 </table>
 
 
-**Note:** If a python function changes, even an imported function from the custom library, then Gradio will refresh and re-run everything. This may not be wise at the heavier end of the DL process so develop that stage carfeully.
-
-
 *When an electromagnetic wave encounters an object it scatters, with some energy being transmitted into the object and the rest propagating in a variety of directions depending on the material composition and local geometry. A precise knowledge of the scattering phenomenon is desirable for a variety of applications, such as medical imaging, radar and wireless communications.  Numerical techniques such as the method of moments give highly accurate results, but are computationally expensive. An emerging alternative is the use of machine learning tools that can be trained using a training set of data covering a sufficiently wide feature set (i.e. problem geometry, material, frequency etc). This project will use an in-house, Matlab-based, implementation of the method of moments to train an artificial neural network to solve the problem of EM scattering from convex dielectric bodies.*
 
 
@@ -49,6 +46,10 @@
 	* ./doc/project_management/log_meetings_dates.html
 	* ./doc/graphviz_doc.workflow.py
 	* ./AnthonyJamesMcElwee_20211330_FR.docx
+
+# Notes
+* If a python function changes, even an imported function from the custom library, then Gradio will refresh and re-run everything. This may not be wise at the heavier end of the DL process so develop that stage carefully.
+* DOCX to PDF will only run if the DOCX is newer thant the PDF version.
 
 # To Do
 * Transition the final_thesis dropbox folder to this github;
