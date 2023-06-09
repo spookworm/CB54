@@ -1,8 +1,10 @@
+<!--
+"""html
 <table>
     <tbody>
         <tr>
             <td colspan=1>
-				<!-- <img id="currentPhoto" src="file/media/Dublin_City_University_Logo.png" onerror="this.onerror=null; this.src='./media/Dublin_City_University_Logo.png'"> -->
+				<img id="currentPhoto" src="file/media/Dublin_City_University_Logo.png" onerror="this.onerror=null; this.src='./media/Dublin_City_University_Logo.png'">
 				<object data="./media/Dublin_City_University_Logo.png" type="image/png">
 				<img src="file/media/Dublin_City_University_Logo.png" />
 				</object>
@@ -40,6 +42,10 @@
 <br>
 <a href="file/AnthonyJamesMcElwee_20211330_PRS.pdf" target="_blank"><h1>DOWNLOAD Project Log Report</h1></a>
 <br>
+"""
+<a href="file/AnthonyJamesMcElwee_20211330_PRS.pdf" target="_blank"><h1>DOWNLOAD Project Log Report</h1></a>
+-->
+[DOWNLOAD Final Project Report]("AnthonyJamesMcElwee_20211330_FR.pdf")
 
 # Update
 * Keep the following documents up-to-date at the end of every session:
