@@ -2,7 +2,10 @@
     <tbody>
         <tr>
             <td colspan=1>
-				<img id="currentPhoto" src="file/media/Dublin_City_University_Logo.png" onerror="this.onerror=null; this.src='./media/Dublin_City_University_Logo.png'">
+				<!-- <img id="currentPhoto" src="file/media/Dublin_City_University_Logo.png" onerror="this.onerror=null; this.src='./media/Dublin_City_University_Logo.png'"> -->
+				<object data="./media/Dublin_City_University_Logo.png" type="image/png">
+				<img src="file/media/Dublin_City_University_Logo.png" />
+				</object>
 			</td>
             <td colspan=1><h1>CB54: Machine Learning Algorithms for EM Wave Scattering Problems</h1></td>
 		</tr>
