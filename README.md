@@ -52,5 +52,5 @@
 
 # To Do
 * Transition the final_thesis dropbox folder to this github;
-* Put document rendering commands into the project itself for auto update of document links for download. the latest version of the docx and pdf should always be available. since dev activity is not in dropbox a version history of the docx may need to be maintained;
+* ~~Put document rendering commands into the project itself for auto update of document links for download. the latest version of the docx and pdf should always be available. since dev activity is not in dropbox a version history of the docx may need to be maintained;~~
 * Have workflow render commands itself for auto update of image; (PROBABLY NOT WORTH IT?)

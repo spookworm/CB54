@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # IMPORT LIBRARIES:START
+import os
 from fn_graph import Composer
 import gradio as gr
 from lib import graphviz_doc
@@ -26,22 +27,23 @@ def composer_call():
 # CUSTOM FUNCTIONS:END
 
 
-# IMAGE RENDER: START
+# IMAGE & DOCUMENTATION RENDER: START
 composer = graphviz_doc.composer_render(composer_call(), path_doc, "digraph")
 graphviz_doc.workflow(path_doc, "workflow")
-# IMAGE RENDER: END
+os.system("cmd_04_Compile_Report.bat")
+# IMAGE & DOCUMENTATION RENDER: END
 
 # GRADIO APP: START
 with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
-    with gr.Tab(label="Github README"):
-        with gr.Column(scale=2):
-            readme_markdown = gr.Markdown(open("./README.md", 'r').read())
     with gr.Tab(label="Dev"):
         gr.HTML("<h1>Dev goes here</h1>")
     with gr.Tab(label="Dev Diagraph"):
         with gr.Column(scale=2):
             diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
             diagraph_image.style(height=600)
+    with gr.Tab(label="Github README"):
+        with gr.Column(scale=2):
+            readme_markdown = gr.Markdown(open("./README.md", 'r').read())
     with gr.Tab(label="Final Portfolio Compilation Files"):
         with gr.Row():
             with gr.Row():

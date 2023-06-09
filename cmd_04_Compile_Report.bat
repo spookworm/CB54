@@ -14,7 +14,6 @@ REM powershell -Command "(gc AnthonyJamesMcElwee_20211330_FR.html) -replace './m
 
 REM pandoc AnthonyJamesMcElwee_20211330_FR.docx -o AnthonyJamesMcElwee_20211330_FR.pdf
 
-echo Put the compilation updates of the subdocuments here if not done in python via Gradio custom functions.
 echo It is better to load these sub-files into the final DOCX report before PDF conversion but during development they will be updated individually.
 REM https://github.com/cognidox/OfficeToPDF/releases
 "C:\Users\antho\Downloads\Programmes\officetopdf.exe" "./doc/project_management/AnthonyJamesMcElwee_20211330_PRS.docx" "AnthonyJamesMcElwee_20211330_PRS.pdf"
