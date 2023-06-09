@@ -33,15 +33,15 @@ graphviz_doc.workflow(path_doc, "workflow")
 
 # GRADIO APP: START
 with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
+    with gr.Tab(label="Github README"):
+        with gr.Column(scale=2):
+            readme_markdown = gr.Markdown(open("./README.md", 'r').read())
     with gr.Tab(label="Dev"):
         gr.HTML("<h1>Dev goes here</h1>")
     with gr.Tab(label="Dev Diagraph"):
         with gr.Column(scale=2):
             diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
             diagraph_image.style(height=600)
-    with gr.Tab(label="Github README"):
-        with gr.Column(scale=2):
-            readme_markdown = gr.Markdown(open("./README.md", 'r').read())
     with gr.Tab(label="Final Portfolio Compilation Files"):
         with gr.Row():
             with gr.Row():
