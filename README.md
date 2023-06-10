@@ -39,6 +39,9 @@
 <!-- <a href="file/AnthonyJamesMcElwee_20211330_PRS.pdf" target="_blank"><h1>DOWNLOAD Project Log Report</h1></a> -->
 [DOWNLOAD Project Log Report](AnthonyJamesMcElwee_20211330_PRS.pdf)
 
+# Folder Descriptions
+* TBC
+
 # Update
 * Keep the following documents up-to-date at the end of every session:
 	* ./doc/project_management/project_logs_emailed/
@@ -55,3 +58,4 @@
 * Transition the final_thesis dropbox folder to this github;
 * ~~Put document rendering commands into the project itself for auto update of document links for download. the latest version of the docx and pdf should always be available. since dev activity is not in dropbox a version history of the docx may need to be maintained;~~
 * Have workflow render commands itself for auto update of image; (PROBABLY NOT WORTH IT?)
+* Have a description file in each folder describing what the folder contents. Auto-populate this readme with those descriptions.
