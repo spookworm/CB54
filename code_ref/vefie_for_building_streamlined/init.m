@@ -4,7 +4,7 @@ input.f = 60e6; % frequency (Hz)
 % If object_gen is 'Yes' then the function to generate the raw geometry
 % programmatically will be called. Otherwise pre-generated files will be
 % used. If object_gen is 'No' then pre-generated geometry files will be used.
-input.object_gen = 'Yes';
+input.object_gen = 'No';
 
 % Discretisation Settings
 input.disc_per_lambda = 10; % chosen accuracy
