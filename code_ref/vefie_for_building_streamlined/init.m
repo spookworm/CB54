@@ -8,8 +8,6 @@ input.object_gen = 'Yes';
 
 % Discretisation Settings
 input.disc_per_lambda = 10; % chosen accuracy
-input.length_x_side = 30; % in meters
-input.length_y_side = 20; % in meters
 
 % Pass list of materials to be used in scene if it is to be generated from scratch.
 input.object_materials = table({'vacuum','concrete','wood','glass','brick'}','VariableNames',{'Name'});

@@ -135,6 +135,12 @@ else
 end
 equiv_a = sqrt(delta_x*delta_y/pi);
 
+
+% Need to change geometry resolution here if frequency is lower scale
+size(object)
+M/N
+input.length_y_side/input.length_x_side
+
 % IMPORT MODEL WITH MATERIAL DESCRIPTIONS
 if strcmp(input.object_gen,'Yes') == 1
     object = object_generator(material_id,M,N,delta_x,delta_y,input);
@@ -165,15 +171,9 @@ legend(materials)
 % if M > size(object,1)
 % M = 128;
 % N = 128;
-object = imresize(object, [M, N], "nearest");
+% object = imresize(object, [M, N], "nearest");
 % end
 
-% Need to change geometry resolution here if frequency is lower scale
-% size(object)
-% M/N
-% input.length_y_side/input.length_x_side
-% object_new = imresize(object,[M N]);
-% plot
 
 
 % Visualise imported object after rescaling for f.
@@ -339,13 +339,8 @@ end
 Ered_2D = vec2matSimulationEred;
 Vred_2D = vec2matSimulationVred;
 ScatRed_2D = Ered_2D - Vred_2D;
-
 x = real(position(1:N));
 y = imag(position(1:N:N*M));
-
-x = flip(x);
-x = rot90(x, 2);
-y = rot90(y, 2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CREATE ALL THE PLOTS
 info_index = 0;

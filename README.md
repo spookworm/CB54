@@ -59,3 +59,27 @@
 * ~~Put document rendering commands into the project itself for auto update of document links for download. the latest version of the docx and pdf should always be available. since dev activity is not in dropbox a version history of the docx may need to be maintained;~~
 * Have workflow render commands itself for auto update of image; (PROBABLY NOT WORTH IT?)
 * Have a description file in each folder describing what the folder contents. Auto-populate this readme with those descriptions.
+
+# Active thoughts
+aim is to adapt streamlined code so that imported geometry can be used
+
+then that resolution decision is implemented
+
+then move code to python
+
+need to work out the length_x_side from the imported geometry file
+
+floor is not bijective so that means we actually do need to set an import resolution standard
+
+the SI unit for lenght is meter so stick with that? no remember we need resolution at the level that captures geometry features, wave characteristics and can feed into model
+
+so there needs to be a decision between the three which brings the resolution to suitable degree
+
+this may be an iterative decision process.
+
+There are at least three parameters that are required in order to decide on the grid resolution:
+* geometry distance scale (0.0, min scale required to capture geometry features];
+* model input grid [minimum resolution to allow inference, maximum resolution that memory can handle OR that avoids redundancy to make inference];
+* material properties [min is set by floor function & lowest cr & disc sampling & geometry ~~scale~~ length, max is implicitly set by the max disc sampling]
+
+Out of these a grid of x rows and y columns should be generated.
