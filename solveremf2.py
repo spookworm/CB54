@@ -36,11 +36,10 @@ def composer_call():
         # .cache()
     )
     return composer_1
-
-
 #
 # CUSTOM FUNCTIONS:END
 #
+
 
 #
 # IMAGE & DOCUMENTATION RENDER: START
@@ -95,6 +94,9 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
     #
     # PROJECT DOCUMENTATION: END
     #
+    # The launch just seems to freeze everything in gradio mode. Leaving here as it may point to an issue at the sharing/hosting stage.
+    # if __name__ == "__main__":
+    #     demo.launch(server_port=8080)
 #
 # GRADIO APP: END
 #
