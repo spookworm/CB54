@@ -20,7 +20,9 @@ lambda0 = c / f ;
 
 %<------BIGGEST RELATIVE EPSELON HAS TO BE CALLED AS FOLLOW
 % using concrete 
-epsilonr = 6.0 -(0.0*j); 
+% epsilonr = 6.0 -(0.0*j); 
+[concrete_epsilon, concrete_sigma, concrete_epsilonr_complex] = buildingMaterialPermittivity('concrete', f);
+epsilonr = concrete_epsilon ;
 epsilon_d = epsilonr*epsilon0 ; 
 mu_d = mu0 ; % No magnetic permitivity in wood
 c_d = 1.0/sqrt(epsilon_d*mu_d) ; 
@@ -30,7 +32,10 @@ lambda_d = c_d / f ;
 
 %<------- OTHER MATERIALS
 % using Glass
-epsilonrg = 4.0 - (0.0*j);
+% epsilonrg = 4.0 - (0.0*j);
+[glass_epsilon, glass_sigma, glass_epsilonr_complex] = buildingMaterialPermittivity('glass', f);
+epsilonrg = glass_epsilon;
+epsilonr = concrete_epsilon ;
 epsilon_g= epsilonrg*epsilon0 ; 
 mu_g = mu0 ; % No magnetic permitivity in wood.
 c_g = 1.0/sqrt(epsilon_g*mu_g) ; 
@@ -39,7 +44,9 @@ eta_g =  sqrt(mu_g/epsilon_g) ;
 lambda_g = c_g / f ;
 
 % using wood
-epsilonrw = 2.0 -(0.0*j); 
+% epsilonrw = 2.0 -(0.0*j); 
+[wood_epsilon, wood_sigma, wood_epsilonr_complex] = buildingMaterialPermittivity('glass', f);
+epsilonrw = wood_epsilon;
 epsilon_w= epsilonrw*epsilon0 ; 
 mu_w = mu0 ; % No magnetic permitivity in wood.
 c_w = 1.0/sqrt(epsilon_w*mu_w) ; 

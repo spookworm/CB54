@@ -21,6 +21,6 @@ Number = 1:1:length(Name);
 input.materials_master = table(Number',Name,hex);
 
 input.directory_geom = './Geometry/';
-% input.object_name = 'object_room.txt';
-input.object_name = 'object_mp_landscape.txt';
+input.object_name = 'object_room.txt';
+% input.object_name = 'object_mp_landscape.txt';
 end
