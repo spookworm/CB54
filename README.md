@@ -87,3 +87,13 @@ Out of these a grid of x rows and y columns should be generated.
 why can't i see the background standing wave in the vacuum? this is the same in the van den berg book. but in other sources it can be seen. is this because of the type of incident wave? do i need to change it so as to be a persisent wave as opposed to an impulse? look at the images in https://www.scielo.br/j/jmoea/a/VvJrMV6dH4rghHZSgg4RpwG/?lang=en
 
 kr(1) is assumed to be vacuum bakground embedding in the code. this is not functional. need to check all of this.
+
+aim is to adapt streamlined code so that imported geometry can be used
+then that resolution decision is implemented
+then move code to python
+
+need to work out the length_x_side from the imported geometry file
+floor is not bijective so that means we actually do need to set an import resolution standard
+the SI unit for lenght is meter so stick with that? no remember we need resolution at the level that captures geometry features, wave characteristics and can feed into model
+
+so there needs to be a decision between the three which brings the resolution to suitable degree

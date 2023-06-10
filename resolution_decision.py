@@ -27,7 +27,10 @@ def scale_geometry(image, dim_x, dim_y):
     return min(scale_geometry_x, scale_geometry_y)
 
 
-scale_geometry = scale_geometry(image, dim_x, dim_y)
+def scale_material():
+    return print()
 
+
+scale_geometry = scale_geometry(image, dim_x, dim_y)
 print(scale_geometry)
 
