@@ -165,8 +165,10 @@ legend(materials)
 % if M > size(object,1)
 % M = 128;
 % N = 128;
-object = imresize(object, [M, N], "nearest");
 % end
+
+% This doesn't look great, is there a better way to resize?
+object = imresize(object, [M, N], "nearest");
 
 % Need to change geometry resolution here if frequency is lower scale
 % size(object)
@@ -229,6 +231,12 @@ fprintf('with grid size %d meter by %d meter \n', delta_x, delta_y)
 % SPECIFY_MATERIALS: POSITION, K AND RHO, FOR EACH BASIS COUNTER
 % INTERIOR SPECIFICATION: position, phi, k, and rho for each number of position (basis counter)
 basis_counter = 0;
+% This is wrong I think unless there is a vacuum in the scene and that it
+% is indexed as one. Would it not be better to assign based on most likely
+% material occurence? See the other occurances too. The incident waves etc.
+% assume that there is a vacuum. What if there is no vacuum? What are the
+% contrasts in contrast with then? Is the inclusion of a single cell of
+% vacuum enough to make the thing work?
 basis_wave_number(1:M*N, 1) = kr(1);
 position = zeros(M*N, 1);
 rho = zeros(M*N, 1);
@@ -243,7 +251,8 @@ for ct1 = 1:M % runs in y direction
         rho(basis_counter, 1) = abs(temp_vec);
         the_phi(basis_counter, 1) = atan2(imag(temp_vec), real(temp_vec));
 
-        basis_wave_number(basis_counter) = kr(object(ct1, ct2));
+        % basis_wave_number(basis_counter) = kr(object(ct1, ct2));
+        basis_wave_number(basis_counter) = kr(material_id==object(ct1, ct2));
     end
 end
 

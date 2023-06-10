@@ -83,3 +83,7 @@ There are at least three parameters that are required in order to decide on the 
 * material properties [min is set by floor function & lowest cr & disc sampling & geometry ~~scale~~ length, max is implicitly set by the max disc sampling]
 
 Out of these a grid of x rows and y columns should be generated.
+
+why can't i see the background standing wave in the vacuum? this is the same in the van den berg book. but in other sources it can be seen. is this because of the type of incident wave? do i need to change it so as to be a persisent wave as opposed to an impulse? look at the images in https://www.scielo.br/j/jmoea/a/VvJrMV6dH4rghHZSgg4RpwG/?lang=en
+
+kr(1) is assumed to be vacuum bakground embedding in the code. this is not functional. need to check all of this.
