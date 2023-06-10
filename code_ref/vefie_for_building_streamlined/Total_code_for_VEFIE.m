@@ -28,17 +28,17 @@ omega = 2.0 * pi * input.f; % angular frequency (rad/s)
 
 % Order of this list should not change unless the numeric identifiers in the imported geometry also reflect such changes.
 % materials = {"vacuum", "concrete", "wood", "glass", "brick", "plasterboard", "ceiling-board", "chipboard", "floorboard", "metal"};
-materials = table2array(input.materials_master(:,2));
-hex = table2array(input.materials_master(:,3));
+materials = table2array(input.materials_master(:, 2));
+hex = table2array(input.materials_master(:, 3));
 map = sscanf(hex', '#%2x%2x%2x', [3, size(hex, 1)]).' / 255;
-markerColor = mat2cell(map, ones(1, height(input.materials_master(:,2))), 3);
+markerColor = mat2cell(map, ones(1, height(input.materials_master(:, 2))), 3);
 
 % IMPORT MODEL WITH MATERIAL DESCRIPTIONS
-if strcmp(input.object_gen,'Yes') == 1
-    [~,materials_present] = ismember(input.object_materials,input.materials_master(:,2));
+if strcmp(input.object_gen, 'Yes') == 1
+    [~, materials_present] = ismember(input.object_materials, input.materials_master(:, 2));
     material_id = unique(materials_present, 'sorted');
 else
-    object = readmatrix([input.directory_geom input.object_name]);
+    object = readmatrix([input.directory_geom, input.object_name]);
     % object = uint32(imread([input.directory_geom input.object_name]));
     material_id = unique(object, 'sorted');
 end
@@ -92,12 +92,12 @@ end
 
 % DISCRETISE_DOMAIN: SPECIFY SPACE GRID
 % 1) discretisize field of interest, imag = Yaxes, real = Xaxes
-if strcmp(input.object_gen,'Yes') == 1
+if strcmp(input.object_gen, 'Yes') == 1
     input.length_x_side = 30; % in meters
     input.length_y_side = 20; % in meters
 else
     % This assumes that the scale of the imported geometry is 1m per cell in both directions.
-    [M_geo, N_geo]=size(object); % M~x
+    [M_geo, N_geo] = size(object); % M~x
     input.length_x_side = M_geo; % in meters
     input.length_y_side = N_geo; % in meters
 end
@@ -111,7 +111,7 @@ if input.length_x_side > input.length_y_side
         N = N + 1;
     end
     delta_x = input.length_x_side / N;
-    
+
     M = floor(input.length_y_side/(delta_x)); % force M = multp 4, size dy near dx
     fourth_of_M = ceil(M/4);
     while (mod(M, fourth_of_M) ~= 0)
@@ -136,8 +136,8 @@ end
 equiv_a = sqrt(delta_x*delta_y/pi);
 
 % IMPORT MODEL WITH MATERIAL DESCRIPTIONS
-if strcmp(input.object_gen,'Yes') == 1
-    object = object_generator(material_id,M,N,delta_x,delta_y,input);
+if strcmp(input.object_gen, 'Yes') == 1
+    object = object_generator(material_id, M, N, delta_x, delta_y, input);
 end
 
 % VISUALISE
@@ -147,7 +147,7 @@ title('Material Configuration Before Scaling for f')
 legend
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 hold on
-L = plot(ones(height(input.materials_master(:,2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
+L = plot(ones(height(input.materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
 set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
 colormap(map)
 legend(materials)
@@ -183,7 +183,7 @@ title('Material Configuration After Scaling for f')
 legend
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 hold on
-L = plot(ones(height(input.materials_master(:,2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
+L = plot(ones(height(input.materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
 set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
 colormap(map)
 legend(materials)
@@ -357,7 +357,7 @@ axis tight
 title('Material Configuration After Simulation')
 legend
 hold on
-L = plot(ones(height(input.materials_master(:,2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
+L = plot(ones(height(input.materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
 set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
 colormap(map)
 legend(materials)
