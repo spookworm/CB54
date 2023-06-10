@@ -34,6 +34,7 @@ map = sscanf(hex', '#%2x%2x%2x', [3, size(hex, 1)]).' / 255;
 markerColor = mat2cell(map, ones(1, height(input.materials_master(:, 2))), 3);
 
 % IMPORT MODEL WITH MATERIAL DESCRIPTIONS
+% object1 = uint16(imread([input.directory_geom 'factorio-furnace-layout_uint16.png']));
 if strcmp(input.object_gen, 'Yes') == 1
     [~, materials_present] = ismember(input.object_materials, input.materials_master(:, 2));
     material_id = unique(materials_present, 'sorted');
@@ -42,14 +43,6 @@ else
     % object = uint32(imread([input.directory_geom input.object_name]));
     material_id = unique(object, 'sorted');
 end
-
-% object1 = uint16(imread([input.directory_geom 'factorio-furnace-layout_uint16.png']));
-% [M_geo1, N_geo1]=size(object1);
-% material_id1 = unique(object1, 'sorted');
-% min(material_id1)
-% max(material_id1)
-% histogram(object1,10)
-% imshow(object1)
 
 epsilonr = ones(length(material_id), 1);
 sigma = ones(length(material_id), 1);
@@ -162,20 +155,11 @@ legend(materials)
 % discretization needs to be incresed then the imported geometry will be
 % sliced up at a higher resolution. Ultimately, the final resolution of the
 % exported geometry & output field needs to be at 256x256.
-% if M > size(object,1)
-% M = 128;
-% N = 128;
-% end
-
-% This doesn't look great, is there a better way to resize?
-object = imresize(object, [M, N], "nearest");
 
 % Need to change geometry resolution here if frequency is lower scale
-% size(object)
-% M/N
-% input.length_y_side/input.length_x_side
-% object_new = imresize(object,[M N]);
-% plot
+% This doesn't look great, is there a better way to resize?
+% Also need to check how upscaling and downscaling perform.
+object = imresize(object, [M, N], "nearest");
 
 
 % Visualise imported object after rescaling for f.
