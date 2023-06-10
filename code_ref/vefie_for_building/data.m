@@ -35,7 +35,6 @@ lambda_d = c_d / f ;
 % epsilonrg = 4.0 - (0.0*j);
 [glass_epsilon, glass_sigma, glass_epsilonr_complex] = buildingMaterialPermittivity('glass', f);
 epsilonrg = glass_epsilon;
-epsilonr = concrete_epsilon ;
 epsilon_g= epsilonrg*epsilon0 ; 
 mu_g = mu0 ; % No magnetic permitivity in wood.
 c_g = 1.0/sqrt(epsilon_g*mu_g) ; 

@@ -60,6 +60,6 @@ object(1+wX+dX:hN-wX-dX, M-wY:M) = 4;
 
 object = object.'; %translate to (row = y,collom = x)
 % writematrix(object, './Geometry/object.txt')
-% writematrix(object, [input.directory_geom input.object_name])
-imwrite(uint8(object), [input.directory_geom input.object_name])
+writematrix(object, [input.directory_geom input.object_name])
+% imwrite(uint8(object), [input.directory_geom input.object_name])
 end

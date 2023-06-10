@@ -16,8 +16,10 @@ length_y_side = 20; % in meters
 
 centre = 0.0 + 0.0*j ; 
 start_pt = centre - 0.5*length_x_side - 0.5*length_y_side*j ; 
- 
-N = floor(length_x_side/(abs(lambda_d)/disc_per_lambda)); % force N = multp 4
+
+lambda_smallest = min([lambda_d, lambda_g, lambda_w]);
+
+N = floor(length_x_side/(abs(lambda_smallest)/disc_per_lambda)); % force N = multp 4
 fourth_of_N =  ceil(N/4);   
 while(mod(N,fourth_of_N) ~= 0 )
     N = N + 1; 
