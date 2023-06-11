@@ -3,46 +3,31 @@ clear;
 close all;
 clc;
 format compact;
-% PRE-PROCESSING
-% Input Data: Geometry; Materials; Boundary Conditions
-% Processes: Discretisation; Approximation; Parametrisation; Coupling (Fields; Geomtery; Circuits; Motion; Methods)
-% TBC: Shift all variables to init programme for simpler manipulation.
-input = init();
+
+% Inputs
+disc_per_lambda = 10; % chosen accuracy
+directory_geom = './Geometry/';
+object_name = 'object_mp_landscape_empty.txt';
+f = 60e6; % frequency (Hz)
 
 % Hard-coded Variables
 epsilon0 = 8.854e-12;
 mu0 = 4.0 * pi * 1.0e-7;
-omega = 2.0 * pi * input.f; % angular frequency (rad/s)
+omega = 2.0 * pi * f; % angular frequency (rad/s)
 
-% SET_MATERIAL_VALUES
-% Due to nature of study, the source must always sit in vacuum for this
-% programme. Expanding on this may form part of future work, however, it is
-% expected that assuming a small region of vacuum (air) surrounds the
-% source this issue will be overcome.
-
-% TBC: pulling in material by frequency should improve the assignment
-% efficiency later in programme. There is an if condition for assignment
-% that could be improved by assigning based on order of frequency. Small
-% changes in this part of the code would be required to achieve this idea.
-% material_freq = [material_id,histc(object(:),material_id)];
-
+% Pass list of master materials with associated visualisation colourings to be used in scene to the generator.
 % Order of this list should not change unless the numeric identifiers in the imported geometry also reflect such changes.
-% materials = {"vacuum", "concrete", "wood", "glass", "brick", "plasterboard", "ceiling-board", "chipboard", "floorboard", "metal"};
-materials = table2array(input.materials_master(:, 2));
-hex = table2array(input.materials_master(:, 3));
+Name = {'vacuum','concrete','wood','glass','brick','plasterboard','ceiling-board','chipboard','floorboard','metal'}';
+hex = ['#FDFF00'; '#A7A9AB'; '#D08931'; '#B9E8E9'; '#ED774C'; '#EFEFEE'; '#F4F1DB'; '#C09B53'; '#7A5409'; '#909090'];
+Number = 1:1:length(Name);
+materials_master = table(Number',Name,hex);
+materials = table2array(materials_master(:, 2));
+hex = table2array(materials_master(:, 3));
 map = sscanf(hex', '#%2x%2x%2x', [3, size(hex, 1)]).' / 255;
-markerColor = mat2cell(map, ones(1, height(input.materials_master(:, 2))), 3);
+markerColor = mat2cell(map, ones(1, height(materials_master(:, 2))), 3);
 
-% IMPORT MODEL WITH MATERIAL DESCRIPTIONS
-% object1 = uint16(imread([input.directory_geom 'factorio-furnace-layout_uint16.png']));
-if strcmp(input.object_gen, 'Yes') == 1
-    [~, materials_present] = ismember(input.object_materials, input.materials_master(:, 2));
-    material_id = unique(materials_present, 'sorted');
-else
-    object = readmatrix([input.directory_geom, input.object_name]);
-    % object = uint32(imread([input.directory_geom input.object_name]));
-    material_id = unique(object, 'sorted');
-end
+object = readmatrix([directory_geom, object_name]);
+material_id = unique(object, 'sorted');
 
 epsilonr = ones(length(material_id), 1);
 sigma = ones(length(material_id), 1);
@@ -60,8 +45,11 @@ for k = 1:length(material_id)
 
     % Set epsilon and sigma based on internal MATLAB function values taken
     % from international standard.
-    % [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials{material_id(k)}, input.f);
-    [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials(material_id(k)), input.f);
+    % [vacuum_epsilon, vacuum_sigma, vacuum_epsilonr_complex] = buildingMaterialPermittivity('vacuum', 60e6);
+    % [concrete_epsilon, concrete_sigma, concrete_epsilonr_complex] = buildingMaterialPermittivity('concrete', 60e6);
+    % [glass_epsilon, glass_sigma, glass_epsilonr_complex] = buildingMaterialPermittivity('glass', 60e6);
+    % [wood_epsilon, wood_sigma, wood_epsilonr_complex] = buildingMaterialPermittivity('glass', 60e6);
+    [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials(material_id(k)), f);
 
     % Set mu.
     mur(k) = 1.0;
@@ -78,60 +66,50 @@ for k = 1:length(material_id)
     % kr(k) = omega * sqrt(epsilonr_complex(k)*epsilon0*mur(k)*mu0);
 
     % Choose the smallest lambda (wavelength) of all materials in the configuration.
-    if lambda_smallest > cr(k) / input.f
-        lambda_smallest = cr(k) / input.f;
+    if lambda_smallest > cr(k) / f
+        lambda_smallest = cr(k) / f;
     end
 end
 
-% DISCRETISE_DOMAIN: SPECIFY SPACE GRID
-% 1) discretisize field of interest, imag = Yaxes, real = Xaxes
-if strcmp(input.object_gen, 'Yes') == 1
-    input.length_x_side = 30; % in meters
-    input.length_y_side = 20; % in meters
-else
-    % This assumes that the scale of the imported geometry is 1m per cell in both directions.
-    [M_geo, N_geo] = size(object); % M~x
-    input.length_x_side = M_geo; % in meters
-    input.length_y_side = N_geo; % in meters
-end
+% This assumes that the scale of the imported geometry is 1m per cell in both directions.
+% As a result, the room in the original code will not work properly. Use
+% the old code to work with that room.
+[M_geo, N_geo] = size(object); % M~x
+length_x_side = M_geo; % in meters
+length_y_side = N_geo; % in meters
 
 % decision to be made here is which one should be calculated first to shortcut the mod loop
-% this decision is based on which  input.length_?_side is BIGGER
-if input.length_x_side > input.length_y_side
-    N = floor(input.length_x_side/(abs(lambda_smallest) / input.disc_per_lambda)); % force N = multp 4
+% this decision is based on which  length_?_side is BIGGER
+if length_x_side > length_y_side
+    N = floor(length_x_side/(abs(lambda_smallest) / disc_per_lambda)); % force N = multp 4
     fourth_of_N = ceil(N/4);
     while (mod(N, fourth_of_N) ~= 0)
         N = N + 1;
     end
-    delta_x = input.length_x_side / N;
+    delta_x = length_x_side / N;
 
-    M = floor(input.length_y_side/(delta_x)); % force M = multp 4, size dy near dx
+    M = floor(length_y_side/(delta_x)); % force M = multp 4, size dy near dx
     fourth_of_M = ceil(M/4);
     while (mod(M, fourth_of_M) ~= 0)
         M = M + 1;
     end
-    delta_y = input.length_y_side / M;
+    delta_y = length_y_side / M;
 else
-    M = floor(input.length_y_side/(abs(lambda_smallest) / input.disc_per_lambda)); % force N = multp 4
+    M = floor(length_y_side/(abs(lambda_smallest) / disc_per_lambda)); % force N = multp 4
     fourth_of_M = ceil(M/4);
     while (mod(M, fourth_of_M) ~= 0)
         M = M + 1;
     end
-    delta_y = input.length_y_side / M;
+    delta_y = length_y_side / M;
 
-    N = floor(input.length_x_side/(delta_y)); % force N = multp 4
+    N = floor(length_x_side/(delta_y)); % force N = multp 4
     fourth_of_N = ceil(N/4);
     while (mod(N, fourth_of_N) ~= 0)
         N = N + 1;
     end
-    delta_x = input.length_x_side / N;
+    delta_x = length_x_side / N;
 end
 equiv_a = sqrt(delta_x*delta_y/pi);
-
-% IMPORT MODEL WITH MATERIAL DESCRIPTIONS
-if strcmp(input.object_gen, 'Yes') == 1
-    object = object_generator(material_id, M, N, delta_x, delta_y, input);
-end
 
 % VISUALISE
 figure
@@ -140,27 +118,15 @@ title('Material Configuration Before Scaling for f')
 legend
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 hold on
-L = plot(ones(height(input.materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
+L = plot(ones(height(materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
 set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
 colormap(map)
 legend(materials)
-
-% RESCALE OBJECT FOR SPECIFIC FREQUENCY
-% TBC: This is required for standardised input into CNN
-% Sophisticated Book uses 128x128
-% Imported geometry will sit at resolution required to depict physical
-% geometry of object. Then this discretization needs to be checked that it
-% is sufficient to depict the electromagnetic materials of the object. If
-% the discretisation is enough already, then it is maintained. If they
-% discretization needs to be incresed then the imported geometry will be
-% sliced up at a higher resolution. Ultimately, the final resolution of the
-% exported geometry & output field needs to be at 256x256.
 
 % Need to change geometry resolution here if frequency is lower scale
 % This doesn't look great, is there a better way to resize?
 % Also need to check how upscaling and downscaling perform.
 object = imresize(object, [M, N], "nearest");
-
 
 % Visualise imported object after rescaling for f.
 figure
@@ -169,46 +135,14 @@ title('Material Configuration After Scaling for f')
 legend
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 hold on
-L = plot(ones(height(input.materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
+L = plot(ones(height(materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
 set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
 colormap(map)
 legend(materials)
 
-% TBC: Label axis with dual labels: length in meters; discretisation count.
-% ax1 = gca;
-% set(ax1,'XAxisLocation','top')
-% set(ax1,'YAxisLocation','left')
-% ax1.XLabel.String = 'Discretization Count (#)';
-% ax1.YLabel.String = 'Discretization Count (#)';
-% ax1.XGrid = 'on';
-% ax1.YGrid = 'on';
-% ax2 = axes('Position',get(ax1,'Position'),'XAxisLocation','bottom','YAxisLocation','right','Color','none','XColor','k','YColor','k');
-% set(ax2,'XAxisLocation','bottom')
-% set(ax2,'YAxisLocation','right')
-% ax2.XLabel.String = 'Distance (meters)';
-% ax2.YLabel.String = 'Distance (meters)';
-% % ax2.XTick = 0:delta_x:length_x_side;
-% ax2.YTick = [0:1:N]*delta_y;
-% ax2.XTickLabel = 0:delta_x:length_x_side;
-% ax2.YTickLabel = [0:1:N]*delta_y;
-% ax2.XGrid = 'on';
-% ax2.YGrid = 'on';
-
-
-% length_y_side = delta_y * M;
-% length_x_side = delta_x * N;
-
-% % Plot object
-% figure
-% surf((1:N)*delta_x, (1:M)*delta_y, object)
-% view(2)
-% shading interp
-% xlabel('Distance in meters')
-% ylabel('Distance in meters')
-
 centre = 0.0 + 0.0 * 1i;
-start_pt = centre - 0.5 * input.length_x_side - 0.5 * input.length_y_side * 1i;
-fprintf('\n \nSize of field of interst is %d meter by %d meter \n', input.length_x_side, input.length_y_side)
+start_pt = centre - 0.5 * length_x_side - 0.5 * length_y_side * 1i;
+fprintf('\n \nSize of field of interst is %d meter by %d meter \n', length_x_side, length_y_side)
 fprintf('Discretizised space is %d grids by %d grids\n', N, M)
 fprintf('with grid size %d meter by %d meter \n', delta_x, delta_y)
 
@@ -303,14 +237,13 @@ while (error > tol) && (icnt <= basis_counter)
 end
 time_Red = toc(start3);
 
-
 % POST-PROCESSING
 % Input Data: Evaluation Locality for diagrams, colour plots etc.
 % Processes: Optimisation; Further Modelling (Lumped Parameters); Approximation of local field qualities; Field Coupling)
 % PLOT_RESULTS
 % Write variable information to Command Window and plot reults
 % WRITE INFORMATION TO COMMAND WINDOW
-fprintf('\nUsed frequency of incomming wave = %d Hz \n', input.f)
+fprintf('\nUsed frequency of incomming wave = %d Hz \n', f)
 % fprintf('\nRelative Epsilon: \nconcrete = %d \nwood = %d \nglass = %d \n', epsilonrd, epsilonrdw, epsilonrdg)
 % fprintf('\nWave Lengths: \nfree space %d meter\nconcrete %d meter\nwood %d meter \nglass %d meter\n', lambda0, lambda_d, lambda_w, lambda_g)
 % fprintf('\n \nSize of field of interst is %d meter by %d meter \n', length_x_side, length_y_side)
@@ -350,7 +283,7 @@ axis tight
 title('Material Configuration After Simulation')
 legend
 hold on
-L = plot(ones(height(input.materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
+L = plot(ones(height(materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
 set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
 colormap(map)
 legend(materials)

@@ -97,3 +97,5 @@ floor is not bijective so that means we actually do need to set an import resolu
 the SI unit for lenght is meter so stick with that? no remember we need resolution at the level that captures geometry features, wave characteristics and can feed into model
 
 so there needs to be a decision between the three which brings the resolution to suitable degree
+
+RESCALE OBJECT FOR SPECIFIC FREQUENCY: This is required for standardised input into CNN Sophisticated Book uses 128x128. Imported geometry will sit at resolution required to depict physical geometry of object. Then this discretization needs to be checked that it is sufficient to depict the electromagnetic materials of the object. If the discretisation is enough already, then it is maintained. If they discretization needs to be incresed then the imported geometry will be sliced up at a higher resolution. Ultimately, the final resolution of the exported geometry & output field needs to be suitable for model input too.
