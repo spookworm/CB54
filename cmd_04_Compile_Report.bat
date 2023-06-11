@@ -17,6 +17,6 @@ REM pandoc AnthonyJamesMcElwee_20211330_FR.docx -o AnthonyJamesMcElwee_20211330_
 echo It is better to load these sub-files into the final DOCX report before PDF conversion but during development they will be updated individually.
 echo DOCX to PDF will only run if the DOCX is newer thant the PDF version.
 REM https://github.com/cognidox/OfficeToPDF/releases
-"C:\Users\antho\Downloads\Programmes\officetopdf.exe" "./doc/project_management/AnthonyJamesMcElwee_20211330_PRS.docx" "AnthonyJamesMcElwee_20211330_PRS.pdf"
-"C:\Users\antho\Downloads\Programmes\officetopdf.exe" "AnthonyJamesMcElwee_20211330_FR.docx" "AnthonyJamesMcElwee_20211330_FR.pdf"
+"./env/officetopdf.exe" "./doc/project_management/AnthonyJamesMcElwee_20211330_PRS.docx" "AnthonyJamesMcElwee_20211330_PRS.pdf"
+"./env/officetopdf.exe" "AnthonyJamesMcElwee_20211330_FR.docx" "AnthonyJamesMcElwee_20211330_FR.pdf"
 REM PAUSE
