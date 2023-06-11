@@ -46,8 +46,12 @@ def composer_call():
 #
 composer = graphviz_doc.composer_render(composer_call(), path_doc, "digraph")
 graphviz_doc.workflow(path_doc, "workflow")
+
+NEED TO GATHER THE TIMES FOR EACH OF THE SUB pdf AND CHECK AND THEN REFRESH THE ONES THAT NEED REFRESHING.
+TRY TO DECOMMISION THE BAT SCRIPT AND DO EVERYTHING FROM HERE.
+
 docx_time = os.path.getmtime("./doc/project_management/AnthonyJamesMcElwee_20211330_PRS.docx")
-pdf_time = os.path.getmtime("AnthonyJamesMcElwee_20211330_PRS.pdf")
+pdf_time = os.path.getmtime("AnthonyJamesMcElwee_20211330_FP.pdf")
 # Only compile reports if the docx file is fresher than the pdf
 if docx_time - pdf_time >= 0.0:
     os.system("cmd_04_Compile_Report.bat")
