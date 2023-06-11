@@ -50,21 +50,18 @@
 
 # Update
 * Keep the following documents up-to-date at the end of every session:
-	* ./doc/project_management/project_logs_emailed/
-	* ./doc/project_management/AnthonyJamesMcElwee_20211330_PRS.docx
 	* ./doc/project_management/log_meetings_dates.html
 	* ./doc/graphviz_doc.workflow.py
-	* ./AnthonyJamesMcElwee_20211330_FR.docx
 
 # Notes
 * If a python function changes, even an imported function from the custom library, then Gradio will refresh and re-run everything. This may not be wise at the heavier end of the DL process so develop that stage carefully.
-* DOCX to PDF will only run if the DOCX is newer thant the PDF version.
 
 # To Do
-* Transition the final_thesis dropbox folder to this github;
+* Complete transition the final_thesis dropbox folder to this github;
 * ~~Put document rendering commands into the project itself for auto update of document links for download. the latest version of the docx and pdf should always be available. since dev activity is not in dropbox a version history of the docx may need to be maintained;~~
 * Have workflow render commands itself for auto update of image; (PROBABLY NOT WORTH IT?)
 * Have a description file in each folder describing what the folder contents. Auto-populate this readme with those descriptions.
+* Need to complete the subdocuments formatting as pages number style etc. is incomplete.
 
 # Active thoughts
 aim is to adapt streamlined code so that imported geometry can be used

@@ -7,7 +7,6 @@ import time
 from fn_graph import Composer
 import gradio as gr
 from pypdf import PdfReader
-import pypdftk
 from lib import graphviz_doc
 from lib import portfolio_doc
 #

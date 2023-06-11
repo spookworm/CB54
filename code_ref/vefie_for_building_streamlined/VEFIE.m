@@ -11,7 +11,7 @@ object_name = 'object_mp_landscape_empty.txt';
 f = 60e6; % frequency (Hz)
 
 % Hard-coded Variables
-epsilon0 = 8.854e-12;
+epsilon0 = 8.854187817e-12;
 mu0 = 4.0 * pi * 1.0e-7;
 omega = 2.0 * pi * f; % angular frequency (rad/s)
 
@@ -252,7 +252,7 @@ fprintf('with grid size %d meter by %d meter', delta_x, delta_y)
 fprintf('So basis counter goes to %d \n', basis_counter)
 fprintf('\nNumber of unknowns in Z is than %d\n', N*M*N*M)
 fprintf('Number of reduced unknowns is %d\n', sum(Rfo)*N*M)
-fprintf('with %d percent of the is filled by contrast \n', sum(Rfo)/(N * M)*100)
+fprintf('with %.2f%% percent of the is filled by contrast \n', sum(Rfo)/(N * M)*100)
 fprintf('\nCG iteration error tollerance = %d \n', tol)
 fprintf('Duration of reduced CG iteration = %d seconds \n', time_Red)
 % CONVERT SOLUTIONS ON 2D GRID, FOR 3D PLOTS
