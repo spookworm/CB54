@@ -6,8 +6,10 @@ import os
 import time
 from fn_graph import Composer
 import gradio as gr
-from lib import graphviz_doc
 from pypdf import PdfReader
+import pypdftk
+from lib import graphviz_doc
+from lib import portfolio_doc
 #
 # IMPORT LIBRARIES:END
 #
@@ -46,15 +48,24 @@ def composer_call():
 #
 composer = graphviz_doc.composer_render(composer_call(), path_doc, "digraph")
 graphviz_doc.workflow(path_doc, "workflow")
-
-NEED TO GATHER THE TIMES FOR EACH OF THE SUB pdf AND CHECK AND THEN REFRESH THE ONES THAT NEED REFRESHING.
-TRY TO DECOMMISION THE BAT SCRIPT AND DO EVERYTHING FROM HERE.
-
-docx_time = os.path.getmtime("./doc/project_management/AnthonyJamesMcElwee_20211330_PRS.docx")
-pdf_time = os.path.getmtime("AnthonyJamesMcElwee_20211330_FP.pdf")
-# Only compile reports if the docx file is fresher than the pdf
-if docx_time - pdf_time >= 0.0:
-    os.system("cmd_04_Compile_Report.bat")
+# Portfolio report update section
+# Converter found at https://github.com/cognidox/OfficeToPDF/releases
+portfolio_doc.docx_compile(".\\doc\\0_MEng_Project_Portfolio_Cover_Pages_2023.docx", ".\\doc\\0_MEng_Project_Portfolio_Cover_Pages_2023.pdf")
+portfolio_doc.docx_compile(".\\doc\\IEEE_Paper\\0_MEng_Project_Paper_Cover_Pages_2023.docx", ".\\doc\\IEEE_Paper\\0_MEng_Project_Paper_Cover_Pages_2023.pdf")
+portfolio_doc.docx_compile(".\\doc\\IEEE_Paper\\1_IEEE_Template.docx", ".\\doc\\IEEE_Paper\\1_IEEE_Template.pdf")
+portfolio_doc.portfolio_compile([".\\doc\\IEEE_Paper\\0_MEng_Project_Paper_Cover_Pages_2023.pdf", ".\\doc\\IEEE_Paper\\1_IEEE_Template.pdf"], "AnthonyJamesMcElwee_20211330_IEEE_Paper.pdf")
+portfolio_doc.docx_compile(".\\doc\\Literature_Review\\0_MEng_Project_Literature_Review_Cover_Pages_2023.docx", ".\\doc\\Literature_Review\\0_MEng_Project_Literature_Review_Cover_Pages_2023.pdf")
+portfolio_doc.docx_compile(".\\doc\\Literature_Review\\1_IEEE_Template.docx", ".\\doc\\Literature_Review\\1_IEEE_Template.pdf")
+portfolio_doc.portfolio_compile([".\\doc\\Literature_Review\\0_ MEng_Project_Literature_Review_Cover_Pages_2023.pdf", ".\\doc\\Literature_Review\\1_IEEE_Template.pdf"], "AnthonyJamesMcElwee_20211330_LR_Updated.pdf")
+portfolio_doc.docx_compile(".\\doc\\Project_Design_Plan\\AnthonyJamesMcElwee_20211330_PDP_signed.docx", "AnthonyJamesMcElwee_20211330_PDP_signed.pdf")
+portfolio_doc.docx_compile(".\\doc\\Project_Research_Log\\AnthonyJamesMcElwee_20211330_PRL.docx", "AnthonyJamesMcElwee_20211330_PRL.pdf")
+portfolio_doc.docx_compile(".\\doc\\Risk_Assignment\\AnthonyJamesMcElwee_20211330_RA.docx", "AnthonyJamesMcElwee_20211330_RA.pdf")
+os.system("echo I think that these remaining files will have to be created in the main folder to include subfolder material. This may aksi be the case for the IEEE_Paper too.")
+os.system("echo Missing AnthonyJamesMcElwee_20211330_PDI.pdf")
+os.system("echo Missing AnthonyJamesMcElwee_20211330_TR.pdf")
+os.system("echo Missing AnthonyJamesMcElwee_20211330_SCL needs to include all relevant github code and GITHUB README.md file also.")
+os.system("echo Missing AnthonyJamesMcElwee_20211330_SCL.pdf")
+portfolio_doc.portfolio_compile(["./doc/0_MEng_Project_Portfolio_Cover_Pages_2023.pdf", "AnthonyJamesMcElwee_20211330_IEEE_Paper.pdf", "AnthonyJamesMcElwee_20211330_LR_Updated.pdf", "AnthonyJamesMcElwee_20211330_PDP_signed.pdf", "AnthonyJamesMcElwee_20211330_PRL.pdf", "AnthonyJamesMcElwee_20211330_RA.pdf"], "AnthonyJamesMcElwee_20211330_FP.pdf")
 #
 # IMAGE & DOCUMENTATION RENDER: END
 #
@@ -88,13 +99,13 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                     gr.HTML("""<h1>workflow</h1>""")
                     workflow_image = gr.Image(value=path_doc + "workflow.png", type='pil')
                     workflow_image.style(height=600, width=600)
-                with gr.Column(scale=2):
-                    number_of_pages = len(PdfReader('AnthonyJamesMcElwee_20211330_FR.pdf').pages)
-                    gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FR: """ + str(number_of_pages) + """ pages</h2>""")
-                    doc_date = time.ctime(docx_time)
-                    gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FR: """ + str(doc_date) + """ Last Modified</h2>""")
-                    gr.HTML("""<h1>log_meetings_dates</h1>""")
-                    gr.HTML(open("./doc/project_management/log_meetings_dates.html", 'r').read(), label="log_meetings_dates")
+                # with gr.Column(scale=2):
+                #     number_of_pages = len(PdfReader('AnthonyJamesMcElwee_20211330_FP.pdf').pages)
+                #     gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FP: """ + str(number_of_pages) + """ pages</h2>""")
+                #     doc_date = time.ctime(os.path.getmtime("AnthonyJamesMcElwee_20211330_FP.pdf"))
+                #     gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FP: """ + str(doc_date) + """ Last Modified</h2>""")
+                #     gr.HTML("""<h1>log_meetings_dates</h1>""")
+                #     gr.HTML(open("./doc/log_meetings_dates.html", 'r').read(), label="log_meetings_dates")
     #
     # PROJECT DOCUMENTATION: END
     #

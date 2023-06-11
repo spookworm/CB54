@@ -33,11 +33,17 @@
 
 
 <!-- THIS WORKS ON GITHUB: just click on the actual files if using locally -->
-<!-- <a href="file/AnthonyJamesMcElwee_20211330_FR.pdf" target="_blank"><h1>DOWNLOAD Final Project Report</h1></a> -->
-[DOWNLOAD Final Project Report](AnthonyJamesMcElwee_20211330_FR.pdf)
+[DOWNLOAD Final Project Report](AnthonyJamesMcElwee_20211330_FP.pdf)
 
-<!-- <a href="file/AnthonyJamesMcElwee_20211330_PRS.pdf" target="_blank"><h1>DOWNLOAD Project Log Report</h1></a> -->
-[DOWNLOAD Project Log Report](AnthonyJamesMcElwee_20211330_PRS.pdf)
+[DOWNLOAD IEEE Conference Paper](AnthonyJamesMcElwee_20211330_IEEE_Paper.pdf)
+
+[DOWNLOAD Literature Review](AnthonyJamesMcElwee_20211330_LR_Updated.pdf)
+
+[DOWNLOAD Project Design Plan](AnthonyJamesMcElwee-20211330-PDP-signed.pdf)
+
+[DOWNLOAD Project Research Log](AnthonyJamesMcElwee_20211330_PRL.pdf)
+
+[DOWNLOAD Risk Assignment](AnthonyJamesMcElwee_20211330_RA.pdf)
 
 # Folder Descriptions
 * TBC
