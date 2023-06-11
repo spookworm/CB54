@@ -72,14 +72,16 @@ portfolio_doc.portfolio_compile(["./doc/0_MEng_Project_Portfolio_Cover_Pages_202
 #
 # GRADIO APP: START
 #
+last_refresh = time.ctime(time.time())
 with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
     #
     # SOLVER: START
     #
     with gr.Tab(label="Dev"):
+        gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
         gr.HTML("<h1>Dev goes here</h1>")
-        gr.HTML("""<h1>Last refresh: """ + str(time.ctime(time.time())) + """</h1>""")
     with gr.Tab(label="Dev Diagraph"):
+        gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
         with gr.Column(scale=2):
             diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
             diagraph_image.style(height=600)
@@ -90,22 +92,24 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
     # PROJECT DOCUMENTATION: START
     #
     with gr.Tab(label="Github README"):
+        gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
         with gr.Column(scale=2):
             readme_markdown = gr.Markdown(open("./README.md", 'r').read())
-    with gr.Tab(label="Final Portfolio Compilation Files"):
+            number_of_pages = len(PdfReader('AnthonyJamesMcElwee_20211330_FP.pdf').pages)
+            gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FP Pages: """ + str(number_of_pages) + """</h2>""")
+            doc_date = time.ctime(os.path.getmtime("AnthonyJamesMcElwee_20211330_FP.pdf"))
+            gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FP Last Modified: """ + str(doc_date) + """</h2>""")
+    with gr.Tab(label="Things missing from final report"):
+        gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
         with gr.Row():
-            with gr.Row():
-                with gr.Column(scale=2):
-                    gr.HTML("""<h1>workflow</h1>""")
-                    workflow_image = gr.Image(value=path_doc + "workflow.png", type='pil')
-                    workflow_image.style(height=600, width=600)
-                # with gr.Column(scale=2):
-                #     number_of_pages = len(PdfReader('AnthonyJamesMcElwee_20211330_FP.pdf').pages)
-                #     gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FP: """ + str(number_of_pages) + """ pages</h2>""")
-                #     doc_date = time.ctime(os.path.getmtime("AnthonyJamesMcElwee_20211330_FP.pdf"))
-                #     gr.HTML("""<h2>AnthonyJamesMcElwee_20211330_FP: """ + str(doc_date) + """ Last Modified</h2>""")
-                #     gr.HTML("""<h1>log_meetings_dates</h1>""")
-                #     gr.HTML(open("./doc/log_meetings_dates.html", 'r').read(), label="log_meetings_dates")
+            with gr.Column(scale=2):
+                gr.HTML("""<h1>workflow</h1>""")
+                workflow_image = gr.Image(value=path_doc + "workflow.png", type='pil')
+                workflow_image.style(height=600, width=600)
+                gr.HTML("""<h1>log_meetings_dates</h1>""")
+                gr.HTML(open("./doc/log_meetings_dates.html", 'r').read(), label="log_meetings_dates")
+                diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
+                diagraph_image.style(height=600)
     #
     # PROJECT DOCUMENTATION: END
     #
