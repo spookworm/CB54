@@ -7,7 +7,8 @@ format compact;
 % Inputs
 path_geo = './Geometry/';
 path_lut = './lut/materials.json';
-object_name = 'object_mp_landscape_empty.txt';
+% object_name = 'object_mp_landscape_empty.txt';
+object_name = 'placeholder.png';
 input_disc_per_lambda = 10; % chosen accuracy
 input_carrier_frequency = 60e6; % frequency (Hz)
 
@@ -16,7 +17,6 @@ epsilon0 = 8.854187817e-12;
 mu0 = 4.0 * pi * 1.0e-7;
 angular_frequency = 2.0 * pi * input_carrier_frequency; % angular frequency (rad/s)
 
-% THIS TO JSON
 % Pass list of master materials with associated visualisation colourings to be used in scene to the generator.
 % Order of this list should not change unless the numeric identifiers in the imported geometry also reflect such changes.
 fid = fopen(path_lut); % Opening the file
@@ -31,30 +31,37 @@ hex = vertcat(materials_master.('HEX'){:});
 map = sscanf(hex', '#%2x%2x%2x', [3, size(hex, 1)]).' / 255;
 markerColor = mat2cell(map, ones(1, height(materials_master.('name'))), 3);
 
-object = readmatrix([path_geo, object_name]);
-material_id = unique(object, 'sorted');
+% image_object = readmatrix([path_geo, object_name]);
+image_object = im2gray(imread([path_geo, object_name]))+1;
+class(image_object)
+% VISUALISE
+figure
+imagesc(image_object, 'XData', 1/2, 'YData', 1/2)
+title('Material Configuration Before Scaling for f')
+legend
+set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
+hold on
+L = plot(ones(height(materials_master.('name'))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
+set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
+colormap(map)
+legend(materials)
 
-epsilonr = ones(length(material_id), 1);
-sigma = ones(length(material_id), 1);
-epsilonr_complex = ones(length(material_id), 1);
-mur = ones(length(material_id), 1);
-mur_complex = ones(length(material_id), 1);
-cr = ones(length(material_id), 1);
-kr = ones(length(material_id), 1);
-lambdar = ones(length(material_id), 1);
+
+unique_integers = unique(image_object, 'sorted');
+epsilonr = ones(length(unique_integers), 1);
+sigma = ones(length(unique_integers), 1);
+epsilonr_complex = ones(length(unique_integers), 1);
+mur = ones(length(unique_integers), 1);
+mur_complex = ones(length(unique_integers), 1);
+cr = ones(length(unique_integers), 1);
+kr = ones(length(unique_integers), 1);
+lambdar = ones(length(unique_integers), 1);
+
 lambda_smallest = realmax;
-for k = 1:length(material_id)
-    % TBC: Expand possible materials list
-    % materials = readtable('./Geometry/pmt-hps-dielectric-constant-table.xlsx');
-    % materials(materials.("Name")=="Acetal","epsilonrd_pt")
-
+for k = 1:length(unique_integers)
     % Set epsilon and sigma based on internal MATLAB function values taken
     % from international standard.
-    % [vacuum_epsilon, vacuum_sigma, vacuum_epsilonr_complex] = buildingMaterialPermittivity('vacuum', 60e6);
-    % [concrete_epsilon, concrete_sigma, concrete_epsilonr_complex] = buildingMaterialPermittivity('concrete', 60e6);
-    % [glass_epsilon, glass_sigma, glass_epsilonr_complex] = buildingMaterialPermittivity('glass', 60e6);
-    % [wood_epsilon, wood_sigma, wood_epsilonr_complex] = buildingMaterialPermittivity('glass', 60e6);
-    [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials(material_id(k)), input_carrier_frequency);
+    [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials(unique_integers(k)+1), input_carrier_frequency);
 
     % Set mu.
     mur(k) = 1.0;
@@ -79,9 +86,7 @@ end
 % This assumes that the scale of the imported geometry is 1m per cell in both directions.
 % As a result, the room in the original code will not work properly. Use
 % the old code to work with that room.
-[M_geo, N_geo] = size(object); % M~x
-length_x_side = M_geo; % in meters
-length_y_side = N_geo; % in meters
+[length_x_side, length_y_side] = size(image_object); % M~x in meters
 
 % decision to be made here is which one should be calculated first to shortcut the mod loop
 % this decision is based on which  length_?_side is BIGGER
@@ -116,26 +121,14 @@ else
 end
 equiv_a = sqrt(delta_x*delta_y/pi);
 
-% VISUALISE
-figure
-imagesc(object, 'XData', 1/2, 'YData', 1/2)
-title('Material Configuration Before Scaling for f')
-legend
-set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
-hold on
-L = plot(ones(height(materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
-set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
-colormap(map)
-legend(materials)
-
 % Need to change geometry resolution here if frequency is lower scale
 % This doesn't look great, is there a better way to resize?
 % Also need to check how upscaling and downscaling perform.
-object = imresize(object, [M, N], "nearest");
+image_object = imresize(image_object, [M, N], "nearest");
 
 % Visualise imported object after rescaling for f.
 figure
-imagesc(object, 'XData', 1/2, 'YData', 1/2)
+imagesc(image_object, 'XData', 1/2, 'YData', 1/2)
 title('Material Configuration After Scaling for f')
 legend
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
@@ -175,7 +168,7 @@ for ct1 = 1:M % runs in y direction
         the_phi(basis_counter, 1) = atan2(imag(temp_vec), real(temp_vec));
 
         % basis_wave_number(basis_counter) = kr(object(ct1, ct2));
-        basis_wave_number(basis_counter) = kr(material_id==object(ct1, ct2));
+        basis_wave_number(basis_counter) = kr(unique_integers==image_object(ct1, ct2));
     end
 end
 
@@ -313,7 +306,7 @@ info_index = 0;
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 subplot(1, 2, 1)
-imagesc(object, 'XData', 1/2, 'YData', 1/2)
+imagesc(image_object, 'XData', 1/2, 'YData', 1/2)
 axis tight
 title('Material Configuration After Simulation')
 legend

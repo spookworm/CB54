@@ -8,7 +8,8 @@ import gradio as gr
 from pypdf import PdfReader
 from lib import graphviz_doc
 from lib import portfolio_doc
-from lib import geo_gen
+from lib import scene_gen
+# from lib import geo_gen
 #
 # IMPORT LIBRARIES:END
 #
@@ -16,12 +17,8 @@ from lib import geo_gen
 #
 # APP GLOBAL VARIABLES: START
 #
-seed = 42
+# Non-documentation moved temporarily in the Gradio style functions during development.
 path_doc = "./doc/"
-path_geo = "./code_ref/vefie_for_building_streamlined/geometry/"
-path_lut = "./code_ref/vefie_for_building_streamlined/lut/materials.json"
-object_name = 'object_mp_landscape_empty.txt'
-#
 # APP GLOBAL VARIABLES: END
 #
 #
@@ -35,12 +32,31 @@ def composer_call():
         Composer()
         .update(
             # list of custom functions goes here
-            geo_gen.epsilon0,
-            geo_gen.mu0,
-            geo_gen.realmax,
-            geo_gen.input_carrier_frequency,
-            geo_gen.input_disc_per_lambda,
-            geo_gen.angular_frequency,
+            scene_gen.seed,
+            scene_gen.path_geo,
+            scene_gen.path_lut,
+            scene_gen.object_name,
+            scene_gen.epsilon0,
+            scene_gen.mu0,
+            scene_gen.input_carrier_frequency,
+            scene_gen.input_disc_per_lambda,
+            scene_gen.angular_frequency,
+            scene_gen.materials_dict,
+            scene_gen.image_object,
+            scene_gen.unique_integers,
+            scene_gen.image_geometry_materials_parse,
+            scene_gen.image_geometry_materials_full,
+            scene_gen.lambda_smallest,
+            scene_gen.input_palette,
+            scene_gen.image_render,
+            scene_gen.length_x_side,
+            scene_gen.length_y_side,
+            scene_gen.longest_side,
+            scene_gen.discretise_side_1,
+            scene_gen.delta_1,
+            scene_gen.discretise_side_2,
+            scene_gen.delta_2,
+            scene_gen.equiv_a,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
@@ -87,18 +103,30 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
     # SOLVER: START
     #
     with gr.Tab(label="Dev"):
-        gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
-        gr.HTML("<h1>Dev Diagraph</h1>")
-        diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
-        diagraph_image.style(height=600)
-
-        gr.Number(value=composer.epsilon0(), label="composer.epsilon0()")
-        gr.Number(value=composer.mu0(), label="composer.mu0()")
-        gr.Number(value=composer.realmax(), label="composer.realmax()")
-        gr.Number(value=composer.input_carrier_frequency(), label="composer.input_carrier_frequency()")
-        gr.Textbox(value=composer.input_disc_per_lambda, label="composer.input_disc_per_lambda")
-        gr.Number(value=composer.angular_frequency(), label="composer.angular_frequency()")
-    #
+        with gr.Row():
+            with gr.Column():
+                gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
+                gr.HTML("<h1>Dev Diagraph</h1>")
+                diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
+                diagraph_image.style(height=600)
+            with gr.Column():
+                # gr.Number(value=composer.epsilon0, label="composer.epsilon0()")
+                # gr.Number(value=composer.mu0, label="composer.mu0()")
+                # gr.Number(value=composer.input_carrier_frequency, label="composer.input_carrier_frequency()")
+                # gr.Textbox(value=composer.input_disc_per_lambda, label="composer.input_disc_per_lambda")
+                # gr.Number(value=composer.angular_frequency, label="composer.angular_frequency()")
+                # gr.Textbox(value=composer.image_object, label="composer.image_object")
+                # gr.Image(value=composer.image_object, label="composer.image_object", type='pil')
+                # gr.Textbox(value=composer.input_palette, label="composer.input_palette")
+                # gr.Image(value=composer.image_render, label="composer.image_render", type='pil')
+                gr.Number(value=composer.length_x_side, label="composer.length_x_side()")
+                gr.Number(value=composer.length_y_side, label="composer.length_y_side()")
+                gr.Textbox(value=composer.longest_side, label="composer.longest_side")
+                gr.Number(value=composer.discretise_side_1, label="composer.discretise_side_1()")
+                gr.Number(value=composer.delta_1, label="composer.delta_1()")
+                gr.Number(value=composer.discretise_side_2, label="composer.discretise_side_2()")
+                gr.Number(value=composer.delta_2, label="composer.delta_2()")
+                gr.Number(value=composer.equiv_a, label="composer.equiv_a()")
     # SOLVER: END
     #
     #
