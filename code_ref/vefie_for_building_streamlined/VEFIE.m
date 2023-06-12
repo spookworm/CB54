@@ -204,6 +204,13 @@ for ct1 = 1:basis_counter
 end
 Time_creation_all_elements_from_G_V_and_D = toc(start1);
 
+x = real(position(1:N));
+y = imag(position(1:N:N*M));
+
+x = flip(x);
+x = rot90(x, 2);
+y = rot90(y, 2);
+
 % SOLVE_WITH_FFT_AND_REDUCEDCG
 % Inclsuion of matrix pre-conditioners to help control for condition
 % number may be required.
@@ -212,6 +219,37 @@ Time_creation_all_elements_from_G_V_and_D = toc(start1);
 clear r p error icnt a b;
 Rfo = logical(D); % Reduced foreward operator
 Vred = Rfo .* V; % create V reduced
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CHECK
+% Seperate out the information before iterative solver and after iterative solver
+vec2matSimulationVred = zeros(M, N);
+for i = 1:M %without vec2mat:
+    vec2matSimulationVred(i, :) = Vred((i - 1)*N+1:i*N);
+end
+Vred_2D = vec2matSimulationVred;
+
+figure
+set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
+
+subplot(1, 2, 1)
+surf(x, y, real(Vred_2D));
+view(2)
+shading interp
+title('Reduced Incoming Wave Part Real');
+xlabel('x (meters)')
+ylabel('y (meter)')
+axis tight
+
+subplot(1, 2, 2)
+surf(x, y, abs(Vred_2D));
+view(2)
+shading interp
+title('Reduced Incoming Wave Part Absolute');
+xlabel('x (meters)')
+ylabel('y (meter)')
+axis tight
+% CHECK
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Ered = zeros(basis_counter, 1); % guess
 r = Rfo .* Ered + Rfo .* BMT_FFT(G_vector.', D.*Ered, N) - Vred; % Z*E - V (= error)
 p = -(Rfo .* r + conj(D) .* (BMT_FFT(conj(G_vector.'), Rfo.*r, N))); % -Z'*r
@@ -257,21 +295,11 @@ fprintf('\nCG iteration error tollerance = %d \n', tol)
 fprintf('Duration of reduced CG iteration = %d seconds \n', time_Red)
 % CONVERT SOLUTIONS ON 2D GRID, FOR 3D PLOTS
 vec2matSimulationEred = zeros(M, N);
-vec2matSimulationVred = zeros(M, N);
 for i = 1:M %without vec2mat:
     vec2matSimulationEred(i, :) = Ered((i - 1)*N+1:i*N);
-    vec2matSimulationVred(i, :) = Vred((i - 1)*N+1:i*N);
 end
 Ered_2D = vec2matSimulationEred;
-Vred_2D = vec2matSimulationVred;
 ScatRed_2D = Ered_2D - Vred_2D;
-
-x = real(position(1:N));
-y = imag(position(1:N:N*M));
-
-x = flip(x);
-x = rot90(x, 2);
-y = rot90(y, 2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CREATE ALL THE PLOTS
 info_index = 0;
@@ -304,15 +332,6 @@ xlabel('Error')
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 
-subplot(2, 3, 1)
-surf(x, y, real(Vred_2D));
-view(2)
-shading interp
-title('Reduced Incoming Wave Part Real');
-xlabel('x (meters)')
-ylabel('y (meter)')
-axis tight
-
 subplot(2, 3, 2)
 surf(x, y, real(ScatRed_2D));
 view(2)
@@ -327,15 +346,6 @@ surf(x, y, real(Ered_2D))
 view(2)
 shading interp
 title('Reduced Total Field Part Real');
-xlabel('x (meters)')
-ylabel('y (meter)')
-axis tight
-
-subplot(2, 3, 4)
-surf(x, y, abs(Vred_2D));
-view(2)
-shading interp
-title('Reduced Incoming Wave Part Absolute');
 xlabel('x (meters)')
 ylabel('y (meter)')
 axis tight

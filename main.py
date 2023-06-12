@@ -4,7 +4,6 @@
 #
 import os
 import time
-from fn_graph import Composer
 import gradio as gr
 from pypdf import PdfReader
 from lib import graphviz_doc
@@ -21,27 +20,28 @@ seed = 42
 #
 # APP GLOBAL VARIABLES: END
 #
-
-
 #
 # CUSTOM FUNCTIONS:START
 #
-# PUT unput_ AT THE START OF FUNCTIONS THAT REQUIRE VARIABLE INPUTS
+
+
 def composer_call():
+    from fn_graph import Composer
     composer_1 = (
         Composer()
         .update(
             # list of custom functions goes here
+
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
     )
     return composer_1
+
+
 #
 # CUSTOM FUNCTIONS:END
 #
-
-
 #
 # IMAGE & DOCUMENTATION RENDER: START
 #

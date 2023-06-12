@@ -20,9 +20,9 @@ def workflow(path_doc, filename):
     os.remove(path_doc + filename + '.pdf')
     os.remove(path_doc + filename)
 
+
 def composer_render(composer_call, path_doc, filename):
     import os
-    from fn_graph import Composer
     composer_call.graphviz().render(directory=path_doc, filename=filename, format='png')
     os.remove(path_doc + filename)
     return composer_call
