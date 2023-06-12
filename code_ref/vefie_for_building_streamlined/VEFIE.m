@@ -181,28 +181,14 @@ end
 % CREATION OF ELEMENTS FOR VEFIE: (I+GD)E=V (Volume-equivalent Electric Field Intergral Equation)
 V = zeros(basis_counter, 1);
 D = zeros(basis_counter, 1); % Diagonal contrast matrix stored as a vector
-G_vector = zeros(basis_counter, 1); % BMT dense matrix, stored as a vector
-fprintf('\nStart creation of all %d ellements of G,V and D \n \n', basis_counter)
+fprintf('\nStart creation of all %d ellements of V and D\n \n', basis_counter)
 start1 = tic;
 % Incident Field
 for ct1 = 1:basis_counter
     V(ct1) = exp(-1i*kr(1)*rho(ct1)*cos(the_phi(ct1)));
     D(ct1, 1) = (basis_wave_number(ct1, 1) * basis_wave_number(ct1, 1) - kr(1) * kr(1)); % contrast function
 end
-for ct1 = 1:basis_counter
-    if (mod(ct1, 100) == 0)
-        fprintf(1, '%dth element \n', ct1);
-    end
-    R_mn2 = abs(position(ct1)-position(1));
-    if ct1 == 1
-        %         G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
-        G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
-    else
-        %         G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
-        G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
-    end
-end
-Time_creation_all_elements_from_G_V_and_D = toc(start1);
+Time_creation_all_elements_from_V_and_D = toc(start1);
 
 x = real(position(1:N));
 y = imag(position(1:N:N*M));
@@ -219,15 +205,13 @@ y = rot90(y, 2);
 clear r p error icnt a b;
 Rfo = logical(D); % Reduced foreward operator
 Vred = Rfo .* V; % create V reduced
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CHECK
-% Seperate out the information before iterative solver and after iterative solver
 vec2matSimulationVred = zeros(M, N);
 for i = 1:M %without vec2mat:
     vec2matSimulationVred(i, :) = Vred((i - 1)*N+1:i*N);
 end
 Vred_2D = vec2matSimulationVred;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 
@@ -248,8 +232,26 @@ title('Reduced Incoming Wave Part Absolute');
 xlabel('x (meters)')
 ylabel('y (meter)')
 axis tight
-% CHECK
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fprintf('\nStart creation of all %d ellements of G\n \n', basis_counter)
+G_vector = zeros(basis_counter, 1); % BMT dense matrix, stored as a vector
+start2 = tic;
+for ct1 = 1:basis_counter
+    if (mod(ct1, 100) == 0)
+        fprintf(1, '%dth element \n', ct1);
+    end
+    R_mn2 = abs(position(ct1)-position(1));
+    if ct1 == 1
+        %         G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
+        G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
+    else
+        %         G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
+        G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
+    end
+end
+Time_creation_all_elements_from_G = toc(start2);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Solver
 Ered = zeros(basis_counter, 1); % guess
 r = Rfo .* Ered + Rfo .* BMT_FFT(G_vector.', D.*Ered, N) - Vred; % Z*E - V (= error)
 p = -(Rfo .* r + conj(D) .* (BMT_FFT(conj(G_vector.'), Rfo.*r, N))); % -Z'*r
