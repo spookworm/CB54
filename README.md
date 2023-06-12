@@ -62,6 +62,7 @@
 * Have workflow render commands itself for auto update of image; (PROBABLY NOT WORTH IT?)
 * Have a description file in each folder describing what the folder contents. Auto-populate this readme with those descriptions.
 * Need to complete the subdocuments formatting as pages number style etc. is incomplete.
+* Clean-up and include the latex derivations for the VEFIE in an appendix of the final report and the mathjax readme file on the gradio app.
 
 # Active thoughts
 aim is to adapt streamlined code so that imported geometry can be used

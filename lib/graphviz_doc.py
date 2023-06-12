@@ -1,4 +1,30 @@
-def workflow(path_doc, filename):
+def composer_render(composer_call, path_doc, filename):
+    import os
+    composer_call.graphviz().render(directory=path_doc, filename=filename, format='png')
+    os.remove(path_doc + filename)
+    return composer_call
+
+
+def workflow_framework(path_doc, filename):
+    import graphviz
+    import os
+
+    dot = graphviz.Digraph(
+        node_attr={'shape': 'rectangle', 'color': '#FAB400', 'fillcolor': '#003A69', 'fontcolor': '#FAB400', 'style': 'filled'},
+        edge_attr={'color': '#FAB400'}
+        )
+    dot.attr(label=r'\n\Framework Workflow', labelloc="t", bgcolor='#003A69', fontcolor='#FAB400', fontsize='40', rankdir='TB')
+
+    dot.node('A')
+    dot.node('B')
+    dot.edge('A', 'B')
+
+    dot.render(directory=path_doc, filename=filename).replace('\\', '/')
+    dot.render(directory=path_doc, filename=filename, view=False, format='png')
+    os.remove(path_doc + filename + '.pdf')
+    os.remove(path_doc + filename)
+
+def workflow_doc(path_doc, filename):
     import graphviz
     import os
 
@@ -34,9 +60,3 @@ def workflow(path_doc, filename):
     os.remove(path_doc + filename + '.pdf')
     os.remove(path_doc + filename)
 
-
-def composer_render(composer_call, path_doc, filename):
-    import os
-    composer_call.graphviz().render(directory=path_doc, filename=filename, format='png')
-    os.remove(path_doc + filename)
-    return composer_call

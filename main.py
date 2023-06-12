@@ -8,6 +8,7 @@ import gradio as gr
 from pypdf import PdfReader
 from lib import graphviz_doc
 from lib import portfolio_doc
+from lib import geo_gen
 #
 # IMPORT LIBRARIES:END
 #
@@ -15,8 +16,11 @@ from lib import portfolio_doc
 #
 # APP GLOBAL VARIABLES: START
 #
-path_doc = "./doc/"
 seed = 42
+path_doc = "./doc/"
+path_geo = "./code_ref/vefie_for_building_streamlined/geometry/"
+path_lut = "./code_ref/vefie_for_building_streamlined/lut/materials.json"
+object_name = 'object_mp_landscape_empty.txt'
 #
 # APP GLOBAL VARIABLES: END
 #
@@ -31,7 +35,12 @@ def composer_call():
         Composer()
         .update(
             # list of custom functions goes here
-
+            geo_gen.epsilon0,
+            geo_gen.mu0,
+            geo_gen.realmax,
+            geo_gen.input_carrier_frequency,
+            geo_gen.input_disc_per_lambda,
+            geo_gen.angular_frequency,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
@@ -46,7 +55,8 @@ def composer_call():
 # IMAGE & DOCUMENTATION RENDER: START
 #
 composer = graphviz_doc.composer_render(composer_call(), path_doc, "digraph")
-graphviz_doc.workflow(path_doc, "workflow")
+graphviz_doc.workflow_framework(path_doc, "workflow_framework")
+graphviz_doc.workflow_doc(path_doc, "workflow_doc")
 # Portfolio report update section
 # Converter found at https://github.com/cognidox/OfficeToPDF/releases
 portfolio_doc.docx_compile(".\\doc\\0_MEng_Project_Portfolio_Cover_Pages_2023.docx", ".\\doc\\0_MEng_Project_Portfolio_Cover_Pages_2023.pdf")
@@ -78,12 +88,16 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
     #
     with gr.Tab(label="Dev"):
         gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
-        gr.HTML("<h1>Dev goes here</h1>")
-    with gr.Tab(label="Dev Diagraph"):
-        gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
-        with gr.Column(scale=2):
-            diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
-            diagraph_image.style(height=600)
+        gr.HTML("<h1>Dev Diagraph</h1>")
+        diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
+        diagraph_image.style(height=600)
+
+        gr.Number(value=composer.epsilon0(), label="composer.epsilon0()")
+        gr.Number(value=composer.mu0(), label="composer.mu0()")
+        gr.Number(value=composer.realmax(), label="composer.realmax()")
+        gr.Number(value=composer.input_carrier_frequency(), label="composer.input_carrier_frequency()")
+        gr.Textbox(value=composer.input_disc_per_lambda, label="composer.input_disc_per_lambda")
+        gr.Number(value=composer.angular_frequency(), label="composer.angular_frequency()")
     #
     # SOLVER: END
     #
@@ -102,8 +116,12 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
         gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
         with gr.Row():
             with gr.Column(scale=2):
-                gr.HTML("""<h1>workflow</h1>""")
-                workflow_image = gr.Image(value=path_doc + "workflow.png", type='pil')
+                gr.HTML("""<h1>mathjax derivations</h1>""")
+                gr.Markdown(open("./doc/mathjax_int.md", 'r').read())
+                gr.HTML("""<h1>workflow_framework</h1>""")
+                workflow_image = gr.Image(value=path_doc + "workflow_framework.png", type='pil')
+                gr.HTML("""<h1>workflow_doc</h1>""")
+                workflow_image = gr.Image(value=path_doc + "workflow_doc.png", type='pil')
                 workflow_image.style(height=600, width=600)
                 gr.HTML("""<h1>log_meetings_dates</h1>""")
                 gr.HTML(open("./doc/log_meetings_dates.html", 'r').read(), label="log_meetings_dates")

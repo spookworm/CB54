@@ -5,10 +5,9 @@ clc;
 format compact;
 
 % Inputs
-path_geo = './Geometry/';
-path_lut = './lut/materials.json';
-object_name = 'object_mp_landscape_empty.txt';
 input_disc_per_lambda = 10; % chosen accuracy
+path_geo = './Geometry/';
+object_name = 'object_mp_landscape_empty.txt';
 input_carrier_frequency = 60e6; % frequency (Hz)
 
 % Hard-coded Variables
@@ -19,13 +18,14 @@ angular_frequency = 2.0 * pi * input_carrier_frequency; % angular frequency (rad
 % THIS TO JSON
 % Pass list of master materials with associated visualisation colourings to be used in scene to the generator.
 % Order of this list should not change unless the numeric identifiers in the imported geometry also reflect such changes.
-fid = fopen(path_lut); % Opening the file
+fileName = '.\lut\materials.json'; % filename in JSON extension
+fid = fopen(fileName); % Opening the file
 raw = fread(fid,inf); % Reading the contents
 str = char(raw'); % Transformation
 fclose(fid); % Closing the file
 data = jsondecode(str); % Using the jsondecode function to parse JSON from string
+class(struct2table(data))
 materials_master = struct2table(data);
-
 materials = materials_master.('name');
 hex = vertcat(materials_master.('HEX'){:});
 map = sscanf(hex', '#%2x%2x%2x', [3, size(hex, 1)]).' / 255;
