@@ -124,11 +124,11 @@ equiv_a = sqrt(delta_x*delta_y/pi);
 % Need to change geometry resolution here if frequency is lower scale
 % This doesn't look great, is there a better way to resize?
 % Also need to check how upscaling and downscaling perform.
-image_object = imresize(image_object, [M, N], "nearest");
+image_resize = imresize(image_object, [M, N], "nearest");
 
 % Visualise imported object after rescaling for f.
 figure
-imagesc(image_object, 'XData', 1/2, 'YData', 1/2)
+imagesc(image_resize, 'XData', 1/2, 'YData', 1/2)
 title('Material Configuration After Scaling for f')
 legend
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
@@ -168,7 +168,7 @@ for ct1 = 1:M % runs in y direction
         the_phi(basis_counter, 1) = atan2(imag(temp_vec), real(temp_vec));
 
         % basis_wave_number(basis_counter) = kr(object(ct1, ct2));
-        basis_wave_number(basis_counter) = kr(unique_integers==image_object(ct1, ct2));
+        basis_wave_number(basis_counter) = kr(unique_integers==image_resize(ct1, ct2));
     end
 end
 
@@ -306,7 +306,7 @@ info_index = 0;
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 subplot(1, 2, 1)
-imagesc(image_object, 'XData', 1/2, 'YData', 1/2)
+imagesc(image_resize, 'XData', 1/2, 'YData', 1/2)
 axis tight
 title('Material Configuration After Simulation')
 legend

@@ -57,6 +57,12 @@ def composer_call():
             scene_gen.discretise_side_2,
             scene_gen.delta_2,
             scene_gen.equiv_a,
+            scene_gen.resolution_information,
+            scene_gen.image_resize,
+            scene_gen.image_resize_render,
+            scene_gen.input_centre,
+            scene_gen.start_point,
+            scene_gen.basis_specification,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
@@ -119,14 +125,21 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 # gr.Image(value=composer.image_object, label="composer.image_object", type='pil')
                 # gr.Textbox(value=composer.input_palette, label="composer.input_palette")
                 # gr.Image(value=composer.image_render, label="composer.image_render", type='pil')
-                gr.Number(value=composer.length_x_side, label="composer.length_x_side()")
-                gr.Number(value=composer.length_y_side, label="composer.length_y_side()")
-                gr.Textbox(value=composer.longest_side, label="composer.longest_side")
-                gr.Number(value=composer.discretise_side_1, label="composer.discretise_side_1()")
-                gr.Number(value=composer.delta_1, label="composer.delta_1()")
-                gr.Number(value=composer.discretise_side_2, label="composer.discretise_side_2()")
-                gr.Number(value=composer.delta_2, label="composer.delta_2()")
-                gr.Number(value=composer.equiv_a, label="composer.equiv_a()")
+                # gr.Number(value=composer.length_x_side, label="composer.length_x_side()")
+                # gr.Number(value=composer.length_y_side, label="composer.length_y_side()")
+                # gr.Textbox(value=composer.longest_side, label="composer.longest_side")
+                # gr.Number(value=composer.discretise_side_1, label="composer.discretise_side_1()")
+                # gr.Number(value=composer.delta_1, label="composer.delta_1()")
+                # gr.Number(value=composer.discretise_side_2, label="composer.discretise_side_2()")
+                # gr.Number(value=composer.delta_2, label="composer.delta_2()")
+                # gr.Number(value=composer.equiv_a, label="composer.equiv_a()")
+                # gr.Textbox(value=composer.resolution_information, label="composer.resolution_information()")
+                # gr.Image(value=composer.image_resize, label="composer.image_resize()")
+                # gr.Image(value=composer.image_resize_render, label="composer.image_resize_render()")
+                gr.Textbox(value=composer.input_centre, label="composer.input_centre()")
+                gr.Textbox(value=composer.start_point, label="composer.start_point()")
+                gr.Number(value=composer.basis_specification(), label="composer.basis_specification()")
+                # gr.Number(value=composer.basis_specification()[0], label="composer.basis_specification()[0]")
     # SOLVER: END
     #
     #

@@ -88,6 +88,18 @@ def unique_integers(image_object):
     # "Unique Values in Geometry"
     import pandas as pd
     import numpy as np
+
+    return pd.DataFrame({"uint8": np.unique(image_object).tolist()})
+
+
+def unique_integers_freq(image_object):
+
+    prepopulation requires freq count of image contents. so replace unique_integers to include a count too
+    # "Unique Values in Geometry"
+    import pandas as pd
+    import numpy as np
+    pd.value_counts(image_object)
+
     return pd.DataFrame({"uint8": np.unique(image_object).tolist()})
 
 
@@ -145,14 +157,20 @@ def length_y_side(image_object):
 
 
 def longest_side(length_x_side, length_y_side):
-    var = {length_x_side: "length_x_side", length_y_side: "length_y_side"}
-    # return [var.get(max(var)), var.get(min(var))]
-    return var
+    # Could there be a problem if both are equal in length?
+    import pandas as pd
+    data = pd.DataFrame(
+        {"name": ["length_x_side", "length_y_side"],
+         "length": [length_x_side, length_y_side]
+         },
+        index=[1, 2]
+        )
+    return data
 
 
 def discretise_side_1(longest_side, lambda_smallest, input_disc_per_lambda):
     import math
-    N = math.floor(max(longest_side)/(abs(lambda_smallest) / input_disc_per_lambda))
+    N = math.floor(longest_side['length'].max()/(abs(lambda_smallest) / input_disc_per_lambda))
     fourth_of_N = math.ceil(N/4)
     while ((N % fourth_of_N) != 0):
         N = N + 1
@@ -160,12 +178,12 @@ def discretise_side_1(longest_side, lambda_smallest, input_disc_per_lambda):
 
 
 def delta_1(longest_side, discretise_side_1):
-    return max(longest_side) / discretise_side_1
+    return longest_side['length'].max() / discretise_side_1
 
 
 def discretise_side_2(longest_side, delta_1):
     import math
-    N = math.floor(min(longest_side)/delta_1)
+    N = math.floor(longest_side['length'].min()/delta_1)
     fourth_of_N = math.ceil(N/4)
     while ((N % fourth_of_N) != 0):
         N = N + 1
@@ -173,7 +191,7 @@ def discretise_side_2(longest_side, delta_1):
 
 
 def delta_2(longest_side, discretise_side_2):
-    return min(longest_side) / discretise_side_2
+    return longest_side['length'].min() / discretise_side_2
 
 
 def equiv_a(delta_1, delta_2):
@@ -181,8 +199,46 @@ def equiv_a(delta_1, delta_2):
     return pow(delta_1*delta_2/math.pi, 0.5)
 
 
-# def image_resize(image_object, longest_side):
-#     # HOW TO MATCH BACK discretise_side_1 TO X AND Y?
-#     # return image_object.resize((basewidth,hsize), Image.Resampling.NEAREST)
-#     print()
+def resolution_information(longest_side, discretise_side_1, discretise_side_2):
+    data = {}
+    longest = str(longest_side[longest_side["length"] == longest_side["length"].min()]['name'].iloc[0])
+    shortest = str(longest_side[longest_side["length"] == longest_side["length"].max()]['name'].iloc[0])
+    data[longest] = discretise_side_1
+    data[shortest] = discretise_side_2
+    return data
 
+
+def image_resize(image_object, resolution_information):
+    from PIL import Image
+    return image_object.resize((resolution_information["length_y_side"], resolution_information["length_x_side"]), Image.Resampling.NEAREST)
+
+
+def image_resize_render(image_resize, input_palette):
+    # print(image_object.mode)
+    # Gradio may be converting input here before it reaches the operations so bear that in mind.
+    image_resize.putpalette(input_palette)
+    return image_resize
+
+
+def input_centre():
+    return 0.0 + 0.0 * 1j
+
+
+def start_point(input_centre, input_disc_per_lambda, length_x_side, length_y_side):
+    # CHECK, is this correct? like there will have to be multiple resize options so why stick with original lengths etc.
+    return input_centre - 0.5 * length_x_side - 0.5 * length_y_side * 1j
+
+
+def basis_specification(resolution_information, image_geometry_materials_full):
+    import numpy as np
+    basis_counter = 0
+    # basis_wave_number(1:N*N, 1) = kr(1)
+    print(resolution_information)
+    # print(resolution_information["length_y_side"])
+    # basis_wave_number = np.full((resolution_information["length_y_side"]*resolution_information["length_y_side"], 1), 10)
+    print(image_geometry_materials_full["kr"])
+    PRE-POPULATING THE MATRIX WITH THE DOMININANT MATERIAL MIGHT SAVE OPERATIONS?
+    image_geometry_materials_full[image_geometry_materials_full["length"] == longest_side["length"].min()]['name'].iloc[0]
+
+    # print(basis_wave_number)
+    return basis_counter
