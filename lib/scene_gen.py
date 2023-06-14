@@ -193,16 +193,20 @@ def equiv_a(delta_1, delta_2):
 
 def resolution_information(longest_side, discretise_side_1, discretise_side_2):
     data = {}
-    longest = str(longest_side[longest_side["length"] == longest_side["length"].min()]['name'].iloc[0])
-    shortest = str(longest_side[longest_side["length"] == longest_side["length"].max()]['name'].iloc[0])
+    longest = str(longest_side[longest_side["length"] == longest_side["length"].max()]['name'].iloc[0])
+    shortest = str(longest_side[longest_side["length"] == longest_side["length"].min()]['name'].iloc[0])
     data[longest] = discretise_side_1
     data[shortest] = discretise_side_2
+    # print("longest", longest)
+    # print("shortest", shortest)
+    # print("data[longest]", data[longest])
+    # print("data[shortest]", data[shortest])
     return data
 
 
 def image_resize(image_object, resolution_information):
     from PIL import Image
-    return image_object.resize((resolution_information["length_y_side"], resolution_information["length_x_side"]), Image.Resampling.NEAREST)
+    return image_object.resize((resolution_information["length_x_side"], resolution_information["length_y_side"]), Image.Resampling.NEAREST)
 
 
 def image_resize_render(image_resize, input_palette):
@@ -221,16 +225,59 @@ def start_point(input_centre, input_disc_per_lambda, length_x_side, length_y_sid
     return input_centre - 0.5 * length_x_side - 0.5 * length_y_side * 1j
 
 
-def basis_specification(resolution_information, image_geometry_materials_full):
+def basis_specification(resolution_information, image_geometry_materials_full, longest_side, start_point):
     import numpy as np
-    basis_counter = 0
-    # # basis_wave_number(1:N*N, 1) = kr(1)
-    # print(resolution_information)
-    # # print(resolution_information["length_y_side"])
-    # # basis_wave_number = np.full((resolution_information["length_y_side"]*resolution_information["length_y_side"], 1), 10)
-    # print(image_geometry_materials_full["kr"])
-    # # PRE-POPULATING THE MATRIX WITH THE DOMININANT MATERIAL MIGHT SAVE OPERATIONS?
-    # image_geometry_materials_full[image_geometry_materials_full["length"] == longest_side["length"].min()]['name'].iloc[0]
+    # PRE-POPULATING THE MATRIX WITH THE DOMININANT MATERIAL MIGHT SAVE OPERATIONS
+    prepop_fill = image_geometry_materials_full[image_geometry_materials_full["counts_elements"] == image_geometry_materials_full["counts_elements"].max()]['kr'].iloc[0]
+    discretise_M = resolution_information["length_y_side"]
+    discretise_N = resolution_information["length_x_side"]
+    # print("discretise_M", discretise_M)
+    # print("type(discretise_M)", type(discretise_M))
+    # print("discretise_N", discretise_N)
+    # print("type(discretise_N)", type(discretise_N))
 
-    # print(basis_wave_number)
-    return basis_counter
+    # print(resolution_information)  # M, N
+    # print(longest_side)  # length_y_side, length_x_side
+    # print("y", longest_side[longest_side["name"] == "length_y_side"]["length"].iloc[0])
+    # print("x", longest_side[longest_side["name"] == "length_x_side"]["length"].iloc[0])
+    # print(resolution_information["length_y_side"])
+    delta_y = longest_side[longest_side["name"] == "length_y_side"]["length"] / resolution_information["length_y_side"]
+    delta_x = longest_side[longest_side["name"] == "length_x_side"]["length"] / resolution_information["length_x_side"]
+    delta_y = delta_y.iloc[0]
+    delta_x = delta_x.iloc[0]
+
+    basis_wave_number = np.full((discretise_N * discretise_N, 1), prepop_fill)
+    position = np.zeros(((discretise_M * discretise_N) + 1, 1), dtype=np.complex_)
+    rho = np.zeros((discretise_M*discretise_N, 1))
+    the_phi = np.zeros((discretise_M*discretise_N, 1))
+
+    # print("type(start_point)", type(start_point))
+    # print("type(delta_x)", type(delta_x))
+    # # NOT WORTH VECTORISING YET
+    basis_counter = 0
+    for ct1 in range(1, discretise_M+1):
+        for ct2 in range(1, discretise_N+1):
+            basis_counter = (ct1 - 1) * discretise_N + ct2
+
+            position[basis_counter, 0] = start_point + (ct2 - 0.5) * delta_x + 1j * (ct1 - 0.5) * delta_y
+
+    # print("type(start_point + (ct2 - 0.5) * delta_x + 1j * (ct1 - 0.5) * delta_y)", type(start_point + (ct2 - 0.5) * delta_x + 1j * (ct1 - 0.5) * delta_y))
+    # print("type(basis_counter)", type(basis_counter))
+            # position[basis_counter, 0] = start_point + (ct2 - 0.5) * delta_x + 1j * (ct1 - 0.5) * delta_y
+    #         temp_vec = position[basis_counter, 0] - input_centre
+    #         rho[basis_counter, 0] = abs(temp_vec)
+    #         the_phi[basis_counter, 0] = math.atan2(np.imag(temp_vec), np.real(temp_vec))
+    #         basis_wave_number[basis_counter] = image_geometry_materials_full[image_geometry_materials_full["uint8"].astype(float) == input_image_geometry_array[ct1, ct2]]["kr"]
+    # unique, counts = np.unique(basis_wave_number, return_counts=True)
+    # print(np.asarray((unique, counts)).T)
+    # print("basis_counter", type(basis_counter))
+    # print("position", type(position))
+    # print("rho", type(rho))
+    # print("the_phi", type(the_phi))
+    # print("basis_wave_number", type(basis_wave_number))
+    # return basis_wave_number
+    # return basis_counter, position, rho, the_phi, basis_wave_number
+    return position
+    # return basis_counter
+    # return print()
+
