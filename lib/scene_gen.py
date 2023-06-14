@@ -88,19 +88,9 @@ def unique_integers(image_object):
     # "Unique Values in Geometry"
     import pandas as pd
     import numpy as np
-
-    return pd.DataFrame({"uint8": np.unique(image_object).tolist()})
-
-
-def unique_integers_freq(image_object):
-
-    prepopulation requires freq count of image contents. so replace unique_integers to include a count too
-    # "Unique Values in Geometry"
-    import pandas as pd
-    import numpy as np
-    pd.value_counts(image_object)
-
-    return pd.DataFrame({"uint8": np.unique(image_object).tolist()})
+    unique_elements, counts_elements = np.unique(image_object, return_counts=True)
+    # return pd.DataFrame({"uint8": np.unique(image_object).tolist()})
+    return pd.DataFrame({"uint8": unique_elements, "counts_elements": counts_elements})
 
 
 def materials_dict(path_lut):
@@ -111,8 +101,10 @@ def materials_dict(path_lut):
 
 def image_geometry_materials_parse(materials_dict, unique_integers):
     # "Unique Values in Geometry"
+    import pandas as pd
     materials_dict['uint8'] = materials_dict['uint8'].astype(int)
-    return unique_integers.join(materials_dict.set_index(['uint8']), on=['uint8'], how='left')
+    unique_integers['uint8'] = unique_integers['uint8'].astype(int)
+    return pd.merge(unique_integers.set_index(['uint8']), materials_dict.set_index(['uint8']), on='uint8', how='left')
 
 
 def image_geometry_materials_full(image_geometry_materials_parse, epsilon0, input_carrier_frequency, mu0, angular_frequency):
@@ -232,13 +224,13 @@ def start_point(input_centre, input_disc_per_lambda, length_x_side, length_y_sid
 def basis_specification(resolution_information, image_geometry_materials_full):
     import numpy as np
     basis_counter = 0
-    # basis_wave_number(1:N*N, 1) = kr(1)
-    print(resolution_information)
-    # print(resolution_information["length_y_side"])
-    # basis_wave_number = np.full((resolution_information["length_y_side"]*resolution_information["length_y_side"], 1), 10)
-    print(image_geometry_materials_full["kr"])
-    PRE-POPULATING THE MATRIX WITH THE DOMININANT MATERIAL MIGHT SAVE OPERATIONS?
-    image_geometry_materials_full[image_geometry_materials_full["length"] == longest_side["length"].min()]['name'].iloc[0]
+    # # basis_wave_number(1:N*N, 1) = kr(1)
+    # print(resolution_information)
+    # # print(resolution_information["length_y_side"])
+    # # basis_wave_number = np.full((resolution_information["length_y_side"]*resolution_information["length_y_side"], 1), 10)
+    # print(image_geometry_materials_full["kr"])
+    # # PRE-POPULATING THE MATRIX WITH THE DOMININANT MATERIAL MIGHT SAVE OPERATIONS?
+    # image_geometry_materials_full[image_geometry_materials_full["length"] == longest_side["length"].min()]['name'].iloc[0]
 
     # print(basis_wave_number)
     return basis_counter
