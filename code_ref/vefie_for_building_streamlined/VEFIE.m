@@ -86,7 +86,7 @@ end
 % This assumes that the scale of the imported geometry is 1m per cell in both directions.
 % As a result, the room in the original code will not work properly. Use
 % the old code to work with that room.
-[length_x_side, length_y_side] = size(image_object); % M~x in meters
+[length_y_side, length_x_side] = size(image_object); % M~x in meters
 
 % decision to be made here is which one should be calculated first to shortcut the mod loop
 % this decision is based on which  length_?_side is BIGGER
