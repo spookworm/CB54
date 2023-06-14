@@ -191,9 +191,9 @@ Time_creation_all_elements_from_V_and_D = toc(start1);
 x = real(position(1:N));
 y = imag(position(1:N:N*M));
 
-x = flip(x);
-x = rot90(x, 2);
-y = rot90(y, 2);
+% x = flip(x);
+% x = rot90(x, 2);
+% y = rot90(y, 2);
 
 % SOLVE_WITH_FFT_AND_REDUCEDCG
 % Inclsuion of matrix pre-conditioners to help control for condition
@@ -215,7 +215,8 @@ set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 
 subplot(1, 2, 1)
 surf(x, y, real(Vred_2D));
-view(2)
+% view(2)
+view(0, 270)
 shading interp
 title('Reduced Incoming Wave Part Real');
 xlabel('x (meters)')
@@ -224,7 +225,8 @@ axis tight
 
 subplot(1, 2, 2)
 surf(x, y, abs(Vred_2D));
-view(2)
+% view(2)
+view(0, 270)
 shading interp
 title('Reduced Incoming Wave Part Absolute');
 xlabel('x (meters)')
