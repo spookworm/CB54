@@ -33,21 +33,11 @@ markerColor = mat2cell(map, ones(1, height(materials_master.('name'))), 3);
 
 % image_object = readmatrix([path_geo, object_name]);
 image_object = im2gray(imread([path_geo, object_name]))+1;
-class(image_object)
-% VISUALISE
-figure
-imagesc(image_object, 'XData', 1/2, 'YData', 1/2)
-title('Material Configuration Before Scaling for f')
-legend
-set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
-hold on
-L = plot(ones(height(materials_master.('name'))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
-set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
-colormap(map)
-legend(materials)
-
-
 unique_integers = unique(image_object, 'sorted');
+
+% VISUALISE
+image_object_render(image_object, map, materials, markerColor, 'Material Configuration Before Scaling for f')
+
 epsilonr = ones(length(unique_integers), 1);
 sigma = ones(length(unique_integers), 1);
 epsilonr_complex = ones(length(unique_integers), 1);
@@ -126,17 +116,8 @@ equiv_a = sqrt(delta_x*delta_y/pi);
 % Also need to check how upscaling and downscaling perform.
 image_resize = imresize(image_object, [M, N], "nearest");
 
-% Visualise imported object after rescaling for f.
-figure
-imagesc(image_resize, 'XData', 1/2, 'YData', 1/2)
-title('Material Configuration After Scaling for f')
-legend
-set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
-hold on
-L = plot(ones(height(materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
-set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
-colormap(map)
-legend(materials)
+% VISUALISE
+image_object_render(image_resize, map, materials, markerColor, 'Material Configuration After Scaling for f')
 
 centre = 0.0 + 0.0 * 1i;
 start_pt = centre - 0.5 * length_x_side - 0.5 * length_y_side * 1i;
@@ -210,29 +191,6 @@ end
 Vred_2D = vec2matSimulationVred;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure
-set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
-
-subplot(1, 2, 1)
-surf(x, y, real(Vred_2D));
-% view(2)
-view(0, 270)
-shading interp
-title('Reduced Incoming Wave Part Real');
-xlabel('x (meters)')
-ylabel('y (meter)')
-axis tight
-
-subplot(1, 2, 2)
-surf(x, y, abs(Vred_2D));
-% view(2)
-view(0, 270)
-shading interp
-title('Reduced Incoming Wave Part Absolute');
-xlabel('x (meters)')
-ylabel('y (meter)')
-axis tight
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('\nStart creation of all %d ellements of G\n \n', basis_counter)
 G_vector = zeros(basis_counter, 1); % BMT dense matrix, stored as a vector
 start2 = tic;
@@ -305,10 +263,14 @@ ScatRed_2D = Ered_2D - Vred_2D;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CREATE ALL THE PLOTS
 info_index = 0;
+
+% VISUALISE
+image_object_render(image_object, map, materials, markerColor, 'Material Configuration Before Scaling for f')
+
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 subplot(1, 2, 1)
-imagesc(image_resize, 'XData', 1/2, 'YData', 1/2)
+imagesc(ind2rgb(image_resize, map), 'XData', 1/2, 'YData', 1/2)
 axis tight
 title('Material Configuration After Simulation')
 legend
@@ -334,6 +296,16 @@ xlabel('Error')
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 
+subplot(2, 3, 1)
+surf(x, y, real(Vred_2D));
+% view(2)
+view(0, 270)
+shading interp
+title('Reduced Incoming Wave Part Real');
+xlabel('x (meters)')
+ylabel('y (meter)')
+axis tight
+
 subplot(2, 3, 2)
 surf(x, y, real(ScatRed_2D));
 view(2)
@@ -348,6 +320,16 @@ surf(x, y, real(Ered_2D))
 view(2)
 shading interp
 title('Reduced Total Field Part Real');
+xlabel('x (meters)')
+ylabel('y (meter)')
+axis tight
+
+subplot(2, 3, 4)
+surf(x, y, abs(Vred_2D));
+% view(2)
+view(0, 270)
+shading interp
+title('Reduced Incoming Wave Part Absolute');
 xlabel('x (meters)')
 ylabel('y (meter)')
 axis tight
