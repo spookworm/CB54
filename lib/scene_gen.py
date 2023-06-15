@@ -46,35 +46,16 @@ def angular_frequency(input_carrier_frequency):
     return 2.0 * math.pi * input_carrier_frequency
 
 
-def input_palette():
-    from PIL import ImageColor
-    # CHECK, this needs to come from the JSON LUT and get iterated over.
-    tuples = [
-        ImageColor.getcolor("#FDFF00", "RGB"),
-        ImageColor.getcolor("#A7A9AB", "RGB"),
-        ImageColor.getcolor("#D08931", "RGB"),
-        ImageColor.getcolor("#B9E8E9", "RGB"),
-        ImageColor.getcolor("#ED774C", "RGB"),
-        ImageColor.getcolor("#EFEFEE", "RGB"),
-        ImageColor.getcolor("#F4F1DB", "RGB"),
-        ImageColor.getcolor("#C09B53", "RGB"),
-        ImageColor.getcolor("#7A5409", "RGB"),
-        ImageColor.getcolor("#909090", "RGB")
-        ]
-    palette = [item for sublist in tuples for item in sublist]
-    return palette
-
-
 def image_object(path_geo, object_name):
     # Generated geometry will be in the form of PNG as it is smaller in memory than CSV or TXT
     from PIL import Image
     return Image.open(path_geo + object_name, mode='r').convert('L')
 
 
-def image_render(image_object, input_palette):
+def image_render(image_object, palette):
     # print(image_object.mode)
     # Gradio may be converting input here before it reaches the operations so bear that in mind.
-    image_object.putpalette(input_palette)
+    image_object.putpalette(palette)
     return image_object
 
 
@@ -97,6 +78,15 @@ def materials_dict(path_lut):
     import pandas as pd
     import json
     return pd.DataFrame(json.load(open(path_lut, 'r')))
+
+
+def palette(materials_dict):
+    from PIL import ImageColor
+    tuples = []
+    for ind in materials_dict.index:
+        tuples.append(ImageColor.getcolor(materials_dict['HEX'][ind], "RGB"))
+    palette_out = [item for sublist in tuples for item in sublist]
+    return palette_out
 
 
 def image_geometry_materials_parse(materials_dict, unique_integers):
@@ -210,10 +200,10 @@ def image_resize(image_object, resolution_information):
     return image_object.resize((resolution_information["length_x_side"], resolution_information["length_y_side"]), Image.Resampling.NEAREST)
 
 
-def image_resize_render(image_resize, input_palette):
+def image_resize_render(image_resize, palette):
     # print(image_object.mode)
     # Gradio may be converting input here before it reaches the operations so bear that in mind.
-    image_resize.putpalette(input_palette)
+    image_resize.putpalette(palette)
     return image_resize
 
 
@@ -249,9 +239,8 @@ def position(resolution_information, longest_side, start_point):
     return position
 
 
-def rho(resolution_information, image_geometry_materials_full, longest_side, start_point, input_centre, image_resize):
+def rho(resolution_information, image_geometry_materials_full, longest_side, start_point, input_centre, image_resize, position):
     import numpy as np
-    import math
     # PRE-POPULATING THE MATRIX WITH THE DOMININANT MATERIAL MIGHT SAVE OPERATIONS
     discretise_M = resolution_information["length_y_side"]
     discretise_N = resolution_information["length_x_side"]
@@ -262,23 +251,21 @@ def rho(resolution_information, image_geometry_materials_full, longest_side, sta
 
     # NOT WORTH VECTORISING ... YET!
     # ct1 -> ct1 + 1 ?
-    position = np.zeros((discretise_M * discretise_N, 1), dtype=np.complex_)
+    # position = np.zeros((discretise_M * discretise_N, 1), dtype=np.complex_)
     rho = np.zeros((discretise_M*discretise_N, 1))
-    the_phi = np.zeros((discretise_M*discretise_N, 1))
     basis_counter = 0
     for ct1 in range(0, discretise_M):
         for ct2 in range(0, discretise_N):
             # basis_counter = (ct1 - 1) * discretise_N + ct2
             basis_counter = ct1 * discretise_N + ct2
             # position(basis_counter, 1) = start_pt + (ct2 - 0.5) * delta_x + 1i * (ct1 - 0.5) * delta_y;
-            position[basis_counter, 0] = start_point + (ct2 + 0.5) * delta_x + 1j * (ct1 + 0.5) * delta_y
+            # position[basis_counter, 0] = start_point + (ct2 + 0.5) * delta_x + 1j * (ct1 + 0.5) * delta_y
             temp_vec = position[basis_counter, 0] - input_centre
             rho[basis_counter, 0] = abs(temp_vec)
-            the_phi[basis_counter, 0] = math.atan2(np.imag(temp_vec), np.real(temp_vec))
     return rho
 
 
-def the_phi(resolution_information, image_geometry_materials_full, longest_side, start_point, input_centre, image_resize):
+def the_phi(resolution_information, image_geometry_materials_full, longest_side, start_point, input_centre, image_resize, position):
     import numpy as np
     import math
     # PRE-POPULATING THE MATRIX WITH THE DOMININANT MATERIAL MIGHT SAVE OPERATIONS
@@ -291,8 +278,7 @@ def the_phi(resolution_information, image_geometry_materials_full, longest_side,
 
     # NOT WORTH VECTORISING ... YET!
     # ct1 -> ct1 + 1 ?
-    position = np.zeros((discretise_M * discretise_N, 1), dtype=np.complex_)
-    rho = np.zeros((discretise_M*discretise_N, 1))
+    # position = np.zeros((discretise_M * discretise_N, 1), dtype=np.complex_)
     the_phi = np.zeros((discretise_M*discretise_N, 1))
     basis_counter = 0
     for ct1 in range(0, discretise_M):
@@ -300,21 +286,22 @@ def the_phi(resolution_information, image_geometry_materials_full, longest_side,
             # basis_counter = (ct1 - 1) * discretise_N + ct2
             basis_counter = ct1 * discretise_N + ct2
             # position(basis_counter, 1) = start_pt + (ct2 - 0.5) * delta_x + 1i * (ct1 - 0.5) * delta_y;
-            position[basis_counter, 0] = start_point + (ct2 + 0.5) * delta_x + 1j * (ct1 + 0.5) * delta_y
+            # position[basis_counter, 0] = start_point + (ct2 + 0.5) * delta_x + 1j * (ct1 + 0.5) * delta_y
             temp_vec = position[basis_counter, 0] - input_centre
-            rho[basis_counter, 0] = abs(temp_vec)
             the_phi[basis_counter, 0] = math.atan2(np.imag(temp_vec), np.real(temp_vec))
     return the_phi
 
 
 def basis_wave_number(resolution_information, image_geometry_materials_full, image_resize):
     import numpy as np
-    # NOT WORTH VECTORISING ... YET!
-    # ct1 -> ct1 + 1 ?
     discretise_M = resolution_information["length_y_side"]
     discretise_N = resolution_information["length_x_side"]
     image_resize = np.array(image_resize)
+
     prepop_fill = image_geometry_materials_full[image_geometry_materials_full["counts_elements"] == image_geometry_materials_full["counts_elements"].max()]['kr'].iloc[0]
+
+    # NOT WORTH VECTORISING ... YET!
+    # ct1 -> ct1 + 1 ?
     basis_wave_number = np.full((discretise_M * discretise_N, 1), prepop_fill)
     basis_counter = 0
     for ct1 in range(0, discretise_M):
@@ -324,3 +311,5 @@ def basis_wave_number(resolution_information, image_geometry_materials_full, ima
             temp_cell = image_geometry_materials_full[image_geometry_materials_full['uint8'] == image_resize[ct1, ct2]]['kr']
             basis_wave_number[basis_counter, 0] = temp_cell.iloc[0]
     return basis_wave_number
+
+

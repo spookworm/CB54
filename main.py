@@ -47,7 +47,7 @@ def composer_call():
             scene_gen.image_geometry_materials_parse,
             scene_gen.image_geometry_materials_full,
             scene_gen.lambda_smallest,
-            scene_gen.input_palette,
+            scene_gen.palette,
             scene_gen.image_render,
             scene_gen.length_x_side,
             scene_gen.length_y_side,
@@ -120,6 +120,7 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 diagraph_image.style(height=800)
             # with gr.Column():
                 # gr.Textbox(value=composer.unique_integers, label="composer.unique_integers")
+                gr.Dataframe(value=composer.materials_dict, label="composer.materials_dict")
                 # gr.Number(value=composer.epsilon0, label="composer.epsilon0()")
                 # gr.Number(value=composer.mu0, label="composer.mu0()")
                 # gr.Number(value=composer.input_carrier_frequency, label="composer.input_carrier_frequency()")
@@ -127,28 +128,27 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 # gr.Number(value=composer.angular_frequency, label="composer.angular_frequency()")
                 # gr.Textbox(value=composer.image_object, label="composer.image_object")
                 # gr.Image(value=composer.image_object, label="composer.image_object", type='pil')
-                # gr.Textbox(value=composer.input_palette, label="composer.input_palette")
-                # gr.Image(value=composer.image_render, label="composer.image_render", type='pil')
+                gr.Textbox(value=composer.palette, label="composer.palette")
+                # gr.Image(value=composer.image_render, label="composer.image_render")
                 # gr.Number(value=composer.length_x_side, label="composer.length_x_side()")
                 # gr.Number(value=composer.length_y_side, label="composer.length_y_side()")
+                # gr.Number(value=composer.lambda_smallest, label="composer.lambda_smallest()")
                 # gr.Textbox(value=composer.longest_side, label="composer.longest_side")
                 # gr.Number(value=composer.discretise_side_1, label="composer.discretise_side_1()")
                 # gr.Number(value=composer.delta_1, label="composer.delta_1()")
                 # gr.Number(value=composer.discretise_side_2, label="composer.discretise_side_2()")
                 # gr.Number(value=composer.delta_2, label="composer.delta_2()")
                 # gr.Number(value=composer.equiv_a, label="composer.equiv_a()")
-                # gr.Textbox(value=composer.resolution_information, label="composer.resolution_information()")
+                # gr.Dataframe(value=composer.resolution_information(), label="composer.resolution_information()", type="numpy", datatype="number")
                 # gr.Image(value=composer.image_resize, label="composer.image_resize()")
-                # gr.Image(value=composer.image_resize_render, label="composer.image_resize_render()")
-                # gr.Textbox(value=composer.input_centre, label="composer.input_centre()")
-                # gr.Textbox(value=composer.start_point, label="composer.start_point()")
-                # gr.Textbox(value=composer.image_geometry_materials_full, label="composer.image_geometry_materials_full()")
+                gr.Image(value=composer.image_resize_render, label="composer.image_resize_render()")
+                gr.Textbox(value=composer.input_centre, label="composer.input_centre()")
+                gr.Textbox(value=composer.start_point, label="composer.start_point()")
+                gr.Textbox(value=composer.image_geometry_materials_full, label="composer.image_geometry_materials_full()")
                 gr.Textbox(value=composer.position, label="composer.position()")
                 gr.Textbox(value=composer.rho, label="composer.rho()")
                 gr.Textbox(value=composer.the_phi, label="composer.the_phi()")
                 gr.Textbox(value=composer.basis_wave_number, label="composer.basis_wave_number()")
-                # gr.Number(value=composer.basis_specification(), label="composer.basis_specification()")
-                # gr.Number(value=composer.basis_specification()[0], label="composer.basis_specification()[0]")
     # SOLVER: END
     #
     #
