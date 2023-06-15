@@ -17,6 +17,9 @@ epsilon0 = 8.854187817e-12;
 mu0 = 4.0 * pi * 1.0e-7;
 angular_frequency = 2.0 * pi * input_carrier_frequency; % angular frequency (rad/s)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Change this to a dictionary set-up: START
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pass list of master materials with associated visualisation colourings to be used in scene to the generator.
 % Order of this list should not change unless the numeric identifiers in the imported geometry also reflect such changes.
 fid = fopen(path_lut); % Opening the file
@@ -51,7 +54,7 @@ lambda_smallest = realmax;
 for k = 1:length(unique_integers)
     % Set epsilon and sigma based on internal MATLAB function values taken
     % from international standard.
-    [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials(unique_integers(k)+1), input_carrier_frequency);
+    [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials(unique_integers(k)), input_carrier_frequency);
 
     % Set mu.
     mur(k) = 1.0;
@@ -72,6 +75,9 @@ for k = 1:length(unique_integers)
         lambda_smallest = cr(k) / input_carrier_frequency;
     end
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Change this to a dictionary set-up: END
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % This assumes that the scale of the imported geometry is 1m per cell in both directions.
 % As a result, the room in the original code will not work properly. Use
@@ -112,7 +118,6 @@ end
 equiv_a = sqrt(delta_x*delta_y/pi);
 
 % Need to change geometry resolution here if frequency is lower scale
-% This doesn't look great, is there a better way to resize?
 % Also need to check how upscaling and downscaling perform.
 image_resize = imresize(image_object, [M, N], "nearest");
 
@@ -128,12 +133,8 @@ fprintf('with grid size %d meter by %d meter \n', delta_x, delta_y)
 % SPECIFY_MATERIALS: POSITION, K AND RHO, FOR EACH BASIS COUNTER
 % INTERIOR SPECIFICATION: position, phi, k, and rho for each number of position (basis counter)
 basis_counter = 0;
-% This is wrong I think unless there is a vacuum in the scene and that it
-% is indexed as one. Would it not be better to assign based on most likely
-% material occurence? See the other occurances too. The incident waves etc.
-% assume that there is a vacuum. What if there is no vacuum? What are the
-% contrasts in contrast with then? Is the inclusion of a single cell of
-% vacuum enough to make the thing work?
+% This is wrong I think unless the vacuum in the scene is indexed as one.
+% Would it be better to pre-assign based on most likely material occurence?
 basis_wave_number(1:M*N, 1) = kr(1);
 position = zeros(M*N, 1);
 rho = zeros(M*N, 1);
@@ -149,9 +150,18 @@ for ct1 = 1:M % runs in y direction
         the_phi(basis_counter, 1) = atan2(imag(temp_vec), real(temp_vec));
 
         % basis_wave_number(basis_counter) = kr(object(ct1, ct2));
-        basis_wave_number(basis_counter) = kr(unique_integers==image_resize(ct1, ct2));
+        % WRONG AS THIS IS A LOGICAL TRUE FALSE TEST, need to set the
+        % basis_wave_number properly. this means using a proper look-up
+        % table. this means speed issues. this means that the code
+        % originally sent was extremely restricted. this means i need to do
+        % a reqrite of everything. god damn. basically matlab needs to copy
+        % python now for the kr etc into a single table.
+        basis_wave_number(basis_counter) = kr(unique_integers(image_resize(ct1, ct2)-1));
+        materials_master(materials_master.("uint8")==5, :)
     end
 end
+
+here please
 
 % PROCESSING
 % Input Data: Error Bound; Max Iteration Steps
@@ -162,6 +172,7 @@ V = zeros(basis_counter, 1);
 D = zeros(basis_counter, 1); % Diagonal contrast matrix stored as a vector
 fprintf('\nStart creation of all %d ellements of V and D\n \n', basis_counter)
 start1 = tic;
+
 % Incident Field
 for ct1 = 1:basis_counter
     V(ct1) = exp(-1i*kr(1)*rho(ct1)*cos(the_phi(ct1)));
