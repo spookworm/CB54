@@ -6,7 +6,8 @@
         "d": "0.0",
         "HEX": "#FDFF00",
         "name": "vacuum",
-        "range": "[1e6 1e11]",
+        "range_lower": "1e6",
+        "range_upper": "1e11",
         "uint8": "0"
     },
     {
@@ -16,7 +17,8 @@
         "d": "0.8095",
         "HEX": "#A7A9AB",
         "name": "concrete",
-        "range": "[1e9 1e11]",
+        "range_lower": "1e9",
+        "range_upper": "1e11",
         "uint8": "1"
     },
     {
@@ -26,7 +28,8 @@
         "d": "1.0718",
         "HEX": "#D08931",
         "name": "wood",
-        "range": "[1e6 1e11]",
+        "range_lower": "1e6",
+        "range_upper": "1e11",
         "uint8": "2"
     },
     {
@@ -36,7 +39,8 @@
         "d": "1.1925",
         "HEX": "#B9E8E9",
         "name": "glass",
-        "range": "[1e8 1e11]",
+        "range_lower": "1e8",
+        "range_upper": "1e11",
         "uint8": "3"
     },
     {
@@ -46,7 +50,8 @@
         "d": "0",
         "HEX": "#ED774C",
         "name": "brick",
-        "range": "[1e9 1e10]",
+        "range_lower": "1e9",
+        "range_upper": "1e10",
         "uint8": "4"
     },
     {
@@ -56,7 +61,8 @@
         "d": "0.7076",
         "HEX": "#EFEFEE",
         "name": "plasterboard",
-        "range": "[1e9 1e11]",
+        "range_lower": "1e9",
+        "range_upper": "1e11",
         "uint8": "5"
     },
     {
@@ -66,7 +72,8 @@
         "d": "1.1634",
         "HEX": "#F4F1DB",
         "name": "ceiling-board",
-        "range": "[1e9 1e11]",
+        "range_lower": "1e9",
+        "range_upper": "1e11",
         "uint8": "6"
     },
     {
@@ -76,7 +83,8 @@
         "d": "0.7800",
         "HEX": "#C09B53",
         "name": "chipboard",
-        "range": "[1e9 1e11]",
+        "range_lower": "1e9",
+        "range_upper": "1e11",
         "uint8": "7"
     },
     {
@@ -86,7 +94,8 @@
         "d": "1.3515",
         "HEX": "#7A5409",
         "name": "floorboard",
-        "range": "[5e10 1e11]",
+        "range_lower": "5e10",
+        "range_upper": "1e11",
         "uint8": "8"
     },
     {
@@ -96,7 +105,8 @@
         "d": "0",
         "HEX": "#909090",
         "name": "metal",
-        "range": "[1e9 1e11]",
+        "range_lower": "1e9",
+        "range_upper": "1e11",
         "uint8": "9"
     }
 ]
