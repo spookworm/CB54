@@ -49,15 +49,15 @@ for k = 1:length(unique_integers)
 end
 
 % VISUALISE
-image_object_render(image_object, materials_master, markerColor, 'Material Configuration Before Scaling for f')
-
-% Choose the smallest lambda (wavelength) of all materials in the configuration.
-lambda_smallest = min(materials_master.('cr')) / input_carrier_frequency;
+% image_object_render(image_object, materials_master, markerColor, 'Material Configuration Before Scaling for f')
 
 % This assumes that the scale of the imported geometry is 1m per cell in both directions.
 % As a result, the room in the original code will not work properly. Use
 % the old code to work with that room.
 [length_y_side, length_x_side] = size(image_object); % M~x in meters
+
+% Choose the smallest lambda (wavelength) of all materials in the configuration.
+lambda_smallest = min(materials_master.('cr')) / input_carrier_frequency;
 
 % decision to be made here is which one should be calculated first to shortcut the mod loop
 % this decision is based on which  length_?_side is BIGGER
@@ -97,7 +97,7 @@ equiv_a = sqrt(delta_x*delta_y/pi);
 image_resize = imresize(image_object, [M, N], "nearest");
 
 % VISUALISE
-image_object_render(image_object, materials_master, markerColor, 'Material Configuration After Scaling for f')
+% image_object_render(image_object, materials_master, markerColor, 'Material Configuration After Scaling for f')
 
 centre = 0.0 + 0.0 * 1i;
 start_pt = centre - 0.5 * length_x_side - 0.5 * length_y_side * 1i;
