@@ -313,13 +313,16 @@ def basis_wave_number(resolution_information, image_geometry_materials_full, ima
     return basis_wave_number
 
 
-def field_incident_V(resolution_information, image_geometry_materials_full, rho, the_phi):
-    import cmath
-    import numpy as np
+def basis_counter(resolution_information):
     discretise_M = resolution_information["length_y_side"]
     discretise_N = resolution_information["length_x_side"]
     basis_counter = discretise_M*discretise_N
+    return basis_counter
 
+
+def field_incident_V(image_geometry_materials_full, basis_counter, rho, the_phi):
+    import cmath
+    import numpy as np
     V = np.zeros((basis_counter, 1), dtype=np.complex_)
     for ct1 in range(0, basis_counter):
         # V(ct1) = exp(-1i*kr(1)*rho(ct1)*cos(the_phi(ct1)));
@@ -327,13 +330,9 @@ def field_incident_V(resolution_information, image_geometry_materials_full, rho,
     return V
 
 
-def field_incident_D(resolution_information, image_geometry_materials_full, basis_wave_number):
+def field_incident_D(image_geometry_materials_full, basis_counter, basis_wave_number):
     # import cmath
     import numpy as np
-    discretise_M = resolution_information["length_y_side"]
-    discretise_N = resolution_information["length_x_side"]
-    basis_counter = discretise_M*discretise_N
-
     D = np.zeros((basis_counter, 1), dtype=np.complex_)
     for ct1 in range(0, basis_counter):
         # D(ct1,1)= (basis_wave_number(ct1,1)*basis_wave_number(ct1,1) - k0*k0); % contrast function
@@ -366,34 +365,28 @@ def Vred_2D(resolution_information, Vred):
     return Vred_2D
 
 
-# def G_vector(resolution_information, image_geometry_materials_full, basis_wave_number):
-#     # import cmath
-#     import numpy as np
-#     discretise_M = resolution_information["length_y_side"]
-#     discretise_N = resolution_information["length_x_side"]
-#     basis_counter = discretise_M*discretise_N
+def G_vector(basis_counter, position, equiv_a):
+    # BMT dense matrix, stored as a vector
+    import numpy as np
+    import math
 
-#     D = np.zeros((basis_counter, 1), dtype=np.complex_)
-#     for ct1 in range(0, basis_counter):
-#         # D(ct1,1)= (basis_wave_number(ct1,1)*basis_wave_number(ct1,1) - k0*k0); % contrast function
-#         D[ct1] = basis_wave_number[ct1] * basis_wave_number[ct1] - image_geometry_materials_full[image_geometry_materials_full['name'] == 'vacuum']['kr'].iloc[0] * image_geometry_materials_full[image_geometry_materials_full['name'] == 'vacuum']['kr'].iloc[0]
+    # D = np.zeros((basis_counter, 1), dtype=np.complex_)
+    # for ct1 in range(0, basis_counter):
+    #     # D(ct1,1)= (basis_wave_number(ct1,1)*basis_wave_number(ct1,1) - k0*k0); % contrast function
+    #     D[ct1] = basis_wave_number[ct1] * basis_wave_number[ct1] - image_geometry_materials_full[image_geometry_materials_full['name'] == 'vacuum']['kr'].iloc[0] * image_geometry_materials_full[image_geometry_materials_full['name'] == 'vacuum']['kr'].iloc[0]
 
-#     G_vector = zeros(basis_counter, 1); % BMT dense matrix, stored as a vector
-#     start2 = tic;
-#     for ct1 = 1:basis_counter
-#         if (mod(ct1, 100) == 0)
-#             fprintf(1, '%dth element \n', ct1);
-#         end
-#         R_mn2 = abs(position(ct1)-position(1));
-#         if ct1 == 1
-#             %         G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
-#             % G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
-#             G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselh(1, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) - 4.0 * 1i / (materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr') * materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')));
-#         else
-#             %         G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
-#             % G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
-#             G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselj(1, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) * besselh(0, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*R_mn2);
-#         end
-#     end
-
-#     return D
+    G_vector = np.zeros((basis_counter, 1), dtype=np.complex_)
+    for ct1 in range(0, basis_counter):
+        # R_mn2 = abs(position(ct1)-position(1));
+        R_mn2 = abs(position[ct1]-position[0])
+        if ct1 == 1:
+            # %         G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
+            # % G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
+            # G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselh(1, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) - 4.0 * 1i / (materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr') * materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')));
+            G_vector[ct1, 1] = (1j / 4.0) * ((2.0 * math.pi * equiv_a / kr(1)) * (besselj(1, kr(1) * equiv_a) - 1j * bessely(1, kr(1) * equiv_a)) - 4.0 * 1j/(kr(1) * kr(1)))
+        else:
+            # %         G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
+            # % G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
+            # G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselj(1, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) * besselh(0, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*R_mn2);
+            G_vector[ct1, 1] = (1j / 4.0) * (2.0 * math.pi * equiv_a / kr(1)) * besselj(1, kr(1) * equiv_a) * (besselj(0, kr(1) * R_mn2) - 1j * bessely(0, kr(1) * R_mn2))
+    return D
