@@ -16,68 +16,43 @@ input_carrier_frequency = 60e6; % frequency (Hz)
 epsilon0 = 8.854187817e-12;
 mu0 = 4.0 * pi * 1.0e-7;
 angular_frequency = 2.0 * pi * input_carrier_frequency; % angular frequency (rad/s)
+% matlab_offset = 1;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Change this to a dictionary set-up: START
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% image_object = readmatrix([path_geo, object_name]);
+image_object = im2gray(imread([path_geo, object_name]));
+unique_integers = unique(image_object, 'sorted');
+
 % Pass list of master materials with associated visualisation colourings to be used in scene to the generator.
 % Order of this list should not change unless the numeric identifiers in the imported geometry also reflect such changes.
 fid = fopen(path_lut); % Opening the file
 raw = fread(fid,inf); % Reading the contents
 str = char(raw'); % Transformation
 fclose(fid); % Closing the file
-data = jsondecode(str); % Using the jsondecode function to parse JSON from string
-materials_master = struct2table(data);
+materials_master = struct2table(jsondecode(str)); % Using the jsondecode function to parse JSON from string
 
-materials = materials_master.('name');
-hex = vertcat(materials_master.('HEX'){:});
-map = sscanf(hex', '#%2x%2x%2x', [3, size(hex, 1)]).' / 255;
-markerColor = mat2cell(map, ones(1, height(materials_master.('name'))), 3);
+% Subset on entries in the scene.
+materials_master = materials_master(ismember(materials_master.("uint8"), unique_integers), :);
 
-% image_object = readmatrix([path_geo, object_name]);
-image_object = im2gray(imread([path_geo, object_name]))+1;
-unique_integers = unique(image_object, 'sorted');
+materials_master.('map') = sscanf(char(materials_master.('HEX'))', '#%2x%2x%2x', [3, size(materials_master.('HEX'), 1)]).' / 255;
+
+% Switch the source dictionary so only the required names are printed
+markerColor = mat2cell(materials_master.('map'), ones(1, height(materials_master.('name'))), 3);
+
+for k = 1:length(unique_integers)
+    [materials_master.('epsilonr')(k), materials_master.('sigma')(k), materials_master.('epsilonr_complex')(k)] = buildingMaterialPermittivity(materials_master.('name'){k}, input_carrier_frequency);
+    materials_master.('mur')(k) = 1.0;
+    materials_master.('mur_complex')(k) = 1.0 - (0.0 * 1i);
+    materials_master.('cr')(k) = 1.0 / sqrt(materials_master.('epsilonr')(k)*epsilon0*materials_master.('mur')(k)*mu0);
+    materials_master.('cr_complex')(k) = 1.0 / sqrt(materials_master.('epsilonr_complex')(k)*epsilon0*materials_master.('mur')(k)*mu0);
+    materials_master.('kr')(k) = angular_frequency * sqrt(materials_master.('epsilonr')(k)*epsilon0*materials_master.('mur')(k)*mu0);
+    materials_master.('kr_complex')(k) = angular_frequency * sqrt(materials_master.('epsilonr_complex')(k)*epsilon0*materials_master.('mur')(k)*mu0);
+end
 
 % VISUALISE
-image_object_render(image_object, map, materials, markerColor, 'Material Configuration Before Scaling for f')
+image_object_render(image_object, materials_master, markerColor, 'Material Configuration Before Scaling for f')
 
-epsilonr = ones(length(unique_integers), 1);
-sigma = ones(length(unique_integers), 1);
-epsilonr_complex = ones(length(unique_integers), 1);
-mur = ones(length(unique_integers), 1);
-mur_complex = ones(length(unique_integers), 1);
-cr = ones(length(unique_integers), 1);
-kr = ones(length(unique_integers), 1);
-lambdar = ones(length(unique_integers), 1);
-
-lambda_smallest = realmax;
-for k = 1:length(unique_integers)
-    % Set epsilon and sigma based on internal MATLAB function values taken
-    % from international standard.
-    [epsilonr(k), sigma(k), epsilonr_complex(k)] = buildingMaterialPermittivity(materials(unique_integers(k)), input_carrier_frequency);
-
-    % Set mu.
-    mur(k) = 1.0;
-    mur_complex(k) = 1.0 - (0.0 * 1i);
-
-    % Set c in material.
-    cr(k) = 1.0 / sqrt(epsilonr(k)*epsilon0*mur(k)*mu0);
-    % TBC: Expanded to complex case without impact?
-    % cr(k)=1.0 / sqrt(epsilonr_complex(k)*epsilon0*mur(k)*mu0);
-
-    % Set k in material.
-    % TBC: Expand to complex case.
-    kr(k) = angular_frequency * sqrt(epsilonr(k)*epsilon0*mur(k)*mu0);
-    % kr(k) = angular_frequency * sqrt(epsilonr_complex(k)*epsilon0*mur(k)*mu0);
-
-    % Choose the smallest lambda (wavelength) of all materials in the configuration.
-    if lambda_smallest > cr(k) / input_carrier_frequency
-        lambda_smallest = cr(k) / input_carrier_frequency;
-    end
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Change this to a dictionary set-up: END
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Choose the smallest lambda (wavelength) of all materials in the configuration.
+lambda_smallest = min(materials_master.('cr')) / input_carrier_frequency;
 
 % This assumes that the scale of the imported geometry is 1m per cell in both directions.
 % As a result, the room in the original code will not work properly. Use
@@ -122,7 +97,7 @@ equiv_a = sqrt(delta_x*delta_y/pi);
 image_resize = imresize(image_object, [M, N], "nearest");
 
 % VISUALISE
-image_object_render(image_resize, map, materials, markerColor, 'Material Configuration After Scaling for f')
+image_object_render(image_object, materials_master, markerColor, 'Material Configuration After Scaling for f')
 
 centre = 0.0 + 0.0 * 1i;
 start_pt = centre - 0.5 * length_x_side - 0.5 * length_y_side * 1i;
@@ -135,7 +110,7 @@ fprintf('with grid size %d meter by %d meter \n', delta_x, delta_y)
 basis_counter = 0;
 % This is wrong I think unless the vacuum in the scene is indexed as one.
 % Would it be better to pre-assign based on most likely material occurence?
-basis_wave_number(1:M*N, 1) = kr(1);
+basis_wave_number(1:M*N, 1) = materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr');
 position = zeros(M*N, 1);
 rho = zeros(M*N, 1);
 the_phi = zeros(M*N, 1);
@@ -149,19 +124,10 @@ for ct1 = 1:M % runs in y direction
         rho(basis_counter, 1) = abs(temp_vec);
         the_phi(basis_counter, 1) = atan2(imag(temp_vec), real(temp_vec));
 
-        % basis_wave_number(basis_counter) = kr(object(ct1, ct2));
-        % WRONG AS THIS IS A LOGICAL TRUE FALSE TEST, need to set the
-        % basis_wave_number properly. this means using a proper look-up
-        % table. this means speed issues. this means that the code
-        % originally sent was extremely restricted. this means i need to do
-        % a reqrite of everything. god damn. basically matlab needs to copy
-        % python now for the kr etc into a single table.
-        basis_wave_number(basis_counter) = kr(unique_integers(image_resize(ct1, ct2)-1));
-        materials_master(materials_master.("uint8")==5, :)
+        % basis_wave_number(basis_counter) = kr(image_resize(ct1, ct2));
+        basis_wave_number(basis_counter) = materials_master(materials_master.('uint8') == image_resize(ct1, ct2), :).('kr');
     end
 end
-
-here please
 
 % PROCESSING
 % Input Data: Error Bound; Max Iteration Steps
@@ -175,8 +141,9 @@ start1 = tic;
 
 % Incident Field
 for ct1 = 1:basis_counter
-    V(ct1) = exp(-1i*kr(1)*rho(ct1)*cos(the_phi(ct1)));
-    D(ct1, 1) = (basis_wave_number(ct1, 1) * basis_wave_number(ct1, 1) - kr(1) * kr(1)); % contrast function
+    % V(ct1) = exp(-1i*kr(1)*rho(ct1)*cos(the_phi(ct1)));
+    V(ct1) = exp(-1i*materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*rho(ct1)*cos(the_phi(ct1)));
+    D(ct1, 1) = (basis_wave_number(ct1, 1) * basis_wave_number(ct1, 1) - materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr') * materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')); % contrast function
 end
 Time_creation_all_elements_from_V_and_D = toc(start1);
 
@@ -212,10 +179,12 @@ for ct1 = 1:basis_counter
     R_mn2 = abs(position(ct1)-position(1));
     if ct1 == 1
         %         G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
-        G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
+        % G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
+        G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselh(1, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) - 4.0 * 1i / (materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr') * materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')));
     else
         %         G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
-        G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
+        % G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
+        G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselj(1, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) * besselh(0, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*R_mn2);
     end
 end
 Time_creation_all_elements_from_G = toc(start2);
@@ -275,21 +244,18 @@ ScatRed_2D = Ered_2D - Vred_2D;
 % CREATE ALL THE PLOTS
 info_index = 0;
 
-% VISUALISE
-image_object_render(image_object, map, materials, markerColor, 'Material Configuration Before Scaling for f')
-
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 subplot(1, 2, 1)
-imagesc(ind2rgb(image_resize, map), 'XData', 1/2, 'YData', 1/2)
+imagesc(ind2rgb(image_resize, materials_master.('map')), 'XData', 1/2, 'YData', 1/2)
 axis tight
 title('Material Configuration After Simulation')
 legend
 hold on
 L = plot(ones(height(materials_master(:, 2))), 'LineStyle', 'none', 'marker', 's', 'visible', 'on');
 set(L, {'MarkerFaceColor'}, markerColor, {'MarkerEdgeColor'}, markerColor);
-colormap(map)
-legend(materials)
+colormap(materials_master.('map'))
+legend(materials_master.('name'))
 
 subplot(1, 2, 2)
 semilogy(Reduced_iteration_error, 'r')
