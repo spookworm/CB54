@@ -285,7 +285,8 @@ axis tight
 
 subplot(2, 3, 2)
 surf(x, y, real(ScatRed_2D));
-view(2)
+% view(2)
+view(0, 270)
 shading interp
 title('Reduced Scattered Field Part Real');
 xlabel('x (meters)')
@@ -294,7 +295,8 @@ axis tight
 
 subplot(2, 3, 3)
 surf(x, y, real(Ered_2D))
-view(2)
+% view(2)
+view(0, 270)
 shading interp
 title('Reduced Total Field Part Real');
 xlabel('x (meters)')
@@ -313,7 +315,8 @@ axis tight
 
 subplot(2, 3, 5)
 surf(x, y, abs(ScatRed_2D));
-view(2)
+% view(2)
+view(0, 270)
 shading interp
 title('Reduced Scattered Field Part Absolute');
 xlabel('x (meters)')
@@ -322,7 +325,8 @@ axis tight
 
 subplot(2, 3, 6)
 surf(x, y, abs(Ered_2D))
-view(2)
+% view(2)
+view(0, 270)
 shading interp
 title('Reduced Total Field Part Absolute');
 xlabel('x (meters)')
