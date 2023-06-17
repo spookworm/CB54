@@ -48,6 +48,9 @@ for k = 1:length(unique_integers)
     materials_master.('kr_complex')(k) = angular_frequency * sqrt(materials_master.('epsilonr_complex')(k)*epsilon0*materials_master.('mur')(k)*mu0);
 end
 
+% Assign vacuum for speed-up.
+vacuum_kr = materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr');
+
 % VISUALISE
 % image_object_render(image_object, materials_master, markerColor, 'Material Configuration Before Scaling for f')
 
@@ -110,7 +113,7 @@ fprintf('with grid size %d meter by %d meter \n', delta_x, delta_y)
 basis_counter = 0;
 % This is wrong I think unless the vacuum in the scene is indexed as one.
 % Would it be better to pre-assign based on most likely material occurence?
-basis_wave_number(1:M*N, 1) = materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr');
+basis_wave_number(1:M*N, 1) = vacuum_kr;
 position = zeros(M*N, 1);
 rho = zeros(M*N, 1);
 the_phi = zeros(M*N, 1);
@@ -142,8 +145,8 @@ start1 = tic;
 % Incident Field
 for ct1 = 1:basis_counter
     % V(ct1) = exp(-1i*kr(1)*rho(ct1)*cos(the_phi(ct1)));
-    V(ct1) = exp(-1i*materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*rho(ct1)*cos(the_phi(ct1)));
-    D(ct1, 1) = (basis_wave_number(ct1, 1) * basis_wave_number(ct1, 1) - materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr') * materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')); % contrast function
+    V(ct1) = exp(-1i*vacuum_kr*rho(ct1)*cos(the_phi(ct1)));
+    D(ct1, 1) = (basis_wave_number(ct1, 1) * basis_wave_number(ct1, 1) - vacuum_kr * vacuum_kr); % contrast function
 end
 Time_creation_all_elements_from_V_and_D = toc(start1);
 
@@ -180,11 +183,11 @@ for ct1 = 1:basis_counter
     if ct1 == 1
         %         G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
         % G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
-        G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselh(1, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) - 4.0 * 1i / (materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr') * materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')));
+        G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / vacuum_kr) * besselh(1, 2, vacuum_kr*equiv_a) - 4.0 * 1i / (vacuum_kr * vacuum_kr));
     else
         %         G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
         % G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
-        G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')) * besselj(1, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*equiv_a) * besselh(0, 2, materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr')*R_mn2);
+        G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / vacuum_kr) * besselj(1, vacuum_kr*equiv_a) * besselh(0, 2, vacuum_kr*R_mn2);
     end
 end
 Time_creation_all_elements_from_G = toc(start2);
