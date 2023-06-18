@@ -81,6 +81,10 @@ def composer_call():
             scene_gen.Ered,
             scene_gen.parula_map,
             scene_gen.r,
+            scene_gen.p,
+            scene_gen.input_solver_tol,
+            scene_gen.solver_error,
+            scene_gen.krylov_solver,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()

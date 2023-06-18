@@ -831,6 +831,8 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
         # Reduced_iteration_error(icnt, 1) = abs(r'*r);
         np.append(reduced_iteration_error, [icnt, solver_error], axis=None)
 
+    return print("WHAT ARE YOU RETURNING?!")
+
     end = time.time()
     print("code runtime: ", end - start)
     return reduced_iteration_error
