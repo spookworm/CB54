@@ -11,6 +11,7 @@ path_lut = './lut/materials.json';
 object_name = 'placeholder.png';
 input_disc_per_lambda = 10; % chosen accuracy
 input_carrier_frequency = 60e6; % frequency (Hz)
+input_solver_tol = 1e-3; % error tolerance
 
 % Hard-coded Variables
 epsilon0 = 8.854187817e-12;
@@ -162,15 +163,9 @@ y = imag(position(1:N:N*M));
 % number may be required.
 
 %%% Reduced CG algoritm with FFT, solving Z*E=V with Z =I+GD %%%
-clear r p error icnt a b;
+clear r p solver_error icnt a b;
 Rfo = logical(D); % Reduced foreward operator
 Vred = Rfo .* V; % create V reduced
-vec2matSimulationVred = zeros(M, N);
-for i = 1:M %without vec2mat:
-    vec2matSimulationVred(i, :) = Vred((i - 1)*N+1:i*N);
-end
-Vred_2D = vec2matSimulationVred;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('\nStart creation of all %d ellements of G\n \n', basis_counter)
 G_vector = zeros(basis_counter, 1); % BMT dense matrix, stored as a vector
@@ -181,11 +176,11 @@ for ct1 = 1:basis_counter
     end
     R_mn2 = abs(position(ct1)-position(1));
     if ct1 == 1
-        %         G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
+        % G_vector(ct1,1)=(1i/4.0)*((2.0*pi*equiv_a/kr(1))*(besselj(1,kr(1)*equiv_a)-1i*bessely(1,kr(1)*equiv_a))-4.0*1i/(kr(1)*kr(1)));
         % G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / kr(1)) * besselh(1, 2, kr(1)*equiv_a) - 4.0 * 1i / (kr(1) * kr(1)));
         G_vector(ct1, 1) = (1i / 4.0) * ((2.0 * pi * equiv_a / vacuum_kr) * besselh(1, 2, vacuum_kr*equiv_a) - 4.0 * 1i / (vacuum_kr * vacuum_kr));
     else
-        %         G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
+        % G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
         % G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / kr(1)) * besselj(1, kr(1)*equiv_a) * besselh(0, 2, kr(1)*R_mn2);
         G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / vacuum_kr) * besselj(1, vacuum_kr*equiv_a) * besselh(0, 2, vacuum_kr*R_mn2);
     end
@@ -194,15 +189,17 @@ Time_creation_all_elements_from_G = toc(start2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Solver
 Ered = zeros(basis_counter, 1); % guess
-r = Rfo .* Ered + Rfo .* BMT_FFT(G_vector.', D.*Ered, N) - Vred; % Z*E - V (= error)
+% Z*E - V (= error)
+r = Rfo .* Ered + Rfo .* BMT_FFT(G_vector.', D.*Ered, N) - Vred;
 p = -(Rfo .* r + conj(D) .* (BMT_FFT(conj(G_vector.'), Rfo.*r, N))); % -Z'*r
-tol = 1e-3; % error tolerance
-icnt = 0; % iteration counter
-error = abs(r'*r); % definition of error
-Reduced_iteration_error = zeros(1, 1);
+
 fprintf('\nStart reduced CG iteration with 2D FFT\n')
+solver_error = abs(r'*r); % definition of error
+
+Reduced_iteration_error = zeros(1, 1);
+icnt = 0; % iteration counter
 start3 = tic;
-while (error > tol) && (icnt <= basis_counter)
+while (solver_error > input_solver_tol) && (icnt <= basis_counter)
     icnt = icnt + 1;
     if (mod(icnt, 50) == 0)
         fprintf(1, '%dth iteration Red \n', icnt);
@@ -213,11 +210,12 @@ while (error > tol) && (icnt <= basis_counter)
     r = r + a * (Rfo .* p + Rfo .* (BMT_FFT(G_vector.', D.*p, N))); % r = r + a*z*p
     b = (norm(Rfo.*r+conj(D).*BMT_FFT(conj(G_vector.'), Rfo.*r, N)) / norm(Rfo.*r_old+conj(D).*BMT_FFT(conj(G_vector.'), Rfo.*r_old, N)))^2; %b = (norm(Z'*r)^2) /(norm(Z'*r_old)^2);
     p = -(Rfo .* r + conj(D) .* BMT_FFT(conj(G_vector.'), Rfo.*r, N)) + b * p; % p=-Z'*r+b*p
-    error = abs(r'*r);
+    solver_error = abs(r'*r);
     Reduced_iteration_error(icnt, 1) = abs(r'*r);
 end
 time_Red = toc(start3);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % POST-PROCESSING
 % Input Data: Evaluation Locality for diagrams, colour plots etc.
 % Processes: Optimisation; Further Modelling (Lumped Parameters); Approximation of local field qualities; Field Coupling)
@@ -234,18 +232,22 @@ fprintf('So basis counter goes to %d \n', basis_counter)
 fprintf('\nNumber of unknowns in Z is than %d\n', N*M*N*M)
 fprintf('Number of reduced unknowns is %d\n', sum(Rfo)*N*M)
 fprintf('with %.2f%% percent of the is filled by contrast \n', sum(Rfo)/(N * M)*100)
-fprintf('\nCG iteration error tollerance = %d \n', tol)
+fprintf('\nCG iteration error tollerance = %d \n', input_solver_tol)
 fprintf('Duration of reduced CG iteration = %d seconds \n', time_Red)
+
+% CREATE ALL THE PLOTS
 % CONVERT SOLUTIONS ON 2D GRID, FOR 3D PLOTS
+vec2matSimulationVred = zeros(M, N);
+for i = 1:M %without vec2mat:
+    vec2matSimulationVred(i, :) = Vred((i - 1)*N+1:i*N);
+end
 vec2matSimulationEred = zeros(M, N);
 for i = 1:M %without vec2mat:
     vec2matSimulationEred(i, :) = Ered((i - 1)*N+1:i*N);
 end
+Vred_2D = vec2matSimulationVred;
 Ered_2D = vec2matSimulationEred;
 ScatRed_2D = Ered_2D - Vred_2D;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CREATE ALL THE PLOTS
-info_index = 0;
 
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
