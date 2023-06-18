@@ -1,14 +1,13 @@
 from IPython import get_ipython
+# Clear workspace
+get_ipython().run_line_magic('reset', '-sf')
+get_ipython().run_line_magic('clear', '-sf')
 try:
     from lib import scene_gen
 except ImportError:
     import scene_gen
 import time
 import numpy as np
-
-# Clear workspace
-get_ipython().run_line_magic('reset', '-sf')
-get_ipython().run_line_magic('clear', '-sf')
 
 
 start = time.time()
@@ -111,14 +110,27 @@ Ered = scene_gen.Ered(basis_counter, model_guess)
 # print("Ered: ", Ered)
 r = scene_gen.r(Ered, G_vector, Vred, field_incident_D, resolution_information, rfo)
 # print("r: ", r)
+p = scene_gen.p(G_vector, field_incident_D, resolution_information, rfo, r)
+# print("p: ", p)
+input_solver_tol = scene_gen.input_solver_tol()
+# print("input_solver_tol: ", input_solver_tol)
+solver_error = scene_gen.solver_error(r)
+# print("solver_error: ", solver_error)
+krylov_solver = scene_gen.krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered)
+# print("krylov_solver: ", krylov_solver)
 
 end = time.time()
 print("code runtime: ", end - start)
 ############################################################################################
 # FRESH WORK BELOW HERE
-# Z*E - V (= error)
 
-# % -Z'*r
-# p = -(Rfo .* r + conj(D) .* (BMT_FFT(conj(G_vector.'), Rfo.*r, N)));
+print('Used frequency of incomming wave = ', input_carrier_frequency,  'Hz')
+print('Discretizised space is ', resolution_information["length_x_side"], 'grids by ', resolution_information["length_y_side"], 'grids')
+print('with grid size', longest_side[longest_side["name"] == "length_x_side"]["length"] / resolution_information["length_x_side"], 'meter by ', longest_side[longest_side["name"] == "length_y_side"]["length"] / resolution_information["length_y_side"], ' meter')
+print('So basis counter goes to ', basis_counter)
+print('Number of unknowns in Z is than ', resolution_information["length_x_side"]*resolution_information["length_y_side"]*resolution_information["length_x_side"]*resolution_information["length_y_side"])
+print('Number of reduced unknowns is ', sum(rfo)*resolution_information["length_x_side"]*resolution_information["length_y_side"])
+print('with ', sum(rfo)/(resolution_information["length_x_side"] * resolution_information["length_y_side"])*100, 'percent of the is filled by contrast')
+print('CG iteration error tollerance = ', input_solver_tol)
+# print('Duration of reduced CG iteration = %d seconds \n', time_Red)
 
-np.multiply(rfo, Ered) + np.multiply(rfo, scene_gen.BMT_FFT(np.transpose(G_vector), field_incident_D * Ered, resolution_information["length_x_side"])) - Vred
