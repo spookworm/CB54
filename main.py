@@ -8,8 +8,8 @@ import gradio as gr
 from pypdf import PdfReader
 from lib import graphviz_doc
 from lib import portfolio_doc
+# from lib import geo_gen # THIS WILL BE THE MID-POINT TERRAIN ETC.
 from lib import scene_gen
-# from lib import geo_gen
 #
 # IMPORT LIBRARIES:END
 #
@@ -66,11 +66,21 @@ def composer_call():
             scene_gen.rho,
             scene_gen.the_phi,
             scene_gen.basis_wave_number,
+            scene_gen.basis_counter,
+            scene_gen.vacuum_kr,
             scene_gen.field_incident_V,
             scene_gen.field_incident_D,
             scene_gen.rfo,
             scene_gen.Vred,
             scene_gen.Vred_2D,
+            scene_gen.image_Vred_2D_real,
+            scene_gen.image_Vred_2D_imag,
+            scene_gen.image_Vred_2D_abs,
+            scene_gen.G_vector,
+            scene_gen.model_guess,
+            scene_gen.Ered,
+            scene_gen.parula_map,
+            scene_gen.r,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
@@ -157,8 +167,15 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 # gr.Textbox(value=composer.field_incident_V, label="composer.field_incident_V()")
                 # gr.Textbox(value=composer.field_incident_D, label="composer.field_incident_D()")
                 # gr.Textbox(value=composer.rfo, label="composer.rfo()")
-                gr.Textbox(value=composer.Vred, label="composer.Vred()")
-                gr.Textbox(value=composer.Vred_2D, label="composer.Vred_2D()")
+                # gr.Textbox(value=composer.Vred, label="composer.Vred()")
+                # gr.Textbox(value=composer.Vred_2D, label="composer.Vred_2D()")
+                # gr.Textbox(value=composer.G_vector, label="composer.G_vector()")
+                # gr.Textbox(value=composer.parula_map, label="composer.parula_map()")
+                # gr.Image(value=composer.image_Vred_2D_real, label="composer.image_Vred_2D_real()", type='pil')
+                # gr.Image(value=composer.image_Vred_2D_imag, label="composer.image_Vred_2D_imag()", type='pil')
+                # gr.Image(value=composer.image_Vred_2D_abs, label="composer.image_Vred_2D_abs()", type='pil')
+                # gr.Textbox(value=composer.Ered, label="composer.Ered()")
+                gr.Textbox(value=composer.r, label="composer.r()")
     # SOLVER: END
     #
     #
