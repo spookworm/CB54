@@ -41,6 +41,10 @@ def input_disc_per_lambda():
     return 10
 
 
+def input_solver_tol():
+    return 1e-3
+
+
 def angular_frequency(input_carrier_frequency):
     import math
     return 2.0 * math.pi * input_carrier_frequency
@@ -760,6 +764,7 @@ def BMT_FFT(X, V, N):
 
 
 def r(Ered, G_vector, Vred, field_incident_D, resolution_information, rfo):
+    # Z*E - V (= error)
     import numpy as np
     try:
         from lib import scene_gen
@@ -767,3 +772,65 @@ def r(Ered, G_vector, Vred, field_incident_D, resolution_information, rfo):
         import scene_gen
     # r = Rfo .* Ered + Rfo .* BMT_FFT(G_vector.', D.*Ered, N) - Vred; % Z*E - V (= error)
     return np.multiply(rfo, Ered) + np.multiply(rfo, scene_gen.BMT_FFT(np.transpose(G_vector), field_incident_D * Ered, resolution_information["length_x_side"])) - Vred
+
+
+def p(G_vector, field_incident_D, resolution_information, rfo, r):
+    # -Z'*r
+    import numpy as np
+    try:
+        from lib import scene_gen
+    except ImportError:
+        import scene_gen
+    # p = -(Rfo .* r + conj(D) .* (BMT_FFT(conj(G_vector.'), Rfo.*r, N)));
+    return -1*(np.multiply(rfo, r) + np.multiply(np.conjugate(field_incident_D), scene_gen.BMT_FFT(np.conjugate(np.transpose(G_vector)), np.multiply(rfo, r), resolution_information["length_x_side"])))
+
+
+def solver_error(r):
+    # error = abs(r'*r);
+    return abs((r.H) * r).astype(float)
+
+
+def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered):
+    import numpy as np
+    import time
+    try:
+        from lib import scene_gen
+    except ImportError:
+        import scene_gen
+
+    solver_error = scene_gen.solver_error(r)
+
+    # iteration counter
+    icnt = 0
+
+    # Reduced_iteration_error = zeros(1, 1);
+    reduced_iteration_error = np.array([icnt, solver_error], dtype=object)
+
+    print('\nStart reduced CG iteration with 2D FFT\n')
+    start = time.time()
+
+    # while (solver_error > input_solver_tol) && (icnt <= basis_counter)
+    while (solver_error > input_solver_tol) and (icnt <= basis_counter):
+        icnt = icnt + 1
+        if icnt % 50 == 0:
+            print(icnt, "th iteration Red \n")
+        # a = (norm(Rfo.*r+conj(D).*BMT_FFT(conj(G_vector.'), Rfo.*r, N)) / norm(Rfo.*p+Rfo.*(BMT_FFT(G_vector.', D.*p, N))))^2; %(norm(Z'*r)^2)/(norm(Z*p)^2);
+        a = (np.linalg.norm(np.multiply(rfo, r) + np.multiply(np.conjugate(field_incident_D), scene_gen.BMT_FFT(np.conjugate(np.transpose(G_vector)), np.multiply(rfo, r), resolution_information["length_x_side"]))) / np.linalg.norm(np.multiply(rfo, p) + np.multiply(rfo, (scene_gen.BMT_FFT(np.transpose(G_vector), np.multiply(field_incident_D, p), resolution_information["length_x_side"])))))**2
+        # Ered = Ered + a * p;
+        Ered = Ered + np.multiply(a, p)
+        # r_old = r;
+        r_old = r.copy()
+        # r = r + a * (Rfo .* p + Rfo .* (BMT_FFT(G_vector.', D.*p, N))); % r = r + a*z*p
+        r = r + np.multiply(a, (np.multiply(rfo, p) + np.multiply(rfo, scene_gen.BMT_FFT(np.transpose(G_vector), np.multiply(field_incident_D, p), resolution_information["length_x_side"]))))
+        # b = (norm(Rfo.*r+conj(D).*BMT_FFT(conj(G_vector.'), Rfo.*r, N)) / norm(Rfo.*r_old+conj(D).*BMT_FFT(conj(G_vector.'), Rfo.*r_old, N)))^2; %b = (norm(Z'*r)^2) /(norm(Z'*r_old)^2);
+        b = (np.linalg.norm(np.multiply(rfo, r) + np.multiply(np.conjugate(field_incident_D), scene_gen.BMT_FFT(np.conjugate(np.transpose(G_vector)), np.multiply(rfo, r), resolution_information["length_x_side"])))/np.linalg.norm(np.multiply(rfo, r_old) + np.multiply(np.conjugate(field_incident_D), scene_gen.BMT_FFT(np.conjugate(np.transpose(G_vector)), np.multiply(rfo, r_old), resolution_information["length_x_side"]))))**2
+        # p = -(Rfo .* r + conj(D) .* BMT_FFT(conj(G_vector.'), Rfo.*r, N)) + b * p; % p=-Z'*r+b*p
+        p = -1*(np.multiply(rfo, r) + np.multiply(np.conjugate(field_incident_D), scene_gen.BMT_FFT(np.conjugate(np.transpose(G_vector)), np.multiply(rfo, r), resolution_information["length_x_side"]))) + np.multiply(b, p)
+        # solver_error = abs(r'*r);
+        solver_error = scene_gen.solver_error(r)
+        # Reduced_iteration_error(icnt, 1) = abs(r'*r);
+        np.append(reduced_iteration_error, [icnt, solver_error], axis=None)
+
+    end = time.time()
+    print("code runtime: ", end - start)
+    return reduced_iteration_error
