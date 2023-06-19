@@ -49,6 +49,13 @@
 Navigate to the subfolder "env" in conda instance and call the following command:
 conda env create -f solveremf2.yml
 
+# Profiling code
+python -m cProfile -o program.prof main_plain.py
+tuna program.prof
+
+vprof -c p main_plain.py
+vprof -c cmh main_plain.py
+
 # Folder Descriptions
 * TBC
 
@@ -69,17 +76,19 @@ conda env create -f solveremf2.yml
 * Clean-up and include the latex derivations for the VEFIE in an appendix of the final report and the mathjax readme file on the gradio app.
 
 # Active thoughts
+decommision aj_gui?
+
+but what about the canoncial validation?
+
+NEED TO TIME EVERY FUNCTION AND SPEED THIS UP. EVERYTHING IS TOO SLOW
+
 aim is to adapt streamlined code so that imported geometry can be used
 
 then that resolution decision is implemented
 
-then move code to python
+floor function is not bijective so that means we actually do need to set an import resolution standard
 
-need to work out the length_x_side from the imported geometry file
-
-floor is not bijective so that means we actually do need to set an import resolution standard
-
-the SI unit for lenght is meter so stick with that? no remember we need resolution at the level that captures geometry features, wave characteristics and can feed into model
+the SI unit for length is meter so stick with that? no remember we need resolution at the level that captures geometry features, wave characteristics and can feed into model
 
 so there needs to be a decision between the three which brings the resolution to suitable degree
 
@@ -94,16 +103,14 @@ Out of these a grid of x rows and y columns should be generated.
 
 why can't i see the background standing wave in the vacuum? this is the same in the van den berg book. but in other sources it can be seen. is this because of the type of incident wave? do i need to change it so as to be a persisent wave as opposed to an impulse? look at the images in https://www.scielo.br/j/jmoea/a/VvJrMV6dH4rghHZSgg4RpwG/?lang=en
 
-kr(1) is assumed to be vacuum bakground embedding in the code. this is not functional. need to check all of this.
-
-aim is to adapt streamlined code so that imported geometry can be used
-then that resolution decision is implemented
-then move code to python
-
-need to work out the length_x_side from the imported geometry file
-floor is not bijective so that means we actually do need to set an import resolution standard
-the SI unit for lenght is meter so stick with that? no remember we need resolution at the level that captures geometry features, wave characteristics and can feed into model
-
-so there needs to be a decision between the three which brings the resolution to suitable degree
-
 RESCALE OBJECT FOR SPECIFIC FREQUENCY: This is required for standardised input into CNN Sophisticated Book uses 128x128. Imported geometry will sit at resolution required to depict physical geometry of object. Then this discretization needs to be checked that it is sufficient to depict the electromagnetic materials of the object. If the discretisation is enough already, then it is maintained. If they discretization needs to be incresed then the imported geometry will be sliced up at a higher resolution. Ultimately, the final resolution of the exported geometry & output field needs to be suitable for model input too.
+
+Fit a model
+
+Returning it as a guess may need to be deffered until after a decision framework is completed
+
+what if it makes things worse? how often should the model be updated?
+
+In fact, the model is halping to generate the data so is this semi-supervised (unsupervised)?
+
+what considerations are made when this is done? how are models metrics made?
