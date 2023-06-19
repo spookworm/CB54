@@ -342,9 +342,13 @@ def field_incident_D(basis_counter, basis_wave_number, vacuum_kr):
     # import cmath
     import numpy as np
     D = np.zeros((basis_counter, 1), dtype=np.complex_)
+
+    # D(ct1,1)= (basis_wave_number(ct1,1)*basis_wave_number(ct1,1) - k0*k0); % contrast function
     for ct1 in range(0, basis_counter):
-        # D(ct1,1)= (basis_wave_number(ct1,1)*basis_wave_number(ct1,1) - k0*k0); % contrast function
         D[ct1] = basis_wave_number[ct1] * basis_wave_number[ct1] - vacuum_kr * vacuum_kr
+
+    # This is somehow slower!
+    # D = [basis_wave_number[ct1] * basis_wave_number[ct1] - vacuum_kr * vacuum_kr for ct1 in range(0, basis_counter)]
     return D
 
 
@@ -634,11 +638,11 @@ def G_vector(basis_counter, position, equiv_a, image_geometry_materials_full, va
     import numpy as np
     import math
     from scipy.special import jv, yv
-    import time
+    # import time
 
     G_vector = np.zeros((basis_counter, 1), dtype=np.complex_)
 
-    start = time.time()
+    # start = time.time()
 
     for ct1 in range(0, basis_counter):
         # R_mn2 = abs(position(ct1)-position(1));
@@ -651,9 +655,8 @@ def G_vector(basis_counter, position, equiv_a, image_geometry_materials_full, va
             # G_vector(ct1,1)=(1i/4.0)*(2.0*pi*equiv_a/kr(1))*besselj(1,kr(1)*equiv_a)*(besselj(0,kr(1)*R_mn2)-1i*bessely(0,kr(1)*R_mn2));
             G_vector[ct1] = (1j / 4.0) * (2.0 * math.pi * equiv_a / vacuum_kr) * jv(1, vacuum_kr * equiv_a) * (jv(0, vacuum_kr * R_mn2) - 1j * yv(0, vacuum_kr * R_mn2))
 
-    end = time.time()
-    print(end - start)
-    # MATLAB: 0.059997600000000
+    # end = time.time()
+    # print(end - start)
     return G_vector
 
 
@@ -771,7 +774,7 @@ def solver_error(r):
 
 def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered_load):
     import numpy as np
-    import time
+    # import time
     try:
         from lib import scene_gen
     except ImportError:
@@ -788,7 +791,7 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
     Ered = Ered_load.copy()
 
     print('\nStart reduced CG iteration with 2D FFT\n')
-    start = time.time()
+    # start = time.time()
 
     # while (solver_error > input_solver_tol) && (icnt <= basis_counter)
     while (solver_error > input_solver_tol) and (icnt <= basis_counter):
@@ -812,8 +815,8 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
         # Reduced_iteration_error(icnt, 1) = abs(r'*r);
         reduced_iteration_error = np.vstack([reduced_iteration_error, [icnt, solver_error]])
 
-    end = time.time()
-    print("code runtime: ", end - start)
+    # end = time.time()
+    # print("code runtime: ", end - start)
     return Ered, reduced_iteration_error
 
 
