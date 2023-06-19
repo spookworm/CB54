@@ -144,7 +144,7 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 gr.HTML("""<h1>Last refresh: """ + str(last_refresh) + """</h1>""")
                 gr.HTML("<h1>Dev Diagraph</h1>")
                 diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
-                diagraph_image.style(height=800)
+                # diagraph_image.style(height=800)
             with gr.Column():
                 # gr.Textbox(value=composer.unique_integers, label="composer.unique_integers")
                 # gr.Dataframe(value=composer.materials_dict, label="composer.materials_dict")
@@ -225,11 +225,11 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 workflow_image = gr.Image(value=path_doc + "workflow_framework.png", type='pil')
                 gr.HTML("""<h1>workflow_doc</h1>""")
                 workflow_image = gr.Image(value=path_doc + "workflow_doc.png", type='pil')
-                workflow_image.style(height=600, width=600)
+                # workflow_image.style(height=600, width=600)
                 gr.HTML("""<h1>log_meetings_dates</h1>""")
                 gr.HTML(open("./doc/log_meetings_dates.html", 'r').read(), label="log_meetings_dates")
                 diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
-                diagraph_image.style(height=600)
+                # diagraph_image.style(height=600)
     #
     # PROJECT DOCUMENTATION: END
     #

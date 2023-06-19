@@ -45,6 +45,10 @@
 
 [DOWNLOAD Risk Assignment](AnthonyJamesMcElwee_20211330_RA.pdf)
 
+# Conda Environment Installation
+Navigate to the subfolder "env" in conda instance and call the following command:
+conda env create -f solveremf2.yml
+
 # Folder Descriptions
 * TBC
 
