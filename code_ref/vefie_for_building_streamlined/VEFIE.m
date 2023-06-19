@@ -11,7 +11,7 @@ path_lut = './lut/materials.json';
 object_name = 'placeholder.png';
 input_disc_per_lambda = 10; % chosen accuracy
 input_carrier_frequency = 60e6; % frequency (Hz)
-input_solver_tol = 1e-3; % error tolerance
+input_solver_tol = 1e-1; % error tolerance
 
 % Hard-coded Variables
 epsilon0 = 8.854187817e-12;

@@ -8,6 +8,7 @@ except ImportError:
     import scene_gen
 import time
 import numpy as np
+from matplotlib import pyplot as plt
 
 start = time.time()
 
@@ -109,10 +110,14 @@ input_solver_tol = scene_gen.input_solver_tol()
 # print("input_solver_tol: ", input_solver_tol)
 solver_error = scene_gen.solver_error(r)
 # print("solver_error: ", solver_error)
+krylov_solver = scene_gen.krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered_load)
+print("type(krylov_solver): ", type(krylov_solver))
 
-[Ered, reduced_iteration_error] = scene_gen.krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered_load)
+Ered = scene_gen.Ered(krylov_solver)
 # print("Ered: ", Ered)
+reduced_iteration_error = scene_gen.reduced_iteration_error(krylov_solver)
 # print("reduced_iteration_error: ", reduced_iteration_error)
+
 ScatRed = scene_gen.ScatRed(Ered, Vred)
 
 Ered_2D = scene_gen.Ered_2D(resolution_information, Ered)
@@ -122,8 +127,10 @@ ScatRed_2D = scene_gen.ScatRed_2D(resolution_information, ScatRed)
 [image_Ered_2D_real, image_Ered_2D_imag, image_Ered_2D_abs] = scene_gen.complex_image_render(Ered_2D, parula_map)
 [image_ScatRed_2D_real, image_ScatRed_2D_imag, image_ScatRed_2D_abs] = scene_gen.complex_image_render(ScatRed_2D, parula_map)
 
+# PLOT ITERATIONS
+
+
 # CREATE ALL THE PLOTS
-from matplotlib import pyplot as plt
 plt.imshow(image_Vred_2D_real, interpolation='nearest')
 plt.imshow(image_Vred_2D_imag, interpolation='nearest')
 plt.imshow(image_Vred_2D_abs, interpolation='nearest')
@@ -134,6 +141,9 @@ plt.imshow(image_ScatRed_2D_real, interpolation='nearest')
 plt.imshow(image_ScatRed_2D_imag, interpolation='nearest')
 plt.imshow(image_ScatRed_2D_abs, interpolation='nearest')
 plt.show()
+
+plt.semilogy(reduced_iteration_error[10:, 0], reduced_iteration_error[10:, 1])
+plt.autoscale(enable=True, axis='x', tight=True)
 
 end = time.time()
 print("code runtime: ", end - start)

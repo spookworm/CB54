@@ -825,7 +825,7 @@ def Ered(krylov_solver):
 
 def reduced_iteration_error(krylov_solver):
     print(type(krylov_solver))
-    reduced_iteration_error = krylov_solver[0]
+    reduced_iteration_error = krylov_solver[1]
     return reduced_iteration_error
 
 
