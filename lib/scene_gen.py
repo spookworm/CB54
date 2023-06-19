@@ -42,7 +42,7 @@ def input_disc_per_lambda():
 
 
 def input_solver_tol():
-    return 1e-3
+    return 1e-1
 
 
 def angular_frequency(input_carrier_frequency):
@@ -367,14 +367,6 @@ def Vred(rfo, field_incident_V):
     return Vred
 
 
-def Vred_2D(resolution_information, Vred):
-    import numpy as np
-    discretise_M = resolution_information["length_y_side"]
-    discretise_N = resolution_information["length_x_side"]
-    Vred_2D = np.reshape(Vred, (discretise_M, discretise_N))
-    return Vred_2D
-
-
 def parula_map():
     parula_data = [[0.2422, 0.1504, 0.6603],
                    [0.2444, 0.1534, 0.6728],
@@ -637,39 +629,6 @@ def parula_map():
     return map_2
 
 
-def image_Vred_2D_real(Vred_2D, parula_map):
-    from PIL import Image
-    import numpy as np
-
-    Vred_2D_real = np.real(Vred_2D)
-    numpy_image = Image.fromarray((Vred_2D_real * 255).astype(np.uint8))
-
-    numpy_image.putpalette(parula_map)
-    return numpy_image
-
-
-def image_Vred_2D_imag(Vred_2D, parula_map):
-    from PIL import Image
-    import numpy as np
-
-    Vred_2D_imag = np.imag(Vred_2D)
-    numpy_image = Image.fromarray((Vred_2D_imag * 255).astype(np.uint8))
-
-    numpy_image.putpalette(parula_map)
-    return numpy_image
-
-
-def image_Vred_2D_abs(Vred_2D, parula_map):
-    from PIL import Image
-    import numpy as np
-
-    Vred_2D_abs = abs(Vred_2D)
-    numpy_image = Image.fromarray((Vred_2D_abs * 255).astype(np.uint8))
-
-    numpy_image.putpalette(parula_map)
-    return numpy_image
-
-
 def G_vector(basis_counter, position, equiv_a, image_geometry_materials_full, vacuum_kr):
     # BMT dense matrix, stored as a vector
     import numpy as np
@@ -703,7 +662,7 @@ def model_guess():
     return None
 
 
-def Ered(basis_counter, model_guess):
+def Ered_load(basis_counter, model_guess):
     # this is the initial guess
     # some sort of if statement will need to go here i think to integrate non-zero guess
     import numpy as np
@@ -713,6 +672,25 @@ def Ered(basis_counter, model_guess):
     else:
         Ered = model_guess.copy()
     return Ered
+
+
+def complex_image_render(image_array, colour_map):
+    from PIL import Image
+    import numpy as np
+
+    image_array_real = np.real(image_array)
+    numpy_image_real = Image.fromarray((image_array_real * 255).astype(np.uint8))
+    numpy_image_real.putpalette(colour_map)
+
+    image_array_imag = np.imag(image_array)
+    numpy_image_imag = Image.fromarray((image_array_imag * 255).astype(np.uint8))
+    numpy_image_imag.putpalette(colour_map)
+
+    image_array_abs = abs(image_array)
+    numpy_image_abs = Image.fromarray((image_array_abs * 255).astype(np.uint8))
+    numpy_image_abs.putpalette(colour_map)
+
+    return numpy_image_real, numpy_image_imag, numpy_image_abs
 
 
 # # JUST DON'T INCLUDE IT IN THE COMPOSER PART SO IT WON'T MISS IT WHEN RENDERING
@@ -763,7 +741,7 @@ def BMT_FFT(X, V, N):
     return output
 
 
-def r(Ered, G_vector, Vred, field_incident_D, resolution_information, rfo):
+def r(Ered_load, G_vector, Vred, field_incident_D, resolution_information, rfo):
     # Z*E - V (= error)
     import numpy as np
     try:
@@ -771,7 +749,7 @@ def r(Ered, G_vector, Vred, field_incident_D, resolution_information, rfo):
     except ImportError:
         import scene_gen
     # r = Rfo .* Ered + Rfo .* BMT_FFT(G_vector.', D.*Ered, N) - Vred; % Z*E - V (= error)
-    return np.multiply(rfo, Ered) + np.multiply(rfo, scene_gen.BMT_FFT(np.transpose(G_vector), field_incident_D * Ered, resolution_information["length_x_side"])) - Vred
+    return np.multiply(rfo, Ered_load) + np.multiply(rfo, scene_gen.BMT_FFT(np.transpose(G_vector), field_incident_D * Ered_load, resolution_information["length_x_side"])) - Vred
 
 
 def p(G_vector, field_incident_D, resolution_information, rfo, r):
@@ -787,10 +765,11 @@ def p(G_vector, field_incident_D, resolution_information, rfo, r):
 
 def solver_error(r):
     # error = abs(r'*r);
-    return abs((r.H) * r).astype(float)
+    out = abs((r.H) * r)
+    return out[0, 0]
 
 
-def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered):
+def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered_load):
     import numpy as np
     import time
     try:
@@ -806,6 +785,8 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
     # Reduced_iteration_error = zeros(1, 1);
     reduced_iteration_error = np.array([icnt, solver_error], dtype=object)
 
+    Ered = Ered_load.copy()
+
     print('\nStart reduced CG iteration with 2D FFT\n')
     start = time.time()
 
@@ -813,7 +794,7 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
     while (solver_error > input_solver_tol) and (icnt <= basis_counter):
         icnt = icnt + 1
         if icnt % 50 == 0:
-            print(icnt, "th iteration Red \n")
+            print(icnt, "th iteration Red")
         # a = (norm(Rfo.*r+conj(D).*BMT_FFT(conj(G_vector.'), Rfo.*r, N)) / norm(Rfo.*p+Rfo.*(BMT_FFT(G_vector.', D.*p, N))))^2; %(norm(Z'*r)^2)/(norm(Z*p)^2);
         a = (np.linalg.norm(np.multiply(rfo, r) + np.multiply(np.conjugate(field_incident_D), scene_gen.BMT_FFT(np.conjugate(np.transpose(G_vector)), np.multiply(rfo, r), resolution_information["length_x_side"]))) / np.linalg.norm(np.multiply(rfo, p) + np.multiply(rfo, (scene_gen.BMT_FFT(np.transpose(G_vector), np.multiply(field_incident_D, p), resolution_information["length_x_side"])))))**2
         # Ered = Ered + a * p;
@@ -829,10 +810,58 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
         # solver_error = abs(r'*r);
         solver_error = scene_gen.solver_error(r)
         # Reduced_iteration_error(icnt, 1) = abs(r'*r);
-        np.append(reduced_iteration_error, [icnt, solver_error], axis=None)
-
-    return print("WHAT ARE YOU RETURNING?!")
+        reduced_iteration_error = np.vstack([reduced_iteration_error, [icnt, solver_error]])
 
     end = time.time()
     print("code runtime: ", end - start)
+    return Ered, reduced_iteration_error
+
+
+def Ered(krylov_solver):
+    print(type(krylov_solver))
+    Ered = krylov_solver[0]
+    return Ered
+
+
+def reduced_iteration_error(krylov_solver):
+    print(type(krylov_solver))
+    reduced_iteration_error = krylov_solver[0]
     return reduced_iteration_error
+
+
+def ScatRed(Ered, Vred):
+    return Ered - Vred
+
+
+def restore_arrays(resolution_information, array_input):
+    # Convert solutions to 2D grid for 3D plots
+    import numpy as np
+    discretise_M = resolution_information["length_y_side"]
+    discretise_N = resolution_information["length_x_side"]
+    # return array_input.resize(discretise_M, discretise_N)
+    return np.reshape(array_input, (discretise_M, discretise_N))
+
+
+def Ered_2D(resolution_information, Ered):
+    try:
+        from lib import scene_gen
+    except ImportError:
+        import scene_gen
+    return scene_gen.restore_arrays(resolution_information, Ered)
+
+
+def Vred_2D(resolution_information, Vred):
+    try:
+        from lib import scene_gen
+    except ImportError:
+        import scene_gen
+    return scene_gen.restore_arrays(resolution_information, Vred)
+
+
+def ScatRed_2D(resolution_information, ScatRed):
+    try:
+        from lib import scene_gen
+    except ImportError:
+        import scene_gen
+    return scene_gen.restore_arrays(resolution_information, ScatRed)
+

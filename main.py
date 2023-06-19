@@ -9,7 +9,10 @@ from pypdf import PdfReader
 from lib import graphviz_doc
 from lib import portfolio_doc
 # from lib import geo_gen # THIS WILL BE THE MID-POINT TERRAIN ETC.
-from lib import scene_gen
+try:
+    from lib import scene_gen
+except ImportError:
+    import scene_gen
 #
 # IMPORT LIBRARIES:END
 #
@@ -32,59 +35,64 @@ def composer_call():
         Composer()
         .update(
             # list of custom functions goes here
-            scene_gen.seed,
-            scene_gen.path_geo,
-            scene_gen.path_lut,
-            scene_gen.object_name,
-            scene_gen.epsilon0,
-            scene_gen.mu0,
-            scene_gen.input_carrier_frequency,
-            scene_gen.input_disc_per_lambda,
+            # scene_gen.BMT_FFT,
+            scene_gen.Ered,
+            scene_gen.Ered_2D,
+            scene_gen.Ered_load,
+            scene_gen.G_vector,
+            scene_gen.ScatRed,
+            scene_gen.ScatRed_2D,
+            scene_gen.Vred,
+            scene_gen.Vred_2D,
             scene_gen.angular_frequency,
-            scene_gen.materials_dict,
-            scene_gen.image_object,
-            scene_gen.unique_integers,
-            scene_gen.image_geometry_materials_parse,
+            scene_gen.basis_counter,
+            scene_gen.basis_wave_number,
+            # scene_gen.complex_image_render,
+            scene_gen.delta_1,
+            scene_gen.delta_2,
+            scene_gen.discretise_side_1,
+            scene_gen.discretise_side_2,
+            scene_gen.epsilon0,
+            scene_gen.equiv_a,
+            scene_gen.field_incident_D,
+            scene_gen.field_incident_V,
             scene_gen.image_geometry_materials_full,
-            scene_gen.lambda_smallest,
-            scene_gen.palette,
+            scene_gen.image_geometry_materials_parse,
+            scene_gen.image_object,
             scene_gen.image_render,
+            scene_gen.image_resize,
+            scene_gen.image_resize_render,
+            scene_gen.input_carrier_frequency,
+            scene_gen.input_centre,
+            scene_gen.input_disc_per_lambda,
+            scene_gen.input_solver_tol,
+            scene_gen.krylov_solver,
+            scene_gen.lambda_smallest,
             scene_gen.length_x_side,
             scene_gen.length_y_side,
             scene_gen.longest_side,
-            scene_gen.discretise_side_1,
-            scene_gen.delta_1,
-            scene_gen.discretise_side_2,
-            scene_gen.delta_2,
-            scene_gen.equiv_a,
-            scene_gen.resolution_information,
-            scene_gen.image_resize,
-            scene_gen.image_resize_render,
-            scene_gen.input_centre,
-            scene_gen.start_point,
-            scene_gen.position,
-            scene_gen.rho,
-            scene_gen.the_phi,
-            scene_gen.basis_wave_number,
-            scene_gen.basis_counter,
-            scene_gen.vacuum_kr,
-            scene_gen.field_incident_V,
-            scene_gen.field_incident_D,
-            scene_gen.rfo,
-            scene_gen.Vred,
-            scene_gen.Vred_2D,
-            scene_gen.image_Vred_2D_real,
-            scene_gen.image_Vred_2D_imag,
-            scene_gen.image_Vred_2D_abs,
-            scene_gen.G_vector,
+            scene_gen.materials_dict,
             scene_gen.model_guess,
-            scene_gen.Ered,
-            scene_gen.parula_map,
-            scene_gen.r,
+            scene_gen.mu0,
+            scene_gen.object_name,
             scene_gen.p,
-            scene_gen.input_solver_tol,
+            scene_gen.palette,
+            scene_gen.parula_map,
+            scene_gen.path_geo,
+            scene_gen.path_lut,
+            scene_gen.position,
+            scene_gen.r,
+            scene_gen.reduced_iteration_error,
+            scene_gen.resolution_information,
+            # scene_gen.restore_arrays,
+            scene_gen.rfo,
+            scene_gen.rho,
+            scene_gen.seed,
             scene_gen.solver_error,
-            scene_gen.krylov_solver,
+            scene_gen.start_point,
+            scene_gen.the_phi,
+            scene_gen.unique_integers,
+            scene_gen.vacuum_kr,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
@@ -137,7 +145,7 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 gr.HTML("<h1>Dev Diagraph</h1>")
                 diagraph_image = gr.Image(value=path_doc + "digraph.png", type='pil')
                 diagraph_image.style(height=800)
-            # with gr.Column():
+            with gr.Column():
                 # gr.Textbox(value=composer.unique_integers, label="composer.unique_integers")
                 # gr.Dataframe(value=composer.materials_dict, label="composer.materials_dict")
                 # gr.Number(value=composer.epsilon0, label="composer.epsilon0()")
@@ -175,11 +183,25 @@ with gr.Blocks(title="SolverEMF", analytics_enabled=True) as demo:
                 # gr.Textbox(value=composer.Vred_2D, label="composer.Vred_2D()")
                 # gr.Textbox(value=composer.G_vector, label="composer.G_vector()")
                 # gr.Textbox(value=composer.parula_map, label="composer.parula_map()")
-                # gr.Image(value=composer.image_Vred_2D_real, label="composer.image_Vred_2D_real()", type='pil')
-                # gr.Image(value=composer.image_Vred_2D_imag, label="composer.image_Vred_2D_imag()", type='pil')
-                # gr.Image(value=composer.image_Vred_2D_abs, label="composer.image_Vred_2D_abs()", type='pil')
+                [image_Vred_2D_real, image_Vred_2D_imag, image_Vred_2D_abs] = scene_gen.complex_image_render(composer.Vred_2D(), composer.parula_map())
+                gr.Image(value=image_Vred_2D_real, label="image_Vred_2D_real", type='pil')
+                gr.Image(value=image_Vred_2D_imag, label="image_Vred_2D_imag", type='pil')
+                gr.Image(value=image_Vred_2D_abs, label="image_Vred_2D_abs", type='pil')
+
+                # [Ered, reduced_iteration_error] = composer.krylov_solver()
+
+                [image_Ered_2D_real, image_Ered_2D_imag, image_Ered_2D_abs] = scene_gen.complex_image_render(composer.Ered_2D(), composer.parula_map())
+                gr.Image(value=image_Ered_2D_real, label="image_Ered_2D_real", type='pil')
+                gr.Image(value=image_Ered_2D_imag, label="image_Ered_2D_imag", type='pil')
+                gr.Image(value=image_Ered_2D_abs, label="image_Ered_2D_abs", type='pil')
+
+                [image_ScatRed_2D_real, image_ScatRed_2D_imag, image_ScatRed_2D_abs] = scene_gen.complex_image_render(composer.ScatRed_2D(), composer.parula_map())
+                gr.Image(value=image_ScatRed_2D_real, label="image_ScatRed_2D_real", type='pil')
+                gr.Image(value=image_ScatRed_2D_imag, label="image_ScatRed_2D_imag", type='pil')
+                gr.Image(value=image_ScatRed_2D_abs, label="image_ScatRed_2D_abs", type='pil')
+
                 # gr.Textbox(value=composer.Ered, label="composer.Ered()")
-                gr.Textbox(value=composer.r, label="composer.r()")
+                # gr.Textbox(value=composer.r, label="composer.r()")
     # SOLVER: END
     #
     #

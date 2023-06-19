@@ -9,7 +9,6 @@ except ImportError:
 import time
 import numpy as np
 
-
 start = time.time()
 
 input_disc_per_lambda = scene_gen.input_disc_per_lambda()
@@ -94,21 +93,15 @@ image_resize_render = scene_gen.image_resize_render(image_resize, palette)
 # print("image_resize_render: ", image_resize_render)
 parula_map = scene_gen.parula_map()
 # print("parula_map: ", parula_map)
-image_Vred_2D_abs = scene_gen.image_Vred_2D_abs(Vred_2D, parula_map)
-# print("image_Vred_2D_abs: ", image_Vred_2D_abs)
-image_Vred_2D_imag = scene_gen.image_Vred_2D_imag(Vred_2D, parula_map)
-# print("image_Vred_2D_imag: ", image_Vred_2D_imag)
-image_Vred_2D_real = scene_gen.image_Vred_2D_real(Vred_2D, parula_map)
-# print("image_Vred_2D_real: ", image_Vred_2D_real)
 image_render = scene_gen.image_render(image_object, palette)
 # print("image_render: ", image_render)
 model_guess = scene_gen.model_guess()
 # print("model_guess: ", model_guess)
 seed = scene_gen.seed()
 # print("seed: ", seed)
-Ered = scene_gen.Ered(basis_counter, model_guess)
+Ered_load = scene_gen.Ered_load(basis_counter, model_guess)
 # print("Ered: ", Ered)
-r = scene_gen.r(Ered, G_vector, Vred, field_incident_D, resolution_information, rfo)
+r = scene_gen.r(Ered_load, G_vector, Vred, field_incident_D, resolution_information, rfo)
 # print("r: ", r)
 p = scene_gen.p(G_vector, field_incident_D, resolution_information, rfo, r)
 # print("p: ", p)
@@ -116,8 +109,31 @@ input_solver_tol = scene_gen.input_solver_tol()
 # print("input_solver_tol: ", input_solver_tol)
 solver_error = scene_gen.solver_error(r)
 # print("solver_error: ", solver_error)
-krylov_solver = scene_gen.krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered)
-# print("krylov_solver: ", krylov_solver)
+
+[Ered, reduced_iteration_error] = scene_gen.krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered_load)
+# print("Ered: ", Ered)
+# print("reduced_iteration_error: ", reduced_iteration_error)
+ScatRed = scene_gen.ScatRed(Ered, Vred)
+
+Ered_2D = scene_gen.Ered_2D(resolution_information, Ered)
+ScatRed_2D = scene_gen.ScatRed_2D(resolution_information, ScatRed)
+
+[image_Vred_2D_real, image_Vred_2D_imag, image_Vred_2D_abs] = scene_gen.complex_image_render(Vred_2D, parula_map)
+[image_Ered_2D_real, image_Ered_2D_imag, image_Ered_2D_abs] = scene_gen.complex_image_render(Ered_2D, parula_map)
+[image_ScatRed_2D_real, image_ScatRed_2D_imag, image_ScatRed_2D_abs] = scene_gen.complex_image_render(ScatRed_2D, parula_map)
+
+# CREATE ALL THE PLOTS
+from matplotlib import pyplot as plt
+plt.imshow(image_Vred_2D_real, interpolation='nearest')
+plt.imshow(image_Vred_2D_imag, interpolation='nearest')
+plt.imshow(image_Vred_2D_abs, interpolation='nearest')
+plt.imshow(image_Ered_2D_real, interpolation='nearest')
+plt.imshow(image_Ered_2D_imag, interpolation='nearest')
+plt.imshow(image_Ered_2D_abs, interpolation='nearest')
+plt.imshow(image_ScatRed_2D_real, interpolation='nearest')
+plt.imshow(image_ScatRed_2D_imag, interpolation='nearest')
+plt.imshow(image_ScatRed_2D_abs, interpolation='nearest')
+plt.show()
 
 end = time.time()
 print("code runtime: ", end - start)
@@ -133,4 +149,3 @@ print('Number of reduced unknowns is ', sum(rfo)*resolution_information["length_
 print('with ', sum(rfo)/(resolution_information["length_x_side"] * resolution_information["length_y_side"])*100, 'percent of the is filled by contrast')
 print('CG iteration error tollerance = ', input_solver_tol)
 # print('Duration of reduced CG iteration = %d seconds \n', time_Red)
-
