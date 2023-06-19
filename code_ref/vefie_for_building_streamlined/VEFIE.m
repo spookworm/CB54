@@ -235,7 +235,6 @@ fprintf('with %.2f%% percent of the is filled by contrast \n', sum(Rfo)/(N * M)*
 fprintf('\nCG iteration error tollerance = %d \n', input_solver_tol)
 fprintf('Duration of reduced CG iteration = %d seconds \n', time_Red)
 
-% CREATE ALL THE PLOTS
 % CONVERT SOLUTIONS ON 2D GRID, FOR 3D PLOTS
 vec2matSimulationVred = zeros(M, N);
 for i = 1:M %without vec2mat:
@@ -245,10 +244,12 @@ vec2matSimulationEred = zeros(M, N);
 for i = 1:M %without vec2mat:
     vec2matSimulationEred(i, :) = Ered((i - 1)*N+1:i*N);
 end
+
 Vred_2D = vec2matSimulationVred;
 Ered_2D = vec2matSimulationEred;
 ScatRed_2D = Ered_2D - Vred_2D;
 
+% CREATE ALL THE PLOTS
 figure
 set(gcf, 'units', 'normalized', 'outerposition', [0, 0, 1, 1])
 subplot(1, 2, 1)
