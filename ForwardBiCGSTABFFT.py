@@ -6,6 +6,7 @@ get_ipython().run_line_magic('reset', '-sf')
 from numba import jit
 import numpy as np
 import time
+from scipy.sparse.linalg import LinearOperator
 try:
     from lib import vdb
 except ImportError:
@@ -314,47 +315,133 @@ u_inc = u_inc(gamma_0, xS, dx, X1, X2)
 itmax = itmax()
 
 
+def Aw(w, N1, N2, FFTG, CHI):
+    # Define the matrix-vector multiplication function Aw
+    # from scipy.sparse import csc_matrix
+    w = w.reshape((N2, N1))
+    y = w - CHI * Kop(w, FFTG)
+    # return csc_matrix(y)
+    y = y.flatten()
+    return y
 
-# BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
-def ITERBiCGSTABw(itmax):
-    # Known 1D vector
+
+def ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax):
+    # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
+    # import numpy as np
+    from scipy.sparse.linalg import bicgstab
+    from scipy.sparse.linalg import LinearOperator
+
+    # Known 1D vector right-hand side
     # b = input.CHI(:) .* u_inc(:);
-    b = CHI * u_inc
+    b = CHI.flatten() * u_inc.flatten()
 
-    # Call BiCGSTAB
-    w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
+    # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
+    # w, exit_code = bicgstab(lambda w: Aw(w, N1, N2, FFTG, CHI), b, tol=Errcri, maxiter=itmax)
+    # w, exit_code = bicgstab(lambda w=None: Aw(w, N1, N2, FFTG, CHI), b, tol=Errcri, maxiter=itmax)
+
+    # Aw = lambda w: Aw
+    # Aw_operator = LinearOperator((N1*N2, 0), matvec=Aw, dtype=np.complex128)
+    # Aw_operator = LinearOperator((N1, N2), matvec=Aw(w, N1, N2, FFTG, CHI))
+    # w, exit_code = bicgstab(Aw_operator, b, tol=Errcri, maxiter=itmax)
+
+    Aw_operator = LinearOperator((N1*N2, N1*N2), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
+
+    # Call bicgstab with the LinearOperator instance and other inputs
+    w, exit_code = bicgstab(Aw_operator, b.flatten(), tol=Errcri, maxiter=itmax)
 
     # Output Matrix
-    w = vector2matrix(w, input)
-    return
+    w = vector2matrix(w, N1, N2)
+    return w
+
+
+def vector2matrix(w, N1, N2):
+    # Modify vector output from 'bicgstab' to matrix for further computations
+    # w = reshape(w, [input.N1, input.N2]);
+    w = w.reshape((N1, N2))
+    return w
+
+
+def Kop(v, FFTG):
+    import numpy as np
+    # from numpy.fft import fftn, ifftn
+
+    # Make fft grid
+    Cv = np.zeros(FFTG.shape, dtype=np.complex128)
+    N1, N2 = v.shape
+
+    # Cv(1:N1, 1:N2) = v;
+    Cv[0:N1, 0:N2] = v
+
+    # Cv = fftn(Cv);
+    Cv = np.fft.fftn(Cv)
+
+    # Convolution by fft
+    Cv = np.fft.ifftn(FFTG * Cv)
+
+    # Kv = Cv(1:N1, 1:N2);
+    Kv = Cv[0:N1, 0:N2]
+    return Kv
+
+
+w = ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax)
+print("w: ", w)
+print("w.shape: ", w.shape)
+
+print(np.real(w).min())
+print(np.real(w).max())
+print(np.imag(w).min())
+print(np.imag(w).max())
+
+# import numpy as np
+# from scipy.sparse import csr_matrix
+# from scipy.sparse.linalg import LinearOperator, bicgstab
+
+# # Define the matrix size and create a dense matrix
+# n = 1000
+# A = np.random.rand(n, n)
+
+# # Convert the dense matrix to a sparse matrix
+# A_sparse = csr_matrix(A)
+
+
+# # Define the matvec function for A_sparse
+# def matvec(x):
+#     return A_sparse.dot(x)
+
+
+# # Create a LinearOperator instance for A_sparse
+# A_operator = LinearOperator((n, n), matvec=matvec)
+
+# # Define the right-hand side vector and convergence criteria
+# b = np.random.rand(n)
+# Errcri = 1e-6
+# itmax = 1000
+
+# # Call bicgstab with the LinearOperator instance
+# w, exit_code = bicgstab(A_operator, b, tol=Errcri, maxiter=itmax)
+
+# # Print the solution and exit code
+# print("Solution:", w)
+# print("Exit code:", exit_code)
 
 
 
-function y = Aw(w, input)
-w = vector2matrix(w, input); % Convert 1D vector to matrix
-y = w - input.CHI .* Kop(w, input.FFTG);
-y = y(:); % Convert matrix to 1D vector
-end %----------------------------------------------------------------------
 
 
-function w = vector2matrix(w, input)
-% Modify vector output from 'bicgstab' to matrix for further computations
-w = reshape(w, [input.N1, input.N2]);
-end
 
+# # @jit(nopython=True, parallel=True)
+# # def init():
+# #     print()
 
-# @jit(nopython=True, parallel=True)
-# def init():
-#     print()
+# # # DO NOT REPORT THIS... COMPILATION TIME IS INCLUDED IN THE EXECUTION TIME!
+# # start = time.perf_counter()
+# # wavelength(c_0, f)
+# # end = time.perf_counter()
+# # print("Elapsed (with compilation) = {}s".format((end - start)))
 
-# # DO NOT REPORT THIS... COMPILATION TIME IS INCLUDED IN THE EXECUTION TIME!
-# start = time.perf_counter()
-# wavelength(c_0, f)
-# end = time.perf_counter()
-# print("Elapsed (with compilation) = {}s".format((end - start)))
+# # # NOW THE FUNCTION IS COMPILED, RE-TIME IT EXECUTING FROM CACHE
+# # start = time.perf_counter()
+# # wavelength(c_0, f)
+# # end = time.perf_counter()
+# # print("Elapsed (after compilation) = {}s".format((end - start)))
 
-# # NOW THE FUNCTION IS COMPILED, RE-TIME IT EXECUTING FROM CACHE
-# start = time.perf_counter()
-# wavelength(c_0, f)
-# end = time.perf_counter()
-# print("Elapsed (after compilation) = {}s".format((end - start)))
