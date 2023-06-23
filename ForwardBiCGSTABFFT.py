@@ -5,8 +5,6 @@ get_ipython().run_line_magic('reset', '-sf')
 
 from numba import jit
 import numpy as np
-import time
-from scipy.sparse.linalg import LinearOperator
 try:
     from lib import vdb
 except ImportError:
@@ -327,30 +325,47 @@ def Aw(w, N1, N2, FFTG, CHI):
 
 def ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax):
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
-    # import numpy as np
     from scipy.sparse.linalg import bicgstab
     from scipy.sparse.linalg import LinearOperator
+    import time
+
+    def callback(xk):
+        # Define the callback function
+        callback.iter_count += 1
+        residual_norm = np.linalg.norm(b - Aw_operator(xk))
+        callback.time_total = time.time() - callback.start_time
+        # print("Current solution:", xk)
+        # print("Iteration:", callback.iter_count, "Residual norm:", residual_norm, "Time:", time.time() - callback.start_time)
+        print(callback.iter_count, "\t", residual_norm, "\t", callback.time_total)
+        if residual_norm < Errcri:
+            return True
+        else:
+            return False
+    print("Iteration:", "\t", "Residual norm:", "\t", "Time:")
+
+    # Initialise iteration count
+    callback.iter_count = 0
+    callback.start_time = time.time()
 
     # Known 1D vector right-hand side
     # b = input.CHI(:) .* u_inc(:);
     b = CHI.flatten() * u_inc.flatten()
 
-    # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
-    # w, exit_code = bicgstab(lambda w: Aw(w, N1, N2, FFTG, CHI), b, tol=Errcri, maxiter=itmax)
-    # w, exit_code = bicgstab(lambda w=None: Aw(w, N1, N2, FFTG, CHI), b, tol=Errcri, maxiter=itmax)
-
-    # Aw = lambda w: Aw
-    # Aw_operator = LinearOperator((N1*N2, 0), matvec=Aw, dtype=np.complex128)
-    # Aw_operator = LinearOperator((N1, N2), matvec=Aw(w, N1, N2, FFTG, CHI))
-    # w, exit_code = bicgstab(Aw_operator, b, tol=Errcri, maxiter=itmax)
-
-    Aw_operator = LinearOperator((N1*N2, N1*N2), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
-
     # Call bicgstab with the LinearOperator instance and other inputs
-    w, exit_code = bicgstab(Aw_operator, b.flatten(), tol=Errcri, maxiter=itmax)
+    # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
+    Aw_operator = LinearOperator((N1*N2, N1*N2), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
+    w, exit_code = bicgstab(Aw_operator, b.flatten(), tol=Errcri, maxiter=itmax, callback=callback)
 
     # Output Matrix
     w = vector2matrix(w, N1, N2)
+
+    # Display the convergence information
+    print("Convergence information:", exit_code)
+    print(exit_code)
+
+    print("Iteration:", callback.iter_count)
+    print("time_total", callback.time_total)
+
     return w
 
 
@@ -384,45 +399,15 @@ def Kop(v, FFTG):
 
 
 w = ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax)
-print("w: ", w)
+# print("w: ", w)
 print("w.shape: ", w.shape)
 
-print(np.real(w).min())
-print(np.real(w).max())
-print(np.imag(w).min())
-print(np.imag(w).max())
-
-# import numpy as np
-# from scipy.sparse import csr_matrix
-# from scipy.sparse.linalg import LinearOperator, bicgstab
-
-# # Define the matrix size and create a dense matrix
-# n = 1000
-# A = np.random.rand(n, n)
-
-# # Convert the dense matrix to a sparse matrix
-# A_sparse = csr_matrix(A)
+print("np.real(w).min()", np.real(w).min())
+print("np.real(w).max()", np.real(w).max())
+print("np.imag(w).min()", np.imag(w).min())
+print("np.imag(w).max()", np.imag(w).max())
 
 
-# # Define the matvec function for A_sparse
-# def matvec(x):
-#     return A_sparse.dot(x)
-
-
-# # Create a LinearOperator instance for A_sparse
-# A_operator = LinearOperator((n, n), matvec=matvec)
-
-# # Define the right-hand side vector and convergence criteria
-# b = np.random.rand(n)
-# Errcri = 1e-6
-# itmax = 1000
-
-# # Call bicgstab with the LinearOperator instance
-# w, exit_code = bicgstab(A_operator, b, tol=Errcri, maxiter=itmax)
-
-# # Print the solution and exit code
-# print("Solution:", w)
-# print("Exit code:", exit_code)
 
 
 
@@ -445,3 +430,17 @@ print(np.imag(w).max())
 # # end = time.perf_counter()
 # # print("Elapsed (after compilation) = {}s".format((end - start)))
 
+
+# function plotContrastSource(w, input)
+# CHI = input.CHI;
+
+# % Plot 2D contrast/source distribution -------------
+# x1 = input.X1(:, 1);
+# x2 = input.X2(1, :);
+# set(figure, 'Units', 'centimeters', 'Position', [5, 5, 18, 12]);
+# subplot(1, 2, 1)
+# IMAGESC(x1, x2, CHI);
+# title('\fontsize{13} \chi = 1 - c_0^2 / c_{sct}^2');
+# subplot(1, 2, 2)
+# IMAGESC(x1, x2, abs(w))
+# title('\fontsize{13} abs(w)');
