@@ -17,59 +17,120 @@ try:
     from lib import ForwardBiCGSTABFFT
 except ImportError:
     import ForwardBiCGSTABFFT
+from lib import graphviz_doc
 
-c_0 = ForwardBiCGSTABFFT.c_0()
+
+def composer_call():
+    from fn_graph import Composer
+    composer_1 = (
+        Composer()
+        .update(
+            # list of custom functions goes here
+            ForwardBiCGSTABFFT.M,
+            ForwardBiCGSTABFFT.NR,
+            ForwardBiCGSTABFFT.a,
+            ForwardBiCGSTABFFT.c_sct,
+            ForwardBiCGSTABFFT.f,
+            ForwardBiCGSTABFFT.xS,
+            ForwardBiCGSTABFFT.c_0,
+            ForwardBiCGSTABFFT.gamma_0,
+            ForwardBiCGSTABFFT.rcvr_phi,
+            ForwardBiCGSTABFFT.s,
+            ForwardBiCGSTABFFT.xR,
+            ForwardBiCGSTABFFT.WavefieldSctCircle,
+            ForwardBiCGSTABFFT.displayDataBesselApproach,
+            ForwardBiCGSTABFFT.Errcri,
+            ForwardBiCGSTABFFT.N1,
+            ForwardBiCGSTABFFT.N2,
+            ForwardBiCGSTABFFT.dx,
+            ForwardBiCGSTABFFT.itmax,
+            ForwardBiCGSTABFFT.CHI,
+            ForwardBiCGSTABFFT.IntG,
+            ForwardBiCGSTABFFT.X1,
+            ForwardBiCGSTABFFT.X2,
+            ForwardBiCGSTABFFT.R,
+            ForwardBiCGSTABFFT.contrast,
+            ForwardBiCGSTABFFT.initFFTGreen1,
+            ForwardBiCGSTABFFT.initFFTGreen2,
+            ForwardBiCGSTABFFT.initFFTGreen,
+            ForwardBiCGSTABFFT.X1fft,
+            ForwardBiCGSTABFFT.X2fft,
+            ForwardBiCGSTABFFT.initFFTGreen,
+            ForwardBiCGSTABFFT.initGrid,
+            ForwardBiCGSTABFFT.wavelength,
+            ForwardBiCGSTABFFT.data_load,
+            ForwardBiCGSTABFFT.u_inc,
+            ForwardBiCGSTABFFT.FFTG,
+            ForwardBiCGSTABFFT.ITERBiCGSTABw,
+            ForwardBiCGSTABFFT.plotContrastSource,
+            ForwardBiCGSTABFFT.Dop,
+            ForwardBiCGSTABFFT.displayDataCSIEApproach,
+            ForwardBiCGSTABFFT.displayDataCompareApproachs,
+        )
+        # .update_parameters(input_length_side=input_length_x_side)
+        # .cache()
+    )
+    return composer_1
+
+
+composer = graphviz_doc.composer_render(composer_call(), '', "digraph")
+
+M = ForwardBiCGSTABFFT.M()
+a = ForwardBiCGSTABFFT.a()
 c_sct = ForwardBiCGSTABFFT.c_sct()
+xS = ForwardBiCGSTABFFT.xS()
+c_0 = ForwardBiCGSTABFFT.c_0()
 f = ForwardBiCGSTABFFT.f()
-wavelength = ForwardBiCGSTABFFT.wavelength(c_0, f)
 s = ForwardBiCGSTABFFT.s(f)
 gamma_0 = ForwardBiCGSTABFFT.gamma_0(s, c_0)
 NR = ForwardBiCGSTABFFT.NR()
-xS = ForwardBiCGSTABFFT.xS()
 rcvr_phi = ForwardBiCGSTABFFT.rcvr_phi(NR)
 xR = ForwardBiCGSTABFFT.xR(NR, rcvr_phi)
+WavefieldSctCircle = ForwardBiCGSTABFFT.WavefieldSctCircle(c_0, c_sct, gamma_0, xR, xS, M, a)
+ForwardBiCGSTABFFT.displayDataBesselApproach(WavefieldSctCircle, rcvr_phi)
+
+
 N1 = ForwardBiCGSTABFFT.N1()
 N2 = ForwardBiCGSTABFFT.N2()
 dx = ForwardBiCGSTABFFT.dx()
-X1, X2 = ForwardBiCGSTABFFT.initGrid(N1, N2, dx)
-X1fft, X2fft = ForwardBiCGSTABFFT.initFFTGreen(N1, N2, dx)
+Errcri = ForwardBiCGSTABFFT.Errcri()
+itmax = ForwardBiCGSTABFFT.itmax()
+
+wavelength = ForwardBiCGSTABFFT.wavelength(c_0, f)
+initFFTGreen1 = ForwardBiCGSTABFFT.initFFTGreen1(N1, dx)
+initFFTGreen2 = ForwardBiCGSTABFFT.initFFTGreen2(N2, dx)
+initFFTGreen = ForwardBiCGSTABFFT.initFFTGreen(initFFTGreen1, initFFTGreen2)
+X1fft = ForwardBiCGSTABFFT.X1fft(initFFTGreen)
+X2fft = ForwardBiCGSTABFFT.X2fft(initFFTGreen)
+
 IntG = ForwardBiCGSTABFFT.IntG(dx, gamma_0, X1fft, X2fft)
-# Apply n-dimensional Fast Fourier transform
-FFTG = ForwardBiCGSTABFFT.np.fft.fftn(IntG)
-a = ForwardBiCGSTABFFT.a()
 contrast = ForwardBiCGSTABFFT.contrast(c_0, c_sct)
+initGrid = ForwardBiCGSTABFFT.initGrid(N1, N2, dx)
+X1 = ForwardBiCGSTABFFT.X1(initGrid)
+X2 = ForwardBiCGSTABFFT.X2(initGrid)
 R = ForwardBiCGSTABFFT.R(X1, X2)
 CHI = ForwardBiCGSTABFFT.CHI(contrast, a, R)
-Errcri = ForwardBiCGSTABFFT.Errcri()
-M = ForwardBiCGSTABFFT.M()
-WavefieldSctCircle = ForwardBiCGSTABFFT.WavefieldSctCircle(c_0, c_sct, gamma_0, xR, xS, M, a)
 
 # Delete existing data if the file exists
 file_path = 'data2D.txt'
 if os.path.exists(file_path):
     os.remove(file_path)
-
-# ok so there is a trick here.
-# when the function is initially called it assumes that the data doesn't exist.
-# when the function runs and there already exists data, it compares this new data to the saved data.
-# the initial run is the bessel-function approach while the second os the contrast source MoM
-ForwardBiCGSTABFFT.displayDataBesselApparoach(WavefieldSctCircle, rcvr_phi)
-
 ForwardBiCGSTABFFT.data_save('', 'data2D', WavefieldSctCircle)
 data_load = ForwardBiCGSTABFFT.data_load('', 'data2D.txt')
 
 u_inc = ForwardBiCGSTABFFT.u_inc(gamma_0, xS, dx, X1, X2)
-itmax = ForwardBiCGSTABFFT.itmax()
-w = ForwardBiCGSTABFFT.ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax)
-# # # print("w: ", w)
-# print("w.shape: ", w.shape)
-# print("np.real(w).min()", np.real(w).min())
-# print("np.real(w).max()", np.real(w).max())
-# print("np.imag(w).min()", np.imag(w).min())
-# print("np.imag(w).max()", np.imag(w).max())
-
-ForwardBiCGSTABFFT.plotContrastSource(w, CHI, X1, X2)
-Dop = ForwardBiCGSTABFFT.Dop(w, gamma_0, dx, xR, NR, X1, X2)
+FFTG = ForwardBiCGSTABFFT.FFTG(IntG)
+ITERBiCGSTABw = ForwardBiCGSTABFFT.ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax)
+# # # print("ITERBiCGSTABw: ", ITERBiCGSTABw)
+# print("ITERBiCGSTABw.shape: ", ITERBiCGSTABw.shape)
+# print("np.real(ITERBiCGSTABw).min()", np.real(ITERBiCGSTABw).min())
+# print("np.real(ITERBiCGSTABw).max()", np.real(ITERBiCGSTABw).max())
+# print("np.imag(ITERBiCGSTABw).min()", np.imag(ITERBiCGSTABw).min())
+# print("np.imag(ITERBiCGSTABw).max()", np.imag(ITERBiCGSTABw).max())
+ForwardBiCGSTABFFT.plotContrastSource(ITERBiCGSTABw, CHI, X1, X2)
+Dop = ForwardBiCGSTABFFT.Dop(ITERBiCGSTABw, gamma_0, dx, xR, NR, X1, X2)
+ForwardBiCGSTABFFT.displayDataCSIEApproach(Dop, rcvr_phi)
+ForwardBiCGSTABFFT.displayDataCompareApproachs(WavefieldSctCircle, Dop, rcvr_phi)
 
 # from line_profiler import LineProfiler
 # profiler = LineProfiler()

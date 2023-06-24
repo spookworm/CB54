@@ -21,19 +21,9 @@ def f():
     return 50.00
 
 
-def wavelength(c_0, f):
-    # wavelength
-    return c_0 / f
-
-
 def s(f):
     # Laplace Parameter
     return 1e-16 - 1j * 2 * np.pi * f
-
-
-def gamma_0(s, c_0):
-    # Propagation Co-efficient
-    return s / c_0
 
 
 def NR():
@@ -41,25 +31,14 @@ def NR():
     return 180
 
 
+def wavelength(c_0, f):
+    # wavelength
+    return c_0 / f
+
+
 def xS():
     # Source Position
     return [-170, 0]
-
-
-def rcvr_phi(NR):
-    # input.rcvr_phi(1:input.NR) = (1:input.NR) * 2 * pi / input.NR;
-    return np.arange(1, NR+1, 1, dtype=np.double) * 2 * np.pi / NR
-
-
-def xR(NR, rcvr_phi):
-    # Receiver Positions
-
-    xR = np.full((2, NR), np.inf)
-    # input.xR(1, 1:input.NR) = 150 * cos(input.rcvr_phi);
-    xR[0, :] = 150.00 * np.cos(rcvr_phi)
-    # input.xR(2, 1:input.NR) = 150 * sin(input.rcvr_phi);
-    xR[1, :] = 150.00 * np.sin(rcvr_phi)
-    return xR
 
 
 def N1():
@@ -77,33 +56,98 @@ def dx():
     return 2.0
 
 
+def gamma_0(s, c_0):
+    # Propagation Co-efficient
+    return s / c_0
+
+
+def a():
+    # Radius Circle Cylinder
+    return 40
+
+
+def Errcri():
+    return 1e-3
+
+
+def M():
+    # Increase M for more accuracy
+    return 100
+
+
+def itmax():
+    return 1000
+
+
+def rcvr_phi(NR):
+    # input.rcvr_phi(1:input.NR) = (1:input.NR) * 2 * pi / input.NR;
+    test = np.transpose(np.arange(1, NR+1, 1, dtype=np.double) * 2 * np.pi / NR)
+    return test
+
+
+def xR(NR, rcvr_phi):
+    # Receiver Positions
+    xR = np.full((2, NR), np.inf)
+    # input.xR(1, 1:input.NR) = 150 * cos(input.rcvr_phi);
+    xR[0, :] = 150.00 * np.cos(rcvr_phi)
+    # input.xR(2, 1:input.NR) = 150 * sin(input.rcvr_phi);
+    xR[1, :] = 150.00 * np.sin(rcvr_phi)
+    return xR
+
+
 def initGrid(N1, N2, dx):
     # Grid in two-dimensional space
     # x1 = -(input.N1 + 1) * input.dx / 2 + (1:input.N1) * input.dx;
     x1 = -(N1 + 1) * dx / 2.0 + np.arange(1, N1+1, 1, dtype=np.double) * dx
+
     # x2 = -(input.N2 + 1) * input.dx / 2 + (1:input.N2) * input.dx;
     x2 = -(N2 + 1) * dx / 2.0 + np.arange(1, N2+1, 1, dtype=np.double) * dx
+
     # [input.X1, input.X2] = ndgrid(x1, x2);
-    X1, X2 = np.meshgrid(x1, x2)
-    X1 = X1.transpose()
-    X2 = X2.transpose()
-    return X1, X2
+    return np.meshgrid(x1, x2)
 
 
-def initFFTGreen(N1, N2, dx):
+def X1(initGrid):
+    return initGrid[0].transpose()
+
+
+def X2(initGrid):
+    return initGrid[1].transpose()
+
+
+def FFTG(IntG):
+    # Apply n-dimensional Fast Fourier transform
+    return np.fft.fftn(IntG)
+
+
+def initFFTGreen1(N1, dx):
     # Compute FFT of Green function
     # N1fft = 2^ceil(log2(2*input.N1));
     N1fft = (2**np.ceil(np.log2(2 * N1))).astype(int)
-
-    # N2fft = 2^ceil(log2(2*input.N2));
-    N2fft = (2**np.ceil(np.log2(2 * N2))).astype(int)
-
     # x1(1:N1fft) = [0 : N1fft / 2 - 1, N1fft / 2 : -1 : 1] * input.dx;
     x1fft = [i * dx for i in (list(range(0, N1fft//2)) + list(range(N1fft//2, 0, -1)))]
+    return x1fft
 
+
+def initFFTGreen2(N2, dx):
+    # Compute FFT of Green function
+    # N2fft = 2^ceil(log2(2*input.N2));
+    N2fft = (2**np.ceil(np.log2(2 * N2))).astype(int)
     # x2(1:N2fft) = [0 : N2fft / 2 - 1, N2fft / 2 : -1 : 1] * input.dx;
     x2fft = [i * dx for i in (list(range(0, N2fft//2)) + list(range(N2fft//2, 0, -1)))]
-    return np.meshgrid(x1fft, x2fft)
+    return x2fft
+
+
+def initFFTGreen(initFFTGreen1, initFFTGreen2):
+    return np.meshgrid(initFFTGreen1, initFFTGreen2)
+
+
+def X1fft(initFFTGreen):
+    return initFFTGreen[0]
+
+
+def X2fft(initFFTGreen):
+    return initFFTGreen[1]
 
 
 def IntG(dx, gamma_0, X1fft, X2fft):
@@ -118,7 +162,7 @@ def IntG(dx, gamma_0, X1fft, X2fft):
     G = 1.0 / (2.0 * np.pi) * kv(0, gamma_0 * DIS)
 
     # Radius circle with area of dx^2
-    delta = (np.pi)**(-0.5) * dx
+    delta = np.pi**(-0.5) * dx
 
     # factor = 2 * besseli(1, gamma_0*delta) / (gamma_0 * delta)
     factor = 2 * iv(1, gamma_0 * delta) / (gamma_0 * delta)
@@ -130,11 +174,6 @@ def IntG(dx, gamma_0, X1fft, X2fft):
     # IntG(1, 1) = 1 - gamma_0 * delta * besselk(1, gamma_0*delta) * factor
     IntG[0, 0] = 1 - gamma_0 * delta * kv(1, gamma_0 * delta) * factor
     return IntG
-
-
-def a():
-    # Radius Circle Cylinder
-    return 40
 
 
 def contrast(c_0, c_sct):
@@ -149,22 +188,26 @@ def CHI(contrast, a, R):
     return contrast * (R < a)
 
 
-def Errcri():
-    return 1e-13
+def data_save(path, filename, data2D):
+    # save DATA2D data2D;
+    np.savetxt(path + filename + '.txt', data2D.view(float))
 
 
-def M():
-    # Increase M for more accuracy
-    return 100
+def data_load(path, filename):
+    # load DATA2D data2D;
+    return np.loadtxt(path + filename).view(complex)
 
 
 def WavefieldSctCircle(c_0, c_sct, gamma_0, xR, xS, M, a):
+    import numpy as np
+    from scipy.special import kv, iv
+
     gam_sct = gamma_0 * c_0 / c_sct
 
     # Compute coefficients of series expansion
     arg0 = gamma_0 * a
     args = gam_sct * a
-    A = np.zeros((1, M+1), dtype=np.complex_)
+    A = np.zeros(M+1, dtype=np.complex_)
     for m in range(0, M+1):
         Ib0 = iv(m, arg0)
         dIb0 = iv(m+1, arg0) + m / arg0 * Ib0
@@ -172,7 +215,7 @@ def WavefieldSctCircle(c_0, c_sct, gamma_0, xR, xS, M, a):
         dIbs = iv(m+1, args) + m / args * Ibs
         Kb0 = kv(m, arg0)
         dKb0 = -kv(m+1, arg0) + m / arg0 * Kb0
-        A[0, m] = -(gam_sct * dIbs * Ib0 - gamma_0 * dIb0 * Ibs) / (gam_sct * dIbs * Kb0 - gamma_0 * dKb0 * Ibs)
+        A[m] = -(gam_sct * dIbs * Ib0 - gamma_0 * dIb0 * Ibs) / (gam_sct * dIbs * Kb0 - gamma_0 * dKb0 * Ibs)
 
     # Compute reflected field at receivers (data)
     # rR = sqrt(xR(1, :).^2+xR(2, :).^2)
@@ -190,37 +233,61 @@ def WavefieldSctCircle(c_0, c_sct, gamma_0, xR, xS, M, a):
     phiS = np.arctan2(xS[1], xS[0])
 
     # data2D = A(1) * besselk(0, gam0*rS) .* besselk(0, gam0*rR);
-    data2D = A[0, 1] * kv(0, gamma_0 * rS) * kv(0, gamma_0 * rR)
+    data2D = A[0] * kv(0, gamma_0 * rS) * kv(0, gamma_0 * rR)
 
-    for m in range(0, M+1):
+    for m in range(1, M+1):
         # factor = 2 * besselk(m, gam0*rS) .* cos(m*(phiS - phiR));
         factor = 2 * kv(m, gamma_0 * rS) * np.cos(m * (phiS - phiR))
 
         # data2D = data2D + A(m+1) * factor .* besselk(m, gamma_0*rR);
-        data2D = data2D + A[0, m] * factor * kv(m, gamma_0 * rR)
+        data2D = data2D + A[m] * factor * kv(m, gamma_0 * rR)
 
     # data2D = 1 / (2 * pi) * data2D;
-    data2D = 1 / (2 * np.pi) * data2D
+    data2D = 1.0 / (2.0 * np.pi) * data2D
     return data2D
 
 
-def data_save(path, filename, data2D):
-    # save DATA2D data2D;
-    np.savetxt(path + filename + '.txt', data2D.view(float))
-
-
-def data_load(path, filename):
-    # load DATA2D data2D;
-    return np.loadtxt(path + filename).view(complex)
-
-
-def displayDataBesselApparoach(data, rcvr_phi):
+def displayDataBesselApproach(WavefieldSctCircle, rcvr_phi):
     angle = rcvr_phi * 180 / np.pi
     # Plot data at a number of receivers
     # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
-    plt.plot(angle, abs(data), label='Bessel-function method')
+    plt.plot(angle, abs(WavefieldSctCircle), label='Bessel-function method')
     plt.tight_layout()
     plt.legend(loc='upper right')
+    plt.title('scattered wave data in 2D', fontsize=12)
+    plt.axis('tight')
+    plt.xlabel('observation angle in degrees')
+    plt.xlim([0, 360])
+    plt.ylabel('abs(data) $\\rightarrow$')
+    plt.show()
+
+
+def displayDataCSIEApproach(Dop, rcvr_phi):
+    angle = rcvr_phi * 180 / np.pi
+    # Plot data at a number of receivers
+    # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
+    plt.plot(angle, abs(Dop), label='Integral-equation method')
+    plt.tight_layout()
+    plt.legend(loc='upper right')
+    plt.title('scattered wave data in 2D', fontsize=12)
+    plt.axis('tight')
+    plt.xlabel('observation angle in degrees')
+    plt.xlim([0, 360])
+    plt.ylabel('abs(data) $\\rightarrow$')
+    plt.show()
+
+
+def displayDataCompareApproachs(WavefieldSctCircle, Dop, rcvr_phi):
+    angle = rcvr_phi * 180 / np.pi
+    error = str(np.linalg.norm(Dop - WavefieldSctCircle, ord=1)/np.linalg.norm(WavefieldSctCircle, ord=1))
+
+    # Plot data at a number of receivers
+    # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
+    plt.tight_layout()
+    plt.plot(angle, np.abs(Dop), '--r', angle, np.abs(WavefieldSctCircle), 'b')
+    plt.legend(['Integral-equation method', 'Bessel-function method'], loc='upper center')
+
+    plt.text(0.5*np.max(angle), 0.8*np.max(np.abs(Dop)), 'Error$^sct$ = ' + error, color='red', ha='center', va='center')
     plt.title('scattered wave data in 2D', fontsize=12)
     plt.axis('tight')
     plt.xlabel('observation angle in degrees')
@@ -243,10 +310,6 @@ def u_inc(gamma_0, xS, dx, X1, X2):
 
     # Factor for weak form if DIS > delta
     return factor * G
-
-
-def itmax():
-    return 1000
 
 
 def Aw(w, N1, N2, FFTG, CHI):
@@ -326,7 +389,7 @@ def Kop(v, FFTG):
     return Kv
 
 
-def plotContrastSource(w, CHI, X1, X2):
+def plotContrastSource(ITERBiCGSTABw, CHI, X1, X2):
     # Plot 2D contrast/source distribution
     # x1 = ForwardBiCGSTABFFT.input.X1(:, 1);
     x1 = X1[:, 0]
@@ -345,7 +408,7 @@ def plotContrastSource(w, CHI, X1, X2):
     ax1.set_title(r'$\chi =$1 - $c_0^2 / c_{sct}^2$', fontsize=13)
 
     ax2 = fig.add_subplot(1, 2, 2)
-    im2 = ax2.imshow(abs(w), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    im2 = ax2.imshow(abs(ITERBiCGSTABw), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
     ax2.set_xlabel('x_2 \u2192')
     ax2.set_ylabel('\u2190 x_1')
     ax2.set_aspect('equal', adjustable='box')
@@ -355,10 +418,12 @@ def plotContrastSource(w, CHI, X1, X2):
     plt.show()
 
 
-def Dop(w, gamma_0, dx, xR, NR, X1, X2):
-    data = np.zeros((1, NR+1), dtype=np.complex_)
+def Dop(ITERBiCGSTABw, gamma_0, dx, xR, NR, X1, X2):
+    data = np.zeros(NR, dtype=np.complex_)
     # Radius circle with area of dx^2
     delta = np.pi**(-0.5) * dx
+
+    print("data", data.shape)
 
     # factor = 2 * besseli(1, gamma_0*delta) / (gamma_0 * delta)
     factor = 2 * iv(1, gamma_0 * delta) / (gamma_0 * delta)
@@ -372,5 +437,5 @@ def Dop(w, gamma_0, dx, xR, NR, X1, X2):
         G = 1.0 / (2.0 * np.pi) * kv(0, gamma_0 * DIS)
 
         # data(1, p) = (gamma_0^2 * dx^2) * factor * sum(G(:).*w(:));
-        data[0, p-1] = (gamma_0**2 * dx**2) * factor * np.sum(G * w)
+        data[p] = (gamma_0**2 * dx**2) * factor * np.sum(G * ITERBiCGSTABw)
     return data
