@@ -4,6 +4,8 @@ close all;
 clc;
 format compact;
 
+total_time = tic;
+
 % Inputs
 path_geo = './Geometry/';
 path_lut = './lut/materials.json';
@@ -141,7 +143,7 @@ end
 V = zeros(basis_counter, 1);
 D = zeros(basis_counter, 1); % Diagonal contrast matrix stored as a vector
 fprintf('\nStart creation of all %d ellements of V and D\n \n', basis_counter)
-start1 = tic;
+% start1 = tic;
 
 % Incident Field
 for ct1 = 1:basis_counter
@@ -149,7 +151,7 @@ for ct1 = 1:basis_counter
     V(ct1) = exp(-1i*vacuum_kr*rho(ct1)*cos(the_phi(ct1)));
     D(ct1, 1) = (basis_wave_number(ct1, 1) * basis_wave_number(ct1, 1) - vacuum_kr * vacuum_kr); % contrast function
 end
-Time_creation_all_elements_from_V_and_D = toc(start1);
+% Time_creation_all_elements_from_V_and_D = toc(start1);
 
 x = real(position(1:N));
 y = imag(position(1:N:N*M));
@@ -169,7 +171,7 @@ Vred = Rfo .* V; % create V reduced
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('\nStart creation of all %d ellements of G\n \n', basis_counter)
 G_vector = zeros(basis_counter, 1); % BMT dense matrix, stored as a vector
-start2 = tic;
+% start2 = tic;
 for ct1 = 1:basis_counter
     if (mod(ct1, 100) == 0)
         fprintf(1, '%dth element \n', ct1);
@@ -185,7 +187,7 @@ for ct1 = 1:basis_counter
         G_vector(ct1, 1) = (1i / 4.0) * (2.0 * pi * equiv_a / vacuum_kr) * besselj(1, vacuum_kr*equiv_a) * besselh(0, 2, vacuum_kr*R_mn2);
     end
 end
-Time_creation_all_elements_from_G = toc(start2);
+% Time_creation_all_elements_from_G = toc(start2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Solver
 Ered = zeros(basis_counter, 1); % guess
@@ -198,7 +200,7 @@ solver_error = abs(r'*r); % definition of error
 
 Reduced_iteration_error = zeros(1, 1);
 icnt = 0; % iteration counter
-start3 = tic;
+% start3 = tic;
 while (solver_error > input_solver_tol) && (icnt <= basis_counter)
     icnt = icnt + 1;
     if (mod(icnt, 50) == 0)
@@ -213,7 +215,7 @@ while (solver_error > input_solver_tol) && (icnt <= basis_counter)
     solver_error = abs(r'*r);
     Reduced_iteration_error(icnt, 1) = abs(r'*r);
 end
-time_Red = toc(start3);
+% time_Red = toc(start3);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % POST-PROCESSING
@@ -233,7 +235,7 @@ fprintf('\nNumber of unknowns in Z is than %d\n', N*M*N*M)
 fprintf('Number of reduced unknowns is %d\n', sum(Rfo)*N*M)
 fprintf('with %.2f%% percent of the is filled by contrast \n', sum(Rfo)/(N * M)*100)
 fprintf('\nCG iteration error tollerance = %d \n', input_solver_tol)
-fprintf('Duration of reduced CG iteration = %d seconds \n', time_Red)
+% fprintf('Duration of reduced CG iteration = %d seconds \n', time_Red)
 
 % CONVERT SOLUTIONS ON 2D GRID, FOR 3D PLOTS
 vec2matSimulationVred = zeros(M, N);
@@ -338,3 +340,5 @@ title('Reduced Total Field Part Absolute');
 xlabel('x (meters)')
 ylabel('y (meter)')
 axis tight
+
+total_time_ran = toc(total_time);

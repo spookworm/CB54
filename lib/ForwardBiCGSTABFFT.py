@@ -321,7 +321,13 @@ def Aw(w, N1, N2, FFTG, CHI):
     return y
 
 
-def ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax):
+def b(CHI, u_inc):
+    # Known 1D vector right-hand side
+    # b = input.CHI(:) .* u_inc(:);
+    return CHI.flatten() * u_inc.flatten()
+
+
+def ITERBiCGSTABw(b, CHI, u_inc, FFTG, N1, N2, Errcri, itmax):
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
 
     def callback(xk):
@@ -342,10 +348,6 @@ def ITERBiCGSTABw(CHI, u_inc, FFTG, N1, N2, Errcri, itmax):
     # Initialise iteration count
     callback.iter_count = 0
     callback.start_time = time.time()
-
-    # Known 1D vector right-hand side
-    # b = input.CHI(:) .* u_inc(:);
-    b = CHI.flatten() * u_inc.flatten()
 
     # Call bicgstab with the LinearOperator instance and other inputs
     # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);

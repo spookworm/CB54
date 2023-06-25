@@ -260,9 +260,11 @@ dependencies:
       - starlette==0.27.0
       - toolz==0.12.0
       - tqdm==4.65.0
+      - tuna==0.5.11
       - tzdata==2023.3
       - uc-micro-py==1.0.2
       - uvicorn==0.22.0
+      - vprof==0.38
       - websockets==11.0.3
       - yarl==1.9.2
 prefix: C:\ProgramData\anaconda3\envs\solveremf2

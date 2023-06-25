@@ -1,14 +1,23 @@
-from IPython import get_ipython
-# Clear workspace
-get_ipython().run_line_magic('reset', '-sf')
-get_ipython().run_line_magic('clear', '-sf')
+# import numpy as np
+
+
+# python -m cProfile -o main_plain.profile main_plain.py
+# pyprof2calltree -i main_plain.profile -o main_plain.calltree
+# kcachegrind main_plain.calltree
+
+# from IPython import get_ipython
+# # Clear workspace
+# get_ipython().run_line_magic('reset', '-sf')
+# get_ipython().run_line_magic('clear', '-sf')
 try:
     from lib import scene_gen
 except ImportError:
     import scene_gen
 import time
-import numpy as np
+# import numpy as np
 from matplotlib import pyplot as plt
+# from time import perf_counter
+
 
 start = time.time()
 
@@ -110,8 +119,13 @@ input_solver_tol = scene_gen.input_solver_tol()
 # print("input_solver_tol: ", input_solver_tol)
 solver_error = scene_gen.solver_error(r)
 # print("solver_error: ", solver_error)
+
+# start = perf_counter()
 krylov_solver = scene_gen.krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p, r, resolution_information, rfo, Ered_load)
-print("type(krylov_solver): ", type(krylov_solver))
+# print("type(krylov_solver): ", type(krylov_solver))
+# duration = perf_counter() - start
+# print('krylov_solver', duration)
+
 
 Ered = scene_gen.Ered(krylov_solver)
 # print("Ered: ", Ered)
@@ -128,22 +142,28 @@ ScatRed_2D = scene_gen.ScatRed_2D(resolution_information, ScatRed)
 [image_ScatRed_2D_real, image_ScatRed_2D_imag, image_ScatRed_2D_abs] = scene_gen.complex_image_render(ScatRed_2D, parula_map)
 
 # PLOT ITERATIONS
-
+# plt.semilogy(reduced_iteration_error[:, 0], reduced_iteration_error[:, 1])
+# plt.autoscale(enable=True, axis='x', tight=True)
 
 # CREATE ALL THE PLOTS
-plt.imshow(image_Vred_2D_real, interpolation='nearest')
-plt.imshow(image_Vred_2D_imag, interpolation='nearest')
-plt.imshow(image_Vred_2D_abs, interpolation='nearest')
-plt.imshow(image_Ered_2D_real, interpolation='nearest')
-plt.imshow(image_Ered_2D_imag, interpolation='nearest')
-plt.imshow(image_Ered_2D_abs, interpolation='nearest')
-plt.imshow(image_ScatRed_2D_real, interpolation='nearest')
-plt.imshow(image_ScatRed_2D_imag, interpolation='nearest')
-plt.imshow(image_ScatRed_2D_abs, interpolation='nearest')
-plt.show()
-
-plt.semilogy(reduced_iteration_error[10:, 0], reduced_iteration_error[10:, 1])
-plt.autoscale(enable=True, axis='x', tight=True)
+# plt.imshow(image_Vred_2D_real)
+# # plt.show()
+# plt.imshow(image_Vred_2D_imag)
+# # plt.show()
+# plt.imshow(image_Vred_2D_abs)
+# # plt.show()
+# plt.imshow(image_Ered_2D_real)
+# # plt.show()
+# plt.imshow(image_Ered_2D_imag)
+# # plt.show()
+# plt.imshow(image_Ered_2D_abs)
+# # plt.show()
+# plt.imshow(image_ScatRed_2D_real)
+# # plt.show()
+# plt.imshow(image_ScatRed_2D_imag)
+# # plt.show()
+# plt.imshow(image_ScatRed_2D_abs)
+# # plt.show()
 
 end = time.time()
 print("code runtime: ", end - start)
@@ -159,3 +179,6 @@ print('Number of reduced unknowns is ', sum(rfo)*resolution_information["length_
 print('with ', sum(rfo)/(resolution_information["length_x_side"] * resolution_information["length_y_side"])*100, 'percent of the is filled by contrast')
 print('CG iteration error tollerance = ', input_solver_tol)
 # print('Duration of reduced CG iteration = %d seconds \n', time_Red)
+
+
+

@@ -1,3 +1,6 @@
+# import numba
+
+
 def seed():
     # Seed
     return 42
@@ -26,7 +29,7 @@ def mu0():
     import math
     return 4.0 * math.pi * 1.0e-7
 
-
+#
 # def realmax():
 #     # Equivalent of realmax in MATLAB. Used to find the minimum resolution required by the materials present in the scene.
 #     import sys
@@ -62,7 +65,7 @@ def image_render(image_object, palette):
     image_object.putpalette(palette)
     return image_object
 
-
+#
 # def image_image(image_object):
 #     from PIL import Image
 #     # return Image.open("./geometry/placeholder.png", mode='r')
@@ -695,11 +698,13 @@ def complex_image_render(image_array, colour_map):
 
     return numpy_image_real, numpy_image_imag, numpy_image_abs
 
-
 # # JUST DON'T INCLUDE IT IN THE COMPOSER PART SO IT WON'T MISS IT WHEN RENDERING
+#
 # def BMT_FFT(G_vector.', D.*Ered, N):
 #     return None
 
+
+# @numba.jit
 def BMT_FFT(X, V, N):
     # def BMT_FFT(resolution_information, G_vector):
     import numpy as np
@@ -725,9 +730,13 @@ def BMT_FFT(X, V, N):
 
     # TO MATCH BACK TO MATLAB THE FOLLOWING TWO OPERATIONS ARE CREATED
     # DELETE OUT THE LAST ROW
-    X = X[:-1, :]
+    # X = X[:-1, :]
+
     # DELETE OUT THE LAST COLUMN
-    X = X[:, :-1]
+    # X = X[:, :-1]
+
+    # Both
+    X = X[:-1, :-1]
 
     # This matches back to MATLAB
     # V = np.zeros((M, N), dtype=np.complex128)
@@ -782,6 +791,9 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
 
     solver_error = scene_gen.solver_error(r)
 
+    # discretise_M = resolution_information["length_y_side"]
+    # discretise_N = resolution_information["length_x_side"]
+
     # iteration counter
     icnt = 0
 
@@ -821,13 +833,13 @@ def krylov_solver(basis_counter, input_solver_tol, G_vector, field_incident_D, p
 
 
 def Ered(krylov_solver):
-    print(type(krylov_solver))
+    # print(type(krylov_solver))
     Ered = krylov_solver[0]
     return Ered
 
 
 def reduced_iteration_error(krylov_solver):
-    print(type(krylov_solver))
+    # print(type(krylov_solver))
     reduced_iteration_error = krylov_solver[1]
     return reduced_iteration_error
 
@@ -867,4 +879,3 @@ def ScatRed_2D(resolution_information, ScatRed):
     except ImportError:
         import scene_gen
     return scene_gen.restore_arrays(resolution_information, ScatRed)
-

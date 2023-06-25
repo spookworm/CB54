@@ -47,12 +47,14 @@
 
 # Conda Environment Installation
 Navigate to the subfolder "env" in conda instance and call the following command:
+
+conda remove --name solveremf2 --all
+
+conda create --name solveremf2
+
 conda env create -f solveremf2.yml
 
 # Profiling code
-python -m cProfile -o program.prof main_plain.py
-tuna program.prof
-
 vprof -c p main_plain.py
 vprof -c cmh main_plain.py
 
