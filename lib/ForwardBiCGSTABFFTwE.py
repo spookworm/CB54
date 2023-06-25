@@ -209,3 +209,141 @@ def E_inc(IncEMwave):
 
 def ZH_inc(IncEMwave):
     return IncEMwave[1]
+
+
+def b(CHI_eps, E_inc):
+    # Known 1D vector right-hand side
+    N = CHI_eps.flatten().shape[0]
+    b = np.zeros(2*N, dtype=np.complex_)
+    b1 = CHI_eps[:].T.flatten() * E_inc[1].flatten()
+    b2 = CHI_eps[:].T.flatten() * E_inc[2].flatten()
+    b = np.concatenate((b1, b2))
+    return b
+
+
+def ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx):
+    # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
+
+    def callback(xk):
+        # Define the callback function
+        callback.iter_count += 1
+        residual_norm = np.linalg.norm(b - Aw_operator(xk))
+        # CHECK: Not sure that this time is correct
+        callback.time_total = time.time() - callback.start_time
+        # print("Current solution:", xk)
+        # print("Iteration:", callback.iter_count, "Residual norm:", residual_norm, "Time:", time.time() - callback.start_time)
+        print(callback.iter_count, "\t", residual_norm, "\t", callback.time_total)
+        if residual_norm < Errcri:
+            return True
+        else:
+            return False
+        print("Iteration:", "\t", "Residual norm:", "\t", "Time:")
+
+    # Initialise iteration count
+    callback.iter_count = 0
+    callback.start_time = time.time()
+
+    # Call bicgstab with the LinearOperator instance and other inputs
+    # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
+    Aw_operator = LinearOperator((b.flatten().shape[0], b.flatten().shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx))
+    w, exit_code = bicgstab(Aw_operator, b.flatten(), tol=Errcri, maxiter=itmax, callback=callback)
+
+    # Output Matrix
+    w_E = vector2matrix(w, N1, N2, CHI_eps)
+
+    # Display the convergence information
+    print("Convergence information:", exit_code)
+    print(exit_code)
+    print("Iteration:", callback.iter_count)
+    print("time_total", callback.time_total)
+    return w_E
+
+
+def Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx):
+    # [N, ~] = size(input.CHI_eps(:));
+    N = CHI_eps.flatten().shape[0]
+
+    # [w_E] = vector2matrix(w, input);
+    w_E = vector2matrix(w, N1, N2, CHI_eps)
+
+    # [Kw_E] = KopE(w_E, input);
+    Kw_E = KopE(w_E, FFTG, gamma_0, dx, N1, N2)
+
+    y = []
+    # y(1:N, 1) = w_E{1}(:) - CHI_eps(:) .* Kw_E{1}(:)
+    y[0:N] = w_E[0].flatten() - CHI_eps.flatten() * Kw_E[0].flatten()
+    # y(N+1:2*N, 1) = w_E{2}(:) - CHI_eps(:) .* Kw_E{2}(:)
+    y[N:2*N] = w_E[1].flatten() - CHI_eps.flatten() * Kw_E[1].flatten()
+    return y
+
+
+def vector2matrix(w, N1, N2, CHI_eps):
+    N = CHI_eps.flatten().shape[0]
+    DIM = [N1, N2]
+    w_E = [np.zeros((N1, N2), dtype=complex), np.zeros((N1, N2), dtype=complex)]
+    w_E[0][:, :] = np.reshape(w[0:N], DIM)
+    w_E[1][:, :] = np.reshape(w[N:2*N], DIM)
+    return w_E
+
+
+def KopE(w_E, FFTG, gamma_0, dx, N1, N2):
+    KwE = np.zeros_like(np.array(w_E), dtype=np.complex_)
+    for n in range(0, 2):
+        # KwE{n} = Kop(wE{n}, input.FFTG);
+        KwE[n, :, :] = Kop(w_E[n], FFTG)
+
+    # Dummy is temporary storage
+    # dummy = graddiv(KwE, input);
+    dummy = graddiv(KwE, dx, N1, N2)
+    for n in range(0, 2):
+        # KwE{n} = KwE{n} - dummy{n} / input.gamma_0^2;
+        KwE[n, :, :] = KwE[n] - dummy[n] / gamma_0**2
+    return KwE
+
+
+def Kop(v, FFTG):
+    # Make FFT grid
+    Cv = np.zeros(FFTG.shape, dtype=np.complex_)
+    N1, N2 = v.shape
+    Cv[0:N1, 0:N2] = v.copy()
+    # Convolution by FFT
+    Cv = np.fft.fftn(Cv)
+    Cv = np.fft.ifftn(FFTG * Cv)
+    Kv = Cv[0:N1, 0:N2]
+    return Kv
+
+
+def graddiv(v, dx, N1, N2):
+    u = np.zeros_like(np.array(v), dtype=np.complex_)
+    # u{1} = zeros(size(v{1}));
+    u[0] = np.zeros(v[0].shape)
+    u[1] = np.zeros(v[1].shape)
+
+    # Compute d1d1_v1, d2d2_v2
+    # u{1}(2:N1 - 1, :) = v{1}(1:N1 - 2, :) - 2 * v{1}(2:N1 - 1, :) + v{1}(3:N1, :);
+    u[0][1:N1-1, :] = v[0][0:N1-2, :] - 2 * v[0][1:N1-1, :] + v[0][2:N1, :]
+
+    # u{2}(:, 2:N2 - 1) = v{2}(:, 1:N2 - 2) - 2 * v{2}(:, 2:N2 - 1) + v{2}(:, 3:N2);
+    u[1][:, 1:N2-2] = v[1][:, 0:N2-3] - 2 * v[1][:, 1:N2-2] + v[1][:, 2:N2-1]
+
+    # Replace the input vector v1 by d1_v and v2 by d2_v2
+    # d1_v1
+    # v{1}(2:N1 - 1, :) = (v{1}(3:N1, :) - v{1}(1:N1 - 2, :)) / 2;
+    v[0][1:N1-1, :] = (v[0][2:N1, :] - v[0][0:N1-2, :]) / 2
+    # d2_v2
+    # v{2}(:, 2:N2 - 1) = (v{2}(:, 3:N2) - v{2}(:, 1:N2 - 2)) / 2;
+    v[1][:, 1:N2-2] = (v[1][:, 2:N2-1] - v[1][:, 0:N2-3]) / 2
+
+    # Add d1_v2 = d1d2_v2 to output vector u1
+    # u{1}(2:N1 - 1, :) = u{1}(2:N1 - 1, :) + (v{2}(3:N1, :) - v{2}(1:N1 - 2, :)) / 2;
+    u[0][1:N1-1, :] = u[0][1:N1-1, :] + (v[1][2:N1, :] - v[1][0:N1-2, :]) / 2.0
+
+    # Add d2_v1 = d2d1_v1 to output vector u2
+    # u{2}(:, 2:N2 - 1) = u{2}(:, 2:N2 - 1) + (v{1}(:, 3:N2) - v{1}(:, 1:N2 - 2)) / 2;
+    u[1][:, 1:N2-1] = u[1][:, 1:N2-1] + (v[0][:, 2:N2] - v[0][:, 0:N2-2]) / 2.0
+
+    # divide by dx^2
+    u[0] = u[0] / dx**2
+    u[1] = u[1] / dx**2
+    return u
+
