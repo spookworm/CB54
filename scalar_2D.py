@@ -50,8 +50,8 @@ def composer_call():
             ForwardBiCGSTABFFT.X2,
             ForwardBiCGSTABFFT.R,
             ForwardBiCGSTABFFT.contrast,
-            ForwardBiCGSTABFFT.initFFTGreen1,
-            ForwardBiCGSTABFFT.initFFTGreen2,
+            ForwardBiCGSTABFFT.x1fft,
+            ForwardBiCGSTABFFT.x2fft,
             ForwardBiCGSTABFFT.initFFTGreen,
             ForwardBiCGSTABFFT.X1fft,
             ForwardBiCGSTABFFT.X2fft,
@@ -97,9 +97,9 @@ Errcri = ForwardBiCGSTABFFT.Errcri()
 itmax = ForwardBiCGSTABFFT.itmax()
 
 wavelength = ForwardBiCGSTABFFT.wavelength(c_0, f)
-initFFTGreen1 = ForwardBiCGSTABFFT.initFFTGreen1(N1, dx)
-initFFTGreen2 = ForwardBiCGSTABFFT.initFFTGreen2(N2, dx)
-initFFTGreen = ForwardBiCGSTABFFT.initFFTGreen(initFFTGreen1, initFFTGreen2)
+x1fft = ForwardBiCGSTABFFT.x1fft(N1, dx)
+x2fft = ForwardBiCGSTABFFT.x2fft(N2, dx)
+initFFTGreen = ForwardBiCGSTABFFT.initFFTGreen(x1fft, x2fft)
 X1fft = ForwardBiCGSTABFFT.X1fft(initFFTGreen)
 X2fft = ForwardBiCGSTABFFT.X2fft(initFFTGreen)
 

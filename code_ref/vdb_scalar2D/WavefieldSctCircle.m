@@ -10,6 +10,14 @@ if exist(fullfile(cd, 'DATA2D.mat'), 'file')
 end
 
 % (1) Compute coefficients of series expansion ----------------------------
+
+
+
+
+
+
+
+
 arg0 = gam0 * input.a;
 args = gam_sct * input.a;
 M = 100; % increase M for more accuracy
@@ -21,6 +29,7 @@ for m = 0:M
     dIbs = besseli(m+1, args) + m / args * Ibs;
     Kb0 = besselk(m, arg0);
     dKb0 = -besselk(m+1, arg0) + m / arg0 * Kb0;
+	
     A(m+1) = -(gam_sct * dIbs * Ib0 - gam0 * dIb0 * Ibs) ...
         / (gam_sct * dIbs * Kb0 - gam0 * dKb0 * Ibs);
 end

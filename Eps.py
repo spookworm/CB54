@@ -49,8 +49,8 @@ def composer_call():
             ForwardBiCGSTABFFT.dx,
             ForwardBiCGSTABFFT.gamma_0,
             ForwardBiCGSTABFFT.initFFTGreen,
-            ForwardBiCGSTABFFT.initFFTGreen1,
-            ForwardBiCGSTABFFT.initFFTGreen2,
+            ForwardBiCGSTABFFT.x1fft,
+            ForwardBiCGSTABFFT.x2fft,
             ForwardBiCGSTABFFT.initGrid,
             ForwardBiCGSTABFFT.itmax,
             ForwardBiCGSTABFFT.rcvr_phi,
@@ -72,6 +72,7 @@ def composer_call():
             ForwardBiCGSTABFFTwE.graddiv,
             ForwardBiCGSTABFFTwE.M,
             ForwardBiCGSTABFFTwE.ZH_inc,
+            ForwardBiCGSTABFFTwE.N,
             ForwardBiCGSTABFFTwE.b,
             ForwardBiCGSTABFFTwE.c_0,
             ForwardBiCGSTABFFTwE.eps_sct,
@@ -110,9 +111,9 @@ initGrid = ForwardBiCGSTABFFT.initGrid(N1, N2, dx)
 X1 = ForwardBiCGSTABFFT.X1(initGrid)
 X2 = ForwardBiCGSTABFFT.X2(initGrid)
 
-initFFTGreen1 = ForwardBiCGSTABFFT.initFFTGreen1(N1, dx)
-initFFTGreen2 = ForwardBiCGSTABFFT.initFFTGreen2(N2, dx)
-initFFTGreen = ForwardBiCGSTABFFT.initFFTGreen(initFFTGreen1, initFFTGreen2)
+x1fft = ForwardBiCGSTABFFT.x1fft(N1, dx)
+x2fft = ForwardBiCGSTABFFT.x2fft(N2, dx)
+initFFTGreen = ForwardBiCGSTABFFT.initFFTGreen(x1fft, x2fft)
 X1fft = ForwardBiCGSTABFFT.X1fft(initFFTGreen)
 X2fft = ForwardBiCGSTABFFT.X2fft(initFFTGreen)
 
@@ -133,6 +134,7 @@ Hdata2D = ForwardBiCGSTABFFTwE.Hdata2D(EMsctCircle)
 
 ForwardBiCGSTABFFTwE.displayEdata(Edata2D, rcvr_phi)
 ForwardBiCGSTABFFTwE.displayHdata(Hdata2D, rcvr_phi)
+
 plotEMcontrast = ForwardBiCGSTABFFTwE.plotEMcontrast(X1, X2, CHI_eps, CHI_mu)
 
 IncEMwave = ForwardBiCGSTABFFTwE.IncEMwave(gamma_0, xS, dx, X1, X2)
@@ -140,7 +142,8 @@ E_inc = ForwardBiCGSTABFFTwE.E_inc(IncEMwave)
 ZH_inc = ForwardBiCGSTABFFTwE.ZH_inc(IncEMwave)
 
 itmax = ForwardBiCGSTABFFT.itmax()
-b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc)
+N = ForwardBiCGSTABFFTwE.N(CHI_eps)
+b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc, N)
 # print(np.real(b)[19871] - 9.533884691144613e-05)
 # print(np.real(b)[19872] - 3.541293300961272e-05)
 
@@ -150,64 +153,67 @@ b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc)
 # print(np.sum(np.real(E_inc[1])) - (-0.019832576190409))
 # print(np.sum(np.real(E_inc[2])) - (-1.301042606982605e-18))
 
-ITERBiCGSTABwE = ForwardBiCGSTABFFTwE.ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx)
-ForwardBiCGSTABFFTwE.plotContrastSource(ITERBiCGSTABwE, CHI_eps, X1, X2)
+
+ITERBiCGSTABwE = ForwardBiCGSTABFFTwE.ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N)
+
+
+ForwardBiCGSTABFFTwE.plotContrastSourcewE(ITERBiCGSTABwE, X1, X2)
 E_sct = ForwardBiCGSTABFFTwE.E_sct(ITERBiCGSTABwE, FFTG, gamma_0, dx, N1, N2)
 
 
-def plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2):
-    # phi = 0:.01:2 * pi;
-    phi = np.arange(0, 2.0*np.pi, 0.01)
+# def plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2):
+#     # phi = 0:.01:2 * pi;
+#     phi = np.arange(0, 2.0*np.pi, 0.01)
 
-    # E = cell(1, 2);
-    # for n = 1:2
-    #     E{n} = E_inc{n} + E_sct{n};
-    # end
+#     # E = cell(1, 2);
+#     # for n = 1:2
+#     #     E{n} = E_inc{n} + E_sct{n};
+#     # end
 
-    E = {}
-    for n in range(1, 3):
-        # E[n] = E_inc[n] + E_sct[n]
-        # E_inc[n]
-        # E_sct[n]
-        # E[n] = E_sct[n]
-        E_inc[n]
-
-
-    # set(figure, 'Units', 'centimeters', 'Position', [5, 5, 18, 12]);
-    # subplot(1, 2, 1);
-    # IMAGESC(X1, X2, abs(E{1}));
-    # title(['\fontsize{13} 2D Electric field E_1 '])
-    # hold on;
-
-    # plot(a*cos(phi), a*sin(phi), 'w');
-    # subplot(1, 2, 2);
-    # IMAGESC(X1, X2, abs(E{2}));
-    # title(['\fontsize{13} 2D Electric field E_2 '])
-    # hold on;
-    # plot(a*cos(phi), a*sin(phi), 'w');
+#     E = {}
+#     for n in range(1, 3):
+#         # E[n] = E_inc[n] + E_sct[n]
+#         # E_inc[n]
+#         # E_sct[n]
+#         # E[n] = E_sct[n]
+#         E_inc[n]
 
 
-    # # Plot wave fields in two-dimensional space
-    # fig = plt.figure(figsize=(7.09, 4.72))
-    # fig.subplots_adjust(wspace=0.3)
+#     # set(figure, 'Units', 'centimeters', 'Position', [5, 5, 18, 12]);
+#     # subplot(1, 2, 1);
+#     # IMAGESC(X1, X2, abs(E{1}));
+#     # title(['\fontsize{13} 2D Electric field E_1 '])
+#     # hold on;
 
-    # ax1 = fig.add_subplot(1, 2, 1)
-    # im1 = ax1.imshow(ITERBiCGSTABwE_1_abs, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
-    # ax1.set_xlabel('x$_2$ \u2192')
-    # ax1.set_ylabel('\u2190 x_1')
-    # ax1.set_aspect('equal', adjustable='box')
-    # fig.colorbar(im1, ax=ax1, orientation='horizontal')
-    # ax1.set_title(r'abs(w$_1^E$)', fontsize=13)
-
-    # ax2 = fig.add_subplot(1, 2, 2)
-    # im2 = ax2.imshow(abs(ITERBiCGSTABwE_2_abs), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
-    # ax2.set_xlabel('x$_2$ \u2192')
-    # ax2.set_ylabel('\u2190 x_1')
-    # ax2.set_aspect('equal', adjustable='box')
-    # fig.colorbar(im2, ax=ax2, orientation='horizontal')
-    # ax2.set_title(r'abs(w$_2^E$)', fontsize=13)
-
-    # plt.show()
+#     # plot(a*cos(phi), a*sin(phi), 'w');
+#     # subplot(1, 2, 2);
+#     # IMAGESC(X1, X2, abs(E{2}));
+#     # title(['\fontsize{13} 2D Electric field E_2 '])
+#     # hold on;
+#     # plot(a*cos(phi), a*sin(phi), 'w');
 
 
-plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2)
+#     # # Plot wave fields in two-dimensional space
+#     # fig = plt.figure(figsize=(7.09, 4.72))
+#     # fig.subplots_adjust(wspace=0.3)
+
+#     # ax1 = fig.add_subplot(1, 2, 1)
+#     # im1 = ax1.imshow(ITERBiCGSTABwE_1_abs, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+#     # ax1.set_xlabel('x$_2$ \u2192')
+#     # ax1.set_ylabel('\u2190 x_1')
+#     # ax1.set_aspect('equal', adjustable='box')
+#     # fig.colorbar(im1, ax=ax1, orientation='horizontal')
+#     # ax1.set_title(r'abs(w$_1^E$)', fontsize=13)
+
+#     # ax2 = fig.add_subplot(1, 2, 2)
+#     # im2 = ax2.imshow(abs(ITERBiCGSTABwE_2_abs), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+#     # ax2.set_xlabel('x$_2$ \u2192')
+#     # ax2.set_ylabel('\u2190 x_1')
+#     # ax2.set_aspect('equal', adjustable='box')
+#     # fig.colorbar(im2, ax=ax2, orientation='horizontal')
+#     # ax2.set_title(r'abs(w$_2^E$)', fontsize=13)
+
+#     # plt.show()
+
+
+# plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2)

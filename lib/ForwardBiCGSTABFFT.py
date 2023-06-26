@@ -26,6 +26,11 @@ def s(f):
     return 1e-16 - 1j * 2 * np.pi * f
 
 
+def gamma_0(s, c_0):
+    # Propagation Co-efficient
+    return s / c_0
+
+
 def NR():
     # Reciever Count
     return 180
@@ -56,11 +61,6 @@ def dx():
     return 2.0
 
 
-def gamma_0(s, c_0):
-    # Propagation Co-efficient
-    return s / c_0
-
-
 def a():
     # Radius Circle Cylinder
     return 40
@@ -81,8 +81,7 @@ def itmax():
 
 def rcvr_phi(NR):
     # input.rcvr_phi(1:input.NR) = (1:input.NR) * 2 * pi / input.NR;
-    test = np.transpose(np.arange(1, NR+1, 1, dtype=np.double) * 2 * np.pi / NR)
-    return test
+    return np.transpose(np.arange(1, NR+1, 1, dtype=np.double) * 2 * np.pi / NR)
 
 
 def xR(NR, rcvr_phi):
@@ -120,7 +119,7 @@ def FFTG(IntG):
     return np.fft.fftn(IntG)
 
 
-def initFFTGreen1(N1, dx):
+def x1fft(N1, dx):
     # Compute FFT of Green function
     # N1fft = 2^ceil(log2(2*input.N1));
     N1fft = (2**np.ceil(np.log2(2 * N1))).astype(int)
@@ -129,7 +128,7 @@ def initFFTGreen1(N1, dx):
     return x1fft
 
 
-def initFFTGreen2(N2, dx):
+def x2fft(N2, dx):
     # Compute FFT of Green function
     # N2fft = 2^ceil(log2(2*input.N2));
     N2fft = (2**np.ceil(np.log2(2 * N2))).astype(int)
@@ -138,8 +137,8 @@ def initFFTGreen2(N2, dx):
     return x2fft
 
 
-def initFFTGreen(initFFTGreen1, initFFTGreen2):
-    return np.meshgrid(initFFTGreen1, initFFTGreen2)
+def initFFTGreen(x1fft, x2fft):
+    return np.meshgrid(x1fft, x2fft)
 
 
 def X1fft(initFFTGreen):

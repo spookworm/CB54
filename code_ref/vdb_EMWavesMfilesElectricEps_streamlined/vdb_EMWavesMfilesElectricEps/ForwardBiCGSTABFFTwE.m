@@ -12,9 +12,9 @@ plotEMcontrast(input); % plot permittivity / permeability contrast
 %  (3) Solve integral equation for contrast source with FFT ---------------
 tic;
 [w_E] = ITERBiCGSTABwE(E_inc, input);
-
-w_E1_real = real(w_E{1});
-w_E1_imag = imag(w_E{1});
+% 
+% w_E1_real = real(w_E{1});
+% w_E1_imag = imag(w_E{1});
 
 toc;
 plotContrastSourcewE(w_E, input);
