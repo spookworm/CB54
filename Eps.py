@@ -18,11 +18,12 @@ try:
 except ImportError:
     import ForwardBiCGSTABFFTwE
 from lib import graphviz_doc
-
+import matplotlib.pyplot as plt
 from scipy.sparse.linalg import bicgstab, LinearOperator
-import numpy as np
 import time
 import sys
+
+import numpy as np
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=15)
 
@@ -57,6 +58,7 @@ def composer_call():
             ForwardBiCGSTABFFT.wavelength,
             ForwardBiCGSTABFFT.xR,
             ForwardBiCGSTABFFT.xS,
+            ForwardBiCGSTABFFTwE.Aw,
             ForwardBiCGSTABFFTwE.CHI_eps,
             ForwardBiCGSTABFFTwE.CHI_mu,
             ForwardBiCGSTABFFTwE.EMsctCircle,
@@ -65,6 +67,9 @@ def composer_call():
             ForwardBiCGSTABFFTwE.Hdata2D,
             ForwardBiCGSTABFFTwE.ITERBiCGSTABwE,
             ForwardBiCGSTABFFTwE.IncEMwave,
+            ForwardBiCGSTABFFTwE.KopE,
+            ForwardBiCGSTABFFTwE.Kop,
+            ForwardBiCGSTABFFTwE.graddiv,
             ForwardBiCGSTABFFTwE.M,
             ForwardBiCGSTABFFTwE.ZH_inc,
             ForwardBiCGSTABFFTwE.b,
@@ -73,6 +78,7 @@ def composer_call():
             ForwardBiCGSTABFFTwE.f,
             ForwardBiCGSTABFFTwE.mu_sct,
             ForwardBiCGSTABFFTwE.plotEMcontrast,
+            ForwardBiCGSTABFFTwE.vector2matrix,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
@@ -134,7 +140,6 @@ E_inc = ForwardBiCGSTABFFTwE.E_inc(IncEMwave)
 ZH_inc = ForwardBiCGSTABFFTwE.ZH_inc(IncEMwave)
 
 itmax = ForwardBiCGSTABFFT.itmax()
-
 b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc)
 # print(np.real(b)[19871] - 9.533884691144613e-05)
 # print(np.real(b)[19872] - 3.541293300961272e-05)
@@ -146,8 +151,63 @@ b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc)
 # print(np.sum(np.real(E_inc[2])) - (-1.301042606982605e-18))
 
 ITERBiCGSTABwE = ForwardBiCGSTABFFTwE.ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx)
+ForwardBiCGSTABFFTwE.plotContrastSource(ITERBiCGSTABwE, CHI_eps, X1, X2)
+E_sct = ForwardBiCGSTABFFTwE.E_sct(ITERBiCGSTABwE, FFTG, gamma_0, dx, N1, N2)
 
 
-ITERBiCGSTABwE_1_real = np.real(ITERBiCGSTABwE[0])
-ITERBiCGSTABwE_1_imag = np.imag(ITERBiCGSTABwE[0])
+def plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2):
+    # phi = 0:.01:2 * pi;
+    phi = np.arange(0, 2.0*np.pi, 0.01)
 
+    # E = cell(1, 2);
+    # for n = 1:2
+    #     E{n} = E_inc{n} + E_sct{n};
+    # end
+
+    E = {}
+    for n in range(1, 3):
+        # E[n] = E_inc[n] + E_sct[n]
+        # E_inc[n]
+        # E_sct[n]
+        # E[n] = E_sct[n]
+        E_inc[n]
+
+
+    # set(figure, 'Units', 'centimeters', 'Position', [5, 5, 18, 12]);
+    # subplot(1, 2, 1);
+    # IMAGESC(X1, X2, abs(E{1}));
+    # title(['\fontsize{13} 2D Electric field E_1 '])
+    # hold on;
+
+    # plot(a*cos(phi), a*sin(phi), 'w');
+    # subplot(1, 2, 2);
+    # IMAGESC(X1, X2, abs(E{2}));
+    # title(['\fontsize{13} 2D Electric field E_2 '])
+    # hold on;
+    # plot(a*cos(phi), a*sin(phi), 'w');
+
+
+    # # Plot wave fields in two-dimensional space
+    # fig = plt.figure(figsize=(7.09, 4.72))
+    # fig.subplots_adjust(wspace=0.3)
+
+    # ax1 = fig.add_subplot(1, 2, 1)
+    # im1 = ax1.imshow(ITERBiCGSTABwE_1_abs, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    # ax1.set_xlabel('x$_2$ \u2192')
+    # ax1.set_ylabel('\u2190 x_1')
+    # ax1.set_aspect('equal', adjustable='box')
+    # fig.colorbar(im1, ax=ax1, orientation='horizontal')
+    # ax1.set_title(r'abs(w$_1^E$)', fontsize=13)
+
+    # ax2 = fig.add_subplot(1, 2, 2)
+    # im2 = ax2.imshow(abs(ITERBiCGSTABwE_2_abs), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    # ax2.set_xlabel('x$_2$ \u2192')
+    # ax2.set_ylabel('\u2190 x_1')
+    # ax2.set_aspect('equal', adjustable='box')
+    # fig.colorbar(im2, ax=ax2, orientation='horizontal')
+    # ax2.set_title(r'abs(w$_2^E$)', fontsize=13)
+
+    # plt.show()
+
+
+plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2)

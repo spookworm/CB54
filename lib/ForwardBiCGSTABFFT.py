@@ -372,21 +372,14 @@ def vector2matrix(w, N1, N2):
     return w
 
 
-def Kop(v, FFTG):
-    # Make fft grid
-    Cv = np.zeros(FFTG.shape, dtype=np.complex128)
-    N1, N2 = v.shape
-
-    # Cv(1:N1, 1:N2) = v;
-    Cv[0:N1, 0:N2] = v
-
-    # Cv = fftn(Cv);
+def Kop(w_E, FFTG):
+    # Make FFT grid
+    Cv = np.zeros(FFTG.shape, dtype=np.complex_)
+    N1, N2 = w_E.shape
+    Cv[0:N1, 0:N2] = w_E.copy()
+    # Convolution by FFT
     Cv = np.fft.fftn(Cv)
-
-    # Convolution by fft
     Cv = np.fft.ifftn(FFTG * Cv)
-
-    # Kv = Cv(1:N1, 1:N2);
     Kv = Cv[0:N1, 0:N2]
     return Kv
 

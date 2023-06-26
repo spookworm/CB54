@@ -190,6 +190,7 @@ def IncEMwave(gamma_0, xS, dx, X1, X2):
     dG11 = (2.0 * X1 * X1 - 1.0) * (-dG / DIS) + gamma_0**2 * X1 * X1 * G
     dG21 = 2.0 * X2 * X1 * (-dG / DIS) + gamma_0**2 * X2 * X1 * G
 
+    # this is sub-optimal, change to an array
     E_inc = {}
     E_inc[1] = -(-gamma_0**2 * G + dG11)
     E_inc[2] = -dG21
@@ -215,8 +216,8 @@ def b(CHI_eps, E_inc):
     # Known 1D vector right-hand side
     N = CHI_eps.flatten().shape[0]
     b = np.zeros(2*N, dtype=np.complex_)
-    b1 = CHI_eps[:].T.flatten() * E_inc[1].flatten()
-    b2 = CHI_eps[:].T.flatten() * E_inc[2].flatten()
+    b1 = CHI_eps[:].T.flatten() * E_inc[1].T.flatten()
+    b2 = CHI_eps[:].T.flatten() * E_inc[2].T.flatten()
     b = np.concatenate((b1, b2))
     return b
 
@@ -246,7 +247,7 @@ def ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma
     # Call bicgstab with the LinearOperator instance and other inputs
     # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
     Aw_operator = LinearOperator((b.flatten().shape[0], b.flatten().shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx))
-    w, exit_code = bicgstab(Aw_operator, b.flatten(), tol=Errcri, maxiter=itmax, callback=callback)
+    w, exit_code = bicgstab(Aw_operator, b, tol=Errcri, maxiter=itmax, callback=callback)
 
     # Output Matrix
     w_E = vector2matrix(w, N1, N2, CHI_eps)
@@ -269,7 +270,7 @@ def Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx):
     # [Kw_E] = KopE(w_E, input);
     Kw_E = KopE(w_E, FFTG, gamma_0, dx, N1, N2)
 
-    y = []
+    y = np.zeros(2*N, dtype=np.complex_)
     # y(1:N, 1) = w_E{1}(:) - CHI_eps(:) .* Kw_E{1}(:)
     y[0:N] = w_E[0].flatten() - CHI_eps.flatten() * Kw_E[0].flatten()
     # y(N+1:2*N, 1) = w_E{2}(:) - CHI_eps(:) .* Kw_E{2}(:)
@@ -301,11 +302,11 @@ def KopE(w_E, FFTG, gamma_0, dx, N1, N2):
     return KwE
 
 
-def Kop(v, FFTG):
+def Kop(w_E, FFTG):
     # Make FFT grid
     Cv = np.zeros(FFTG.shape, dtype=np.complex_)
-    N1, N2 = v.shape
-    Cv[0:N1, 0:N2] = v.copy()
+    N1, N2 = w_E.shape
+    Cv[0:N1, 0:N2] = w_E.copy()
     # Convolution by FFT
     Cv = np.fft.fftn(Cv)
     Cv = np.fft.ifftn(FFTG * Cv)
@@ -313,37 +314,72 @@ def Kop(v, FFTG):
     return Kv
 
 
-def graddiv(v, dx, N1, N2):
-    u = np.zeros_like(np.array(v), dtype=np.complex_)
-    # u{1} = zeros(size(v{1}));
-    u[0] = np.zeros(v[0].shape)
-    u[1] = np.zeros(v[1].shape)
+def graddiv(KwE, dx, N1, N2):
+    u = np.zeros_like(np.array(KwE), dtype=np.complex_)
+    # u{1} = zeros(size(KwE{1}));
+    u[0] = np.zeros(KwE[0].shape)
+    u[1] = np.zeros(KwE[1].shape)
 
     # Compute d1d1_v1, d2d2_v2
     # u{1}(2:N1 - 1, :) = v{1}(1:N1 - 2, :) - 2 * v{1}(2:N1 - 1, :) + v{1}(3:N1, :);
-    u[0][1:N1-1, :] = v[0][0:N1-2, :] - 2 * v[0][1:N1-1, :] + v[0][2:N1, :]
+    u[0][1:N1-1, :] = KwE[0][0:N1-2, :] - 2 * KwE[0][1:N1-1, :] + KwE[0][2:N1, :]
 
     # u{2}(:, 2:N2 - 1) = v{2}(:, 1:N2 - 2) - 2 * v{2}(:, 2:N2 - 1) + v{2}(:, 3:N2);
-    u[1][:, 1:N2-2] = v[1][:, 0:N2-3] - 2 * v[1][:, 1:N2-2] + v[1][:, 2:N2-1]
+    u[1][:, 1:N2-2] = KwE[1][:, 0:N2-3] - 2 * KwE[1][:, 1:N2-2] + KwE[1][:, 2:N2-1]
 
     # Replace the input vector v1 by d1_v and v2 by d2_v2
     # d1_v1
     # v{1}(2:N1 - 1, :) = (v{1}(3:N1, :) - v{1}(1:N1 - 2, :)) / 2;
-    v[0][1:N1-1, :] = (v[0][2:N1, :] - v[0][0:N1-2, :]) / 2
+    KwE[0][1:N1-1, :] = (KwE[0][2:N1, :] - KwE[0][0:N1-2, :]) / 2
     # d2_v2
     # v{2}(:, 2:N2 - 1) = (v{2}(:, 3:N2) - v{2}(:, 1:N2 - 2)) / 2;
-    v[1][:, 1:N2-2] = (v[1][:, 2:N2-1] - v[1][:, 0:N2-3]) / 2
+    KwE[1][:, 1:N2-2] = (KwE[1][:, 2:N2-1] - KwE[1][:, 0:N2-3]) / 2
 
     # Add d1_v2 = d1d2_v2 to output vector u1
     # u{1}(2:N1 - 1, :) = u{1}(2:N1 - 1, :) + (v{2}(3:N1, :) - v{2}(1:N1 - 2, :)) / 2;
-    u[0][1:N1-1, :] = u[0][1:N1-1, :] + (v[1][2:N1, :] - v[1][0:N1-2, :]) / 2.0
+    u[0][1:N1-1, :] = u[0][1:N1-1, :] + (KwE[1][2:N1, :] - KwE[1][0:N1-2, :]) / 2.0
 
     # Add d2_v1 = d2d1_v1 to output vector u2
     # u{2}(:, 2:N2 - 1) = u{2}(:, 2:N2 - 1) + (v{1}(:, 3:N2) - v{1}(:, 1:N2 - 2)) / 2;
-    u[1][:, 1:N2-1] = u[1][:, 1:N2-1] + (v[0][:, 2:N2] - v[0][:, 0:N2-2]) / 2.0
+    u[1][:, 1:N2-1] = u[1][:, 1:N2-1] + (KwE[0][:, 2:N2] - KwE[0][:, 0:N2-2]) / 2.0
 
     # divide by dx^2
     u[0] = u[0] / dx**2
     u[1] = u[1] / dx**2
     return u
 
+
+def plotContrastSource(ITERBiCGSTABwE, CHI_eps, X1, X2):
+    ITERBiCGSTABwE_1_abs = np.abs(ITERBiCGSTABwE[0])
+    ITERBiCGSTABwE_2_abs = np.abs(ITERBiCGSTABwE[1])
+
+    # Plot 2D contrast/source distribution
+    # x1 = ForwardBiCGSTABFFT.input.X1(:, 1);
+    x1 = X1[:, 0]
+    # x2 = ForwardBiCGSTABFFT.input.X2(1, :);
+    x2 = X2[0, :]
+
+    fig = plt.figure(figsize=(7.09, 4.72))
+    fig.subplots_adjust(wspace=0.3)
+
+    ax1 = fig.add_subplot(1, 2, 1)
+    im1 = ax1.imshow(ITERBiCGSTABwE_1_abs, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    ax1.set_xlabel('x$_2$ \u2192')
+    ax1.set_ylabel('\u2190 x_1')
+    ax1.set_aspect('equal', adjustable='box')
+    fig.colorbar(im1, ax=ax1, orientation='horizontal')
+    ax1.set_title(r'abs(w$_1^E$)', fontsize=13)
+
+    ax2 = fig.add_subplot(1, 2, 2)
+    im2 = ax2.imshow(abs(ITERBiCGSTABwE_2_abs), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    ax2.set_xlabel('x$_2$ \u2192')
+    ax2.set_ylabel('\u2190 x_1')
+    ax2.set_aspect('equal', adjustable='box')
+    fig.colorbar(im2, ax=ax2, orientation='horizontal')
+    ax2.set_title(r'abs(w$_2^E$)', fontsize=13)
+
+    plt.show()
+
+
+def E_sct(w_E, FFTG, gamma_0, dx, N1, N2):
+    return KopE(w_E, FFTG, gamma_0, dx, N1, N2)

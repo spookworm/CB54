@@ -1,7 +1,5 @@
 function [Kv] = Kop(v, FFTG)
-
 Cv = zeros(size(FFTG)); % make fft grid
-
 [N1, N2] = size(v);
 Cv(1:N1, 1:N2) = v;
 

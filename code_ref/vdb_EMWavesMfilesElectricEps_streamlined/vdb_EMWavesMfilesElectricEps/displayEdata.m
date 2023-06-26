@@ -10,10 +10,8 @@ set(figure, 'Units', 'centimeters', 'Position', [5, 5, 18, 7]);
 angle = input.rcvr_phi * 180 / pi;
 if exist(fullfile(cd, 'EDATA2D.mat'), 'file')
     plot(angle, abs(Edata), '--r', angle, abs(Edata2D), 'b')
-    legend('Integral-equation method', ...
-        'Bessel-function method', 'Location', 'Best');
-    text(50, 0.8*max(abs(Edata)), ...
-        ['Error(E^{sct}) = ', E_error, '  '], 'EdgeColor', 'red', 'Fontsize', 11);
+    legend('Integral-equation method', 'Bessel-function method', 'Location', 'Best');
+    text(50, 0.8*max(abs(Edata)), ['Error(E^{sct}) = ', E_error, '  '], 'EdgeColor', 'red', 'Fontsize', 11);
 else
     plot(angle, abs(Edata), 'b')
     legend('Bessel-function method', 'Location', 'Best');
