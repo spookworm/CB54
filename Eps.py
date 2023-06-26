@@ -3,12 +3,7 @@ Time factor = exp(-iwt)
 Spatial units is in m
 Source wavelet M Z_0 / gamma_0  = 1   (Z_0 M = gamma_0)
 """
-
 from IPython import get_ipython
-# Clear workspace
-get_ipython().run_line_magic('clear', '-sf')
-get_ipython().run_line_magic('reset', '-sf')
-
 try:
     from lib import ForwardBiCGSTABFFT
 except ImportError:
@@ -18,14 +13,14 @@ try:
 except ImportError:
     import ForwardBiCGSTABFFTwE
 from lib import graphviz_doc
-import matplotlib.pyplot as plt
-from scipy.sparse.linalg import bicgstab, LinearOperator
-import time
-import sys
-
 import numpy as np
+import sys
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=15)
+
+# Clear workspace
+get_ipython().run_line_magic('clear', '-sf')
+get_ipython().run_line_magic('reset', '-sf')
 
 
 def composer_call():
@@ -47,6 +42,8 @@ def composer_call():
             ForwardBiCGSTABFFT.X2fft,
             ForwardBiCGSTABFFT.a,
             ForwardBiCGSTABFFT.delta,
+            ForwardBiCGSTABFFT.displayDataCSIEApproach,
+            ForwardBiCGSTABFFT.displayDataCompareApproachs,
             ForwardBiCGSTABFFT.dx,
             ForwardBiCGSTABFFT.gamma_0,
             ForwardBiCGSTABFFT.initFFTGreen,
@@ -147,7 +144,7 @@ Hdata2D = ForwardBiCGSTABFFTwE.Hdata2D(EMsctCircle)
 ForwardBiCGSTABFFTwE.displayEdata(Edata2D, rcvr_phi)
 ForwardBiCGSTABFFTwE.displayHdata(Hdata2D, rcvr_phi)
 
-plotEMcontrast = ForwardBiCGSTABFFTwE.plotEMcontrast(X1, X2, CHI_eps, CHI_mu)
+ForwardBiCGSTABFFTwE.plotEMcontrast(X1, X2, CHI_eps, CHI_mu)
 
 IncEMwave = ForwardBiCGSTABFFTwE.IncEMwave(gamma_0, xS, dx, X1, X2)
 E_inc = ForwardBiCGSTABFFTwE.E_inc(IncEMwave)
@@ -190,3 +187,8 @@ ForwardBiCGSTABFFTwE.plotEtotalwavefield(E, a, X1, X2, N1, N2, phi)
 DOPwE = ForwardBiCGSTABFFTwE.DOPwE(w_E, gamma_0, dx, xR, NR, delta, X1, X2)
 Edata = ForwardBiCGSTABFFTwE.Edata(DOPwE)
 Hdata = ForwardBiCGSTABFFTwE.Hdata(DOPwE)
+
+ForwardBiCGSTABFFT.displayDataCSIEApproach(Edata, rcvr_phi)
+ForwardBiCGSTABFFT.displayDataCSIEApproach(Hdata, rcvr_phi)
+ForwardBiCGSTABFFT.displayDataCompareApproachs(Edata2D, Edata, rcvr_phi)
+ForwardBiCGSTABFFT.displayDataCompareApproachs(Hdata2D, Hdata, rcvr_phi)
