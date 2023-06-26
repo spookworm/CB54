@@ -149,7 +149,12 @@ def X2fft(initFFTGreen):
     return initFFTGreen[1]
 
 
-def IntG(dx, gamma_0, X1fft, X2fft):
+def delta(dx):
+    # radius circle with area of dx^2
+    return (np.pi)**(-0.5) * dx
+
+
+def IntG(dx, gamma_0, X1fft, X2fft, delta):
     # Compute gam_0^2 * subdomain integrals of Green function
     DIS = np.sqrt(X1fft**2 + X2fft**2)
 
@@ -159,9 +164,6 @@ def IntG(dx, gamma_0, X1fft, X2fft):
 
     # G = 1 / (2 * pi) .* besselk(0, gamma_0*DIS);
     G = 1.0 / (2.0 * np.pi) * kv(0, gamma_0 * DIS)
-
-    # Radius circle with area of dx^2
-    delta = np.pi**(-0.5) * dx
 
     # factor = 2 * besseli(1, gamma_0*delta) / (gamma_0 * delta)
     factor = 2 * iv(1, gamma_0 * delta) / (gamma_0 * delta)

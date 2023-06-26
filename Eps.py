@@ -46,40 +46,50 @@ def composer_call():
             ForwardBiCGSTABFFT.X2,
             ForwardBiCGSTABFFT.X2fft,
             ForwardBiCGSTABFFT.a,
+            ForwardBiCGSTABFFT.delta,
             ForwardBiCGSTABFFT.dx,
             ForwardBiCGSTABFFT.gamma_0,
             ForwardBiCGSTABFFT.initFFTGreen,
-            ForwardBiCGSTABFFT.x1fft,
-            ForwardBiCGSTABFFT.x2fft,
             ForwardBiCGSTABFFT.initGrid,
             ForwardBiCGSTABFFT.itmax,
             ForwardBiCGSTABFFT.rcvr_phi,
             ForwardBiCGSTABFFT.s,
             ForwardBiCGSTABFFT.wavelength,
+            ForwardBiCGSTABFFT.x1fft,
+            ForwardBiCGSTABFFT.x2fft,
             ForwardBiCGSTABFFT.xR,
             ForwardBiCGSTABFFT.xS,
             ForwardBiCGSTABFFTwE.Aw,
             ForwardBiCGSTABFFTwE.CHI_eps,
             ForwardBiCGSTABFFTwE.CHI_mu,
+            ForwardBiCGSTABFFTwE.DOPwE,
+            ForwardBiCGSTABFFTwE.E,
             ForwardBiCGSTABFFTwE.EMsctCircle,
             ForwardBiCGSTABFFTwE.E_inc,
+            ForwardBiCGSTABFFTwE.E_sct,
+            ForwardBiCGSTABFFTwE.Edata,
             ForwardBiCGSTABFFTwE.Edata2D,
+            ForwardBiCGSTABFFTwE.Hdata,
             ForwardBiCGSTABFFTwE.Hdata2D,
-            ForwardBiCGSTABFFTwE.ITERBiCGSTABwE,
             ForwardBiCGSTABFFTwE.IncEMwave,
-            ForwardBiCGSTABFFTwE.KopE,
             ForwardBiCGSTABFFTwE.Kop,
-            ForwardBiCGSTABFFTwE.graddiv,
+            ForwardBiCGSTABFFTwE.KopE,
+            ForwardBiCGSTABFFTwE.KwE,
             ForwardBiCGSTABFFTwE.M,
-            ForwardBiCGSTABFFTwE.ZH_inc,
             ForwardBiCGSTABFFTwE.N,
+            ForwardBiCGSTABFFTwE.ZH_inc,
             ForwardBiCGSTABFFTwE.b,
             ForwardBiCGSTABFFTwE.c_0,
             ForwardBiCGSTABFFTwE.eps_sct,
             ForwardBiCGSTABFFTwE.f,
+            ForwardBiCGSTABFFTwE.graddiv,
             ForwardBiCGSTABFFTwE.mu_sct,
-            ForwardBiCGSTABFFTwE.plotEMcontrast,
+            ForwardBiCGSTABFFTwE.phi,
+            ForwardBiCGSTABFFTwE.plotContrastSourcewE,
+            ForwardBiCGSTABFFTwE.plotEtotalwavefield,
             ForwardBiCGSTABFFTwE.vector2matrix,
+            ForwardBiCGSTABFFTwE.w,
+            ForwardBiCGSTABFFTwE.w_E,
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()
@@ -111,13 +121,15 @@ initGrid = ForwardBiCGSTABFFT.initGrid(N1, N2, dx)
 X1 = ForwardBiCGSTABFFT.X1(initGrid)
 X2 = ForwardBiCGSTABFFT.X2(initGrid)
 
+delta = ForwardBiCGSTABFFT.delta(dx)
+
 x1fft = ForwardBiCGSTABFFT.x1fft(N1, dx)
 x2fft = ForwardBiCGSTABFFT.x2fft(N2, dx)
 initFFTGreen = ForwardBiCGSTABFFT.initFFTGreen(x1fft, x2fft)
 X1fft = ForwardBiCGSTABFFT.X1fft(initFFTGreen)
 X2fft = ForwardBiCGSTABFFT.X2fft(initFFTGreen)
 
-IntG = ForwardBiCGSTABFFT.IntG(dx, gamma_0, X1fft, X2fft)
+IntG = ForwardBiCGSTABFFT.IntG(dx, gamma_0, X1fft, X2fft, delta)
 FFTG = ForwardBiCGSTABFFT.FFTG(IntG)
 a = ForwardBiCGSTABFFT.a()
 R = ForwardBiCGSTABFFT.R(X1, X2)
@@ -154,66 +166,27 @@ b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc, N)
 # print(np.sum(np.real(E_inc[2])) - (-1.301042606982605e-18))
 
 
-ITERBiCGSTABwE = ForwardBiCGSTABFFTwE.ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N)
+w = ForwardBiCGSTABFFTwE.w(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N)
 
+w_E = ForwardBiCGSTABFFTwE.w_E(w, N1, N2, N)
 
-ForwardBiCGSTABFFTwE.plotContrastSourcewE(ITERBiCGSTABwE, X1, X2)
-E_sct = ForwardBiCGSTABFFTwE.E_sct(ITERBiCGSTABwE, FFTG, gamma_0, dx, N1, N2)
+ForwardBiCGSTABFFTwE.plotContrastSourcewE(w_E, X1, X2)
+E_sct = ForwardBiCGSTABFFTwE.E_sct(w_E, FFTG, gamma_0, dx, N1, N2)
 
+print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))))
+print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))))
+print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))))
+print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))))
 
-# def plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2):
-#     # phi = 0:.01:2 * pi;
-#     phi = np.arange(0, 2.0*np.pi, 0.01)
+# print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))) - (-0.001251086990038))
+# print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))) - (8.943406881272415e-05))
+# print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))) - (-8.673617379884035e-19))
+# print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))) - (2.439454888092385e-18))
 
-#     # E = cell(1, 2);
-#     # for n = 1:2
-#     #     E{n} = E_inc{n} + E_sct{n};
-#     # end
+E = ForwardBiCGSTABFFTwE.E(E_inc, E_sct)
+phi = ForwardBiCGSTABFFTwE.phi()
+ForwardBiCGSTABFFTwE.plotEtotalwavefield(E, a, X1, X2, N1, N2, phi)
 
-#     E = {}
-#     for n in range(1, 3):
-#         # E[n] = E_inc[n] + E_sct[n]
-#         # E_inc[n]
-#         # E_sct[n]
-#         # E[n] = E_sct[n]
-#         E_inc[n]
-
-
-#     # set(figure, 'Units', 'centimeters', 'Position', [5, 5, 18, 12]);
-#     # subplot(1, 2, 1);
-#     # IMAGESC(X1, X2, abs(E{1}));
-#     # title(['\fontsize{13} 2D Electric field E_1 '])
-#     # hold on;
-
-#     # plot(a*cos(phi), a*sin(phi), 'w');
-#     # subplot(1, 2, 2);
-#     # IMAGESC(X1, X2, abs(E{2}));
-#     # title(['\fontsize{13} 2D Electric field E_2 '])
-#     # hold on;
-#     # plot(a*cos(phi), a*sin(phi), 'w');
-
-
-#     # # Plot wave fields in two-dimensional space
-#     # fig = plt.figure(figsize=(7.09, 4.72))
-#     # fig.subplots_adjust(wspace=0.3)
-
-#     # ax1 = fig.add_subplot(1, 2, 1)
-#     # im1 = ax1.imshow(ITERBiCGSTABwE_1_abs, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
-#     # ax1.set_xlabel('x$_2$ \u2192')
-#     # ax1.set_ylabel('\u2190 x_1')
-#     # ax1.set_aspect('equal', adjustable='box')
-#     # fig.colorbar(im1, ax=ax1, orientation='horizontal')
-#     # ax1.set_title(r'abs(w$_1^E$)', fontsize=13)
-
-#     # ax2 = fig.add_subplot(1, 2, 2)
-#     # im2 = ax2.imshow(abs(ITERBiCGSTABwE_2_abs), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
-#     # ax2.set_xlabel('x$_2$ \u2192')
-#     # ax2.set_ylabel('\u2190 x_1')
-#     # ax2.set_aspect('equal', adjustable='box')
-#     # fig.colorbar(im2, ax=ax2, orientation='horizontal')
-#     # ax2.set_title(r'abs(w$_2^E$)', fontsize=13)
-
-#     # plt.show()
-
-
-# plotEtotalwavefield(E_inc, E_sct, a, X1, X2, N1, N2)
+DOPwE = ForwardBiCGSTABFFTwE.DOPwE(w_E, gamma_0, dx, xR, NR, delta, X1, X2)
+Edata = ForwardBiCGSTABFFTwE.Edata(DOPwE)
+Hdata = ForwardBiCGSTABFFTwE.Hdata(DOPwE)

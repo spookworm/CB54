@@ -109,12 +109,9 @@ def EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a):
     return Edata2D, Hdata2D
 
 
-def IncEMwave(gamma_0, xS, dx, X1, X2):
+def IncEMwave(gamma_0, xS, delta, X1, X2):
     # Compute Incident field
-
     # incident wave from electric dipole in negative x_1
-    # radius circle with area of dx^2
-    delta = (np.pi)**(-0.5) * dx
     factor = 2.0 * iv(1, gamma_0 * delta) / (gamma_0 * delta)
 
     X1 = X1 - xS[0]
@@ -151,7 +148,7 @@ def ZH_inc(IncEMwave):
 
 
 def E_sct(w_E, FFTG, gamma_0, dx, N1, N2):
-    return KopE(w_E, FFTG, gamma_0, dx, N1, N2)
+    return KwE(w_E, FFTG, gamma_0, dx, N1, N2)
 
 
 def N(CHI_eps):
@@ -161,13 +158,14 @@ def N(CHI_eps):
 def b(CHI_eps, E_inc, N):
     # Known 1D vector right-hand side
     b = np.zeros(2*N, dtype=np.complex_)
-    b1 = CHI_eps[:].T.flatten() * E_inc[1].T.flatten()
-    b2 = CHI_eps[:].T.flatten() * E_inc[2].T.flatten()
-    b = np.concatenate((b1, b2))
+    # b(1:N, 1) = input.CHI_eps(:) .* E_inc{1}(:);
+    b[0:N] = (CHI_eps * E_inc[1]).reshape(-1)
+    # b(N+1:2*N, 1) = input.CHI_eps(:) .* E_inc{2}(:);
+    b[N:2*N] = (CHI_eps * E_inc[2]).reshape(-1)
     return b
 
 
-def ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N):
+def w(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N):
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
 
     def callback(xk):
@@ -191,18 +189,20 @@ def ITERBiCGSTABwE(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma
 
     # Call bicgstab with the LinearOperator instance and other inputs
     # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
-    Aw_operator = LinearOperator((b.flatten().shape[0], b.flatten().shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx, N))
+    Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx, N))
     w, exit_code = bicgstab(Aw_operator, b, tol=Errcri, maxiter=itmax, callback=callback)
-
-    # Output Matrix
-    w_E = vector2matrix(w, N1, N2, N)
 
     # Display the convergence information
     print("Convergence information:", exit_code)
     print(exit_code)
     print("Iteration:", callback.iter_count)
     print("time_total", callback.time_total)
-    return w_E
+    return w
+
+
+def w_E(w, N1, N2, N):
+    # Output Matrix
+    return vector2matrix(w, N1, N2, N)
 
 
 def Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx, N):
@@ -211,7 +211,7 @@ def Aw(w, N1, N2, FFTG, CHI_eps, gamma_0, dx, N):
     w_E = vector2matrix(w, N1, N2, N)
 
     # [Kw_E] = KopE(w_E, input);
-    Kw_E = KopE(w_E, FFTG, gamma_0, dx, N1, N2)
+    Kw_E = KwE(w_E, FFTG, gamma_0, dx, N1, N2)
 
     y = np.zeros(2*N, dtype=np.complex_)
     # y(1:N, 1) = w_E{1}(:) - CHI_eps(:) .* Kw_E{1}(:)
@@ -234,8 +234,11 @@ def vector2matrix(w, N1, N2, N):
     return w_E
 
 
+def KwE(w_E, FFTG, gamma_0, dx, N1, N2):
+    return KopE(w_E, FFTG, gamma_0, dx, N1, N2)
+
+
 def KopE(w_E, FFTG, gamma_0, dx, N1, N2):
-    # print("HERE KopE")
     KwE = {}
     for n in range(1, 3):
         # KwE{n} = Kop(wE{n}, input.FFTG);
@@ -247,7 +250,6 @@ def KopE(w_E, FFTG, gamma_0, dx, N1, N2):
     for n in range(1, 3):
         # KwE{n} = KwE{n} - dummy{n} / input.gamma_0^2;
         KwE[n] = KwE[n] - dummy[n] / gamma_0**2
-    # print("THERE KopE")
     return KwE
 
 
@@ -302,18 +304,70 @@ def graddiv(KwE, dx, N1, N2):
     return u
 
 
-def plotContrastSourcewE(ITERBiCGSTABwE, X1, X2):
+def E(E_inc, E_sct):
+    E = {}
+    for n in range(1, 3):
+        E[n] = E_inc[n] + E_sct[n]
+    return E
+
+
+def phi():
+    # phi = 0:.01:2 * pi;
+    return np.arange(0, 2.0*np.pi, 0.01)
+
+
+def DOPwE(w_E, gamma_0, dx, xR, NR, delta, X1, X2):
+    Edata = np.zeros((NR), dtype=np.complex_)
+    Hdata = np.zeros((NR), dtype=np.complex_)
+
+    # Weak Form
+    factor = 2 * iv(1, gamma_0 * delta) / (gamma_0 * delta)
+
+    for p in range(1, NR+1):
+        X1 = xR[0, p-1] - X1
+        X2 = xR[1, p-1] - X2
+
+        DIS = np.sqrt(X1**2 + X2**2)
+        X1 = X1 / DIS
+        X2 = X2 / DIS
+
+        G = factor * 1.0 / (2.0 * np.pi) * kv(0, gamma_0 * DIS)
+        dG = -factor * gamma_0 * 1.0 / (2.0 * np.pi) * kv(1, gamma_0 * DIS)
+        d1_G = X1 * dG
+        d2_G = X2 * dG
+
+        dG11 = (2.0 * X1 * X1 - 1.0) * (-dG / DIS) + gamma_0**2 * X1 * X1 * G
+        dG22 = (2.0 * X2 * X2 - 1.0) * (-dG / DIS) + gamma_0**2 * X2 * X2 * G
+        dG21 = 2.0 * X2 * X1 * (-dG / DIS) + gamma_0**2 * X2 * X1 * G
+
+        # E1rfl = dx^2 * sum((gam0^2 * G(:) - dG11(:)).*w_E{1}(:) - dG21(:).*w_E{2}(:));
+        E1rfl = dx**2 * np.sum(gamma_0**2 * G.flatten() - dG11.flatten() * w_E[1].flatten() - dG21.flatten() * w_E[2].flatten())
+        E2rfl = dx**2 * np.sum(-dG21.flatten() * w_E[1].flatten() + (gamma_0**2 * G.flatten() - dG22.flatten()) * w_E[2].flatten())
+        ZH3rfl = gamma_0 * dx**2 * np.sum(d2_G.flatten() * w_E[1].flatten() - d1_G.flatten() * w_E[2].flatten())
+
+        Edata[p-1] = np.sqrt(np.abs(E1rfl)**2 + np.abs(E2rfl)**2)
+        Hdata[p-1] = np.abs(ZH3rfl)
+    return Edata, Hdata
+
+
+def Edata(DOPwE):
+    return DOPwE[0]
+
+
+def Hdata(DOPwE):
+    return DOPwE[1]
+
+
+def plotContrastSourcewE(w_E, X1, X2):
     # Plot 2D contrast/source distribution
-    # x1 = ForwardBiCGSTABFFT.input.X1(:, 1);
     x1 = X1[:, 0]
-    # x2 = ForwardBiCGSTABFFT.input.X2(1, :);
     x2 = X2[0, :]
 
     fig = plt.figure(figsize=(7.09, 4.72))
     fig.subplots_adjust(wspace=0.3)
 
     ax1 = fig.add_subplot(1, 2, 1)
-    im1 = ax1.imshow(np.abs(ITERBiCGSTABwE[1]), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    im1 = ax1.imshow(np.abs(w_E[1]), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
     ax1.set_xlabel('x$_2$ \u2192')
     ax1.set_ylabel('\u2190 x_1')
     ax1.set_aspect('equal', adjustable='box')
@@ -321,7 +375,7 @@ def plotContrastSourcewE(ITERBiCGSTABwE, X1, X2):
     ax1.set_title(r'abs(w$_1^E$)', fontsize=13)
 
     ax2 = fig.add_subplot(1, 2, 2)
-    im2 = ax2.imshow(np.abs(ITERBiCGSTABwE[2]), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    im2 = ax2.imshow(np.abs(w_E[2]), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
     ax2.set_xlabel('x$_2$ \u2192')
     ax2.set_ylabel('\u2190 x_1')
     ax2.set_aspect('equal', adjustable='box')
@@ -384,5 +438,26 @@ def plotEMcontrast(X1, X2, CHI_eps, CHI_mu):
     ax2.set_aspect('equal', adjustable='box')
     fig.colorbar(im2, ax=ax2, orientation='horizontal')
     ax2.set_title(r'$\chi^\mu =$1 - $\mu_{sct} / \mu_0$', fontsize=13)
+
+    plt.show()
+
+
+def plotEtotalwavefield(E, a, X1, X2, N1, N2, phi):
+    # Plot wave fields in two-dimensional space
+    fig, axs = plt.subplots(1, 2, figsize=(18, 12))
+
+    im1 = axs[0].imshow(abs(E[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet')
+    axs[0].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[0].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[0].set_title('2D Electric field E1', fontsize=13)
+    fig.colorbar(im1, ax=axs[0], orientation='horizontal')
+    axs[0].plot(a*np.cos(phi), a*np.sin(phi), 'w')
+
+    im2 = axs[1].imshow(abs(E[2]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet')
+    axs[1].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[1].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[1].set_title('2D Electric field E2', fontsize=13)
+    fig.colorbar(im2, ax=axs[1], orientation='horizontal')
+    axs[1].plot(a*np.cos(phi), a*np.sin(phi), 'w')
 
     plt.show()
