@@ -5,7 +5,13 @@ Errcri = input.Errcri;
 [N, ~] = size(input.CHI_eps(:));
 b(1:N, 1) = input.CHI_eps(:) .* E_inc{1}(:);
 b(N+1:2*N, 1) = input.CHI_eps(:) .* E_inc{2}(:);
-w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax); % call BICGSTAB
+% w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax); % call BICGSTAB
+[w, flag, relres, iter, resvec] = bicgstab(@(w) Aw(w, input), b, Errcri, itmax); % call BICGSTAB
+display(flag)
+display(relres)
+display(iter)
+display(resvec)
+
 [w_E] = vector2matrix(w, input); % output matrices
 end %----------------------------------------------------------------------
 

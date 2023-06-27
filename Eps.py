@@ -23,80 +23,78 @@ get_ipython().run_line_magic('clear', '-sf')
 get_ipython().run_line_magic('reset', '-sf')
 
 
-def composer_call():
-    from fn_graph import Composer
-    composer_1 = (
-        Composer()
-        .update(
-            # list of custom functions goes here
-            ForwardBiCGSTABFFT.Errcri,
-            ForwardBiCGSTABFFT.FFTG,
-            ForwardBiCGSTABFFT.IntG,
-            ForwardBiCGSTABFFT.N1,
-            ForwardBiCGSTABFFT.N2,
-            ForwardBiCGSTABFFT.NR,
-            ForwardBiCGSTABFFT.R,
-            ForwardBiCGSTABFFT.X1,
-            ForwardBiCGSTABFFT.X1fft,
-            ForwardBiCGSTABFFT.X2,
-            ForwardBiCGSTABFFT.X2fft,
-            ForwardBiCGSTABFFT.a,
-            ForwardBiCGSTABFFT.delta,
-            ForwardBiCGSTABFFT.displayDataCSIEApproach,
-            ForwardBiCGSTABFFT.displayDataCompareApproachs,
-            ForwardBiCGSTABFFT.dx,
-            ForwardBiCGSTABFFT.gamma_0,
-            ForwardBiCGSTABFFT.initFFTGreen,
-            ForwardBiCGSTABFFT.initGrid,
-            ForwardBiCGSTABFFT.itmax,
-            ForwardBiCGSTABFFT.rcvr_phi,
-            ForwardBiCGSTABFFT.s,
-            ForwardBiCGSTABFFT.wavelength,
-            ForwardBiCGSTABFFT.x1fft,
-            ForwardBiCGSTABFFT.x2fft,
-            ForwardBiCGSTABFFT.xR,
-            ForwardBiCGSTABFFT.xS,
-            ForwardBiCGSTABFFTwE.Aw,
-            ForwardBiCGSTABFFTwE.CHI_eps,
-            ForwardBiCGSTABFFTwE.CHI_mu,
-            ForwardBiCGSTABFFTwE.DOPwE,
-            ForwardBiCGSTABFFTwE.E,
-            ForwardBiCGSTABFFTwE.EMsctCircle,
-            ForwardBiCGSTABFFTwE.E_inc,
-            ForwardBiCGSTABFFTwE.E_sct,
-            ForwardBiCGSTABFFTwE.Edata,
-            ForwardBiCGSTABFFTwE.Edata2D,
-            ForwardBiCGSTABFFTwE.Hdata,
-            ForwardBiCGSTABFFTwE.Hdata2D,
-            ForwardBiCGSTABFFTwE.IncEMwave,
-            ForwardBiCGSTABFFTwE.Kop,
-            ForwardBiCGSTABFFTwE.KopE,
-            ForwardBiCGSTABFFTwE.KwE,
-            ForwardBiCGSTABFFTwE.M,
-            ForwardBiCGSTABFFTwE.N,
-            ForwardBiCGSTABFFTwE.ZH_inc,
-            ForwardBiCGSTABFFTwE.b,
-            ForwardBiCGSTABFFTwE.c_0,
-            ForwardBiCGSTABFFTwE.eps_sct,
-            ForwardBiCGSTABFFTwE.f,
-            ForwardBiCGSTABFFTwE.graddiv,
-            ForwardBiCGSTABFFTwE.mu_sct,
-            ForwardBiCGSTABFFTwE.phi,
-            ForwardBiCGSTABFFTwE.plotContrastSourcewE,
-            ForwardBiCGSTABFFTwE.plotEtotalwavefield,
-            ForwardBiCGSTABFFTwE.vector2matrix,
-            ForwardBiCGSTABFFTwE.w,
-            ForwardBiCGSTABFFTwE.w_E,
-        )
-        # .update_parameters(input_length_side=input_length_x_side)
-        # .cache()
-    )
-    return composer_1
+# def composer_call():
+#     from fn_graph import Composer
+#     composer_1 = (
+#         Composer()
+#         .update(
+#             # list of custom functions goes here
+#             ForwardBiCGSTABFFT.Errcri,
+#             ForwardBiCGSTABFFT.FFTG,
+#             ForwardBiCGSTABFFT.IntG,
+#             ForwardBiCGSTABFFT.N1,
+#             ForwardBiCGSTABFFT.N2,
+#             ForwardBiCGSTABFFT.NR,
+#             ForwardBiCGSTABFFT.R,
+#             ForwardBiCGSTABFFT.X1,
+#             ForwardBiCGSTABFFT.X1fft,
+#             ForwardBiCGSTABFFT.X2,
+#             ForwardBiCGSTABFFT.X2fft,
+#             ForwardBiCGSTABFFT.a,
+#             ForwardBiCGSTABFFT.delta,
+#             ForwardBiCGSTABFFT.displayDataCSIEApproach,
+#             ForwardBiCGSTABFFT.displayDataCompareApproachs,
+#             ForwardBiCGSTABFFT.dx,
+#             ForwardBiCGSTABFFT.gamma_0,
+#             ForwardBiCGSTABFFT.initFFTGreen,
+#             ForwardBiCGSTABFFT.initGrid,
+#             ForwardBiCGSTABFFT.itmax,
+#             ForwardBiCGSTABFFT.rcvr_phi,
+#             ForwardBiCGSTABFFT.s,
+#             ForwardBiCGSTABFFT.wavelength,
+#             ForwardBiCGSTABFFT.x1fft,
+#             ForwardBiCGSTABFFT.x2fft,
+#             ForwardBiCGSTABFFT.xR,
+#             ForwardBiCGSTABFFT.xS,
+#             ForwardBiCGSTABFFTwE.Aw,
+#             ForwardBiCGSTABFFTwE.CHI_eps,
+#             ForwardBiCGSTABFFTwE.CHI_mu,
+#             ForwardBiCGSTABFFTwE.DOPwE,
+#             ForwardBiCGSTABFFTwE.E,
+#             ForwardBiCGSTABFFTwE.EMsctCircle,
+#             ForwardBiCGSTABFFTwE.E_inc,
+#             ForwardBiCGSTABFFTwE.E_sct,
+#             ForwardBiCGSTABFFTwE.Edata,
+#             ForwardBiCGSTABFFTwE.Edata2D,
+#             ForwardBiCGSTABFFTwE.Hdata,
+#             ForwardBiCGSTABFFTwE.Hdata2D,
+#             ForwardBiCGSTABFFTwE.IncEMwave,
+#             ForwardBiCGSTABFFTwE.Kop,
+#             ForwardBiCGSTABFFTwE.KopE,
+#             ForwardBiCGSTABFFTwE.KwE,
+#             ForwardBiCGSTABFFTwE.M,
+#             ForwardBiCGSTABFFTwE.N,
+#             ForwardBiCGSTABFFTwE.ZH_inc,
+#             ForwardBiCGSTABFFTwE.b,
+#             ForwardBiCGSTABFFTwE.c_0,
+#             ForwardBiCGSTABFFTwE.eps_sct,
+#             ForwardBiCGSTABFFTwE.f,
+#             ForwardBiCGSTABFFTwE.graddiv,
+#             ForwardBiCGSTABFFTwE.mu_sct,
+#             ForwardBiCGSTABFFTwE.phi,
+#             ForwardBiCGSTABFFTwE.plotContrastSourcewE,
+#             ForwardBiCGSTABFFTwE.plotEtotalwavefield,
+#             ForwardBiCGSTABFFTwE.vector2matrix,
+#             ForwardBiCGSTABFFTwE.w,
+#             ForwardBiCGSTABFFTwE.w_E,
+#         )
+#         # .update_parameters(input_length_side=input_length_x_side)
+#         # .cache()
+#     )
+#     return composer_1
 
 
-composer = graphviz_doc.composer_render(composer_call(), '', "digraph")
-
-
+# composer = graphviz_doc.composer_render(composer_call(), '', "digraph")
 c_0 = ForwardBiCGSTABFFTwE.c_0()
 eps_sct = ForwardBiCGSTABFFTwE.eps_sct()
 mu_sct = ForwardBiCGSTABFFTwE.mu_sct()
@@ -146,49 +144,39 @@ ForwardBiCGSTABFFTwE.displayHdata(Hdata2D, rcvr_phi)
 
 ForwardBiCGSTABFFTwE.plotEMcontrast(X1, X2, CHI_eps, CHI_mu)
 
-IncEMwave = ForwardBiCGSTABFFTwE.IncEMwave(gamma_0, xS, dx, X1, X2)
+IncEMwave = ForwardBiCGSTABFFTwE.IncEMwave(gamma_0, xS, delta, X1, X2)
 E_inc = ForwardBiCGSTABFFTwE.E_inc(IncEMwave)
 ZH_inc = ForwardBiCGSTABFFTwE.ZH_inc(IncEMwave)
 
 itmax = ForwardBiCGSTABFFT.itmax()
 N = ForwardBiCGSTABFFTwE.N(CHI_eps)
 b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc, N)
-# print(np.real(b)[19871] - 9.533884691144613e-05)
-# print(np.real(b)[19872] - 3.541293300961272e-05)
-
-# print(sum(np.real(b)) - (- 0.002404557207356))
-# print(sum(np.imag(b)) - (-7.340318325805991e-04))
-
-# print(np.sum(np.real(E_inc[1])) - (-0.019832576190409))
-# print(np.sum(np.real(E_inc[2])) - (-1.301042606982605e-18))
-
-
 w = ForwardBiCGSTABFFTwE.w(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N)
-
 w_E = ForwardBiCGSTABFFTwE.w_E(w, N1, N2, N)
 
 ForwardBiCGSTABFFTwE.plotContrastSourcewE(w_E, X1, X2)
-E_sct = ForwardBiCGSTABFFTwE.E_sct(w_E, FFTG, gamma_0, dx, N1, N2)
 
-print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))))
-print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))))
-print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))))
-print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))))
+# E_sct = ForwardBiCGSTABFFTwE.E_sct(w_E, FFTG, gamma_0, dx, N1, N2)
 
-# print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))) - (-0.001251086990038))
-# print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))) - (8.943406881272415e-05))
-# print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))) - (-8.673617379884035e-19))
-# print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))) - (2.439454888092385e-18))
+# # print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))))
+# # print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))))
+# # print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))))
+# # print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))))
 
-E = ForwardBiCGSTABFFTwE.E(E_inc, E_sct)
-phi = ForwardBiCGSTABFFTwE.phi()
-ForwardBiCGSTABFFTwE.plotEtotalwavefield(E, a, X1, X2, N1, N2, phi)
+# # # print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))) - (-0.001251086990038))
+# # # print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))) - (8.943406881272415e-05))
+# # # print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))) - (-8.673617379884035e-19))
+# # # print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))) - (2.439454888092385e-18))
 
-DOPwE = ForwardBiCGSTABFFTwE.DOPwE(w_E, gamma_0, dx, xR, NR, delta, X1, X2)
-Edata = ForwardBiCGSTABFFTwE.Edata(DOPwE)
-Hdata = ForwardBiCGSTABFFTwE.Hdata(DOPwE)
+# E = ForwardBiCGSTABFFTwE.E(E_inc, E_sct)
+# phi = ForwardBiCGSTABFFTwE.phi()
+# ForwardBiCGSTABFFTwE.plotEtotalwavefield(E, a, X1, X2, N1, N2, phi)
 
-ForwardBiCGSTABFFT.displayDataCSIEApproach(Edata, rcvr_phi)
-ForwardBiCGSTABFFT.displayDataCSIEApproach(Hdata, rcvr_phi)
-ForwardBiCGSTABFFT.displayDataCompareApproachs(Edata2D, Edata, rcvr_phi)
-ForwardBiCGSTABFFT.displayDataCompareApproachs(Hdata2D, Hdata, rcvr_phi)
+# DOPwE = ForwardBiCGSTABFFTwE.DOPwE(w_E, gamma_0, dx, xR, NR, delta, X1, X2)
+# Edata = ForwardBiCGSTABFFTwE.Edata(DOPwE)
+# Hdata = ForwardBiCGSTABFFTwE.Hdata(DOPwE)
+
+# ForwardBiCGSTABFFT.displayDataCSIEApproach(Edata, rcvr_phi)
+# ForwardBiCGSTABFFT.displayDataCSIEApproach(Hdata, rcvr_phi)
+# ForwardBiCGSTABFFT.displayDataCompareApproachs(Edata2D, Edata, rcvr_phi)
+# ForwardBiCGSTABFFT.displayDataCompareApproachs(Hdata2D, Hdata, rcvr_phi)

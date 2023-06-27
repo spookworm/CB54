@@ -120,20 +120,26 @@ def IncEMwave(gamma_0, xS, delta, X1, X2):
     X1 = X1 / DIS
     X2 = X2 / DIS
 
+    # G = factor * 1 / (2 * pi) .* besselk(0, gam0*DIS);
     G = factor * 1.0 / (2.0 * np.pi) * kv(0, gamma_0 * DIS)
+    # dG = -factor * gam0 .* 1 / (2 * pi) .* besselk(1, gam0*DIS);
     dG = -factor * gamma_0 * 1.0 / (2.0 * np.pi) * kv(1, gamma_0 * DIS)
-
+    # dG11 = (2 * X1 .* X1 - 1) .* (-dG ./ DIS) + gam0^2 * X1 .* X1 .* G;
     dG11 = (2.0 * X1 * X1 - 1.0) * (-dG / DIS) + gamma_0**2 * X1 * X1 * G
+    # dG21 = 2 * X2 .* X1 .* (-dG ./ DIS) + gam0^2 * X2 .* X1 .* G;
     dG21 = 2.0 * X2 * X1 * (-dG / DIS) + gamma_0**2 * X2 * X1 * G
 
     E_inc = {}
+    # E_inc{1} = -(-gam0^2 * G + dG11);
     E_inc[1] = -(-gamma_0**2 * G + dG11)
+    # E_inc{2} = -dG21;
     E_inc[2] = -dG21
-    E_inc[3] = 0
+    # E_inc{3} = 0;
+    E_inc[3] = 0.0
 
     ZH_inc = {}
-    ZH_inc[1] = 0
-    ZH_inc[2] = 0
+    ZH_inc[1] = 0.0
+    ZH_inc[2] = 0.0
     ZH_inc[3] = gamma_0 * X2 * dG
 
     return E_inc, ZH_inc
@@ -159,9 +165,9 @@ def b(CHI_eps, E_inc, N):
     # Known 1D vector right-hand side
     b = np.zeros(2*N, dtype=np.complex_)
     # b(1:N, 1) = input.CHI_eps(:) .* E_inc{1}(:);
-    b[0:N] = (CHI_eps * E_inc[1]).reshape(-1)
+    b[0:N] = CHI_eps.T.flatten() * E_inc[1].T.flatten()
     # b(N+1:2*N, 1) = input.CHI_eps(:) .* E_inc{2}(:);
-    b[N:2*N] = (CHI_eps * E_inc[2]).reshape(-1)
+    b[N:2*N] = CHI_eps.T.flatten() * E_inc[2].T.flatten()
     return b
 
 
