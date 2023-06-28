@@ -4,14 +4,14 @@ Spatial units is in m
 Source wavelet  Q = ForwardBiCGSTABFFT.1
 """
 
-# from IPython import get_ipython
-# # Clear workspace
-# get_ipython().run_line_magic('clear', '-sf')
-# get_ipython().run_line_magic('reset', '-sf')
+from IPython import get_ipython
+# Clear workspace
+get_ipython().run_line_magic('clear', '-sf')
+get_ipython().run_line_magic('reset', '-sf')
 
-# from numba import jit
-# import numpy as np
-# import time
+from numba import jit
+import numpy as np
+import time
 import os
 try:
     from lib import ForwardBiCGSTABFFT
@@ -120,8 +120,24 @@ data_load = ForwardBiCGSTABFFT.data_load('', 'data2D.txt')
 
 u_inc = ForwardBiCGSTABFFT.u_inc(gamma_0, xS, dx, X1, X2)
 FFTG = ForwardBiCGSTABFFT.FFTG(IntG)
+
 b = ForwardBiCGSTABFFT.b(CHI, u_inc)
-ITERBiCGSTABw = ForwardBiCGSTABFFT.ITERBiCGSTABw(b, CHI, u_inc, FFTG, N1, N2, Errcri, itmax)
+
+import scipy.io
+mat_data = scipy.io.loadmat('b_sc.mat', squeeze_me=True)
+b_mat = mat_data['b']
+
+# b_mat = np.squeeze(b_matlab['b'])
+# np.array(, dtype=complex)
+print(np.min(b) - 0)
+print(np.max(b) - (-0.028314865396912 + 0.001590507181768j))
+print(np.sum(b) - (0.548405479741005 - 1.995717873431475j))
+
+are_equal = np.array_equal(b, b_mat)
+are_close = np.allclose(b, b_mat, rtol=1e-15, atol=1e-15)
+
+
+ITERBiCGSTABw = ForwardBiCGSTABFFT.ITERBiCGSTABw(b_mat, CHI, u_inc, FFTG, N1, N2, Errcri, itmax)
 # # # print("ITERBiCGSTABw: ", ITERBiCGSTABw)
 # print("ITERBiCGSTABw.shape: ", ITERBiCGSTABw.shape)
 # print("np.real(ITERBiCGSTABw).min()", np.real(ITERBiCGSTABw).min())

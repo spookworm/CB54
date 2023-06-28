@@ -103,10 +103,8 @@ wavelength = ForwardBiCGSTABFFT.wavelength(c_0, f)
 s = ForwardBiCGSTABFFT.s(f)
 gamma_0 = ForwardBiCGSTABFFT.gamma_0(s, c_0)
 
-xS = ForwardBiCGSTABFFT.xS()
 NR = ForwardBiCGSTABFFT.NR()
 rcvr_phi = ForwardBiCGSTABFFT.rcvr_phi(NR)
-xR = ForwardBiCGSTABFFT.xR(NR, rcvr_phi)
 
 N1 = ForwardBiCGSTABFFT.N1()
 N2 = ForwardBiCGSTABFFT.N2()
@@ -127,46 +125,57 @@ X2fft = ForwardBiCGSTABFFT.X2fft(initFFTGreen)
 IntG = ForwardBiCGSTABFFT.IntG(dx, gamma_0, X1fft, X2fft, delta)
 FFTG = ForwardBiCGSTABFFT.FFTG(IntG)
 a = ForwardBiCGSTABFFT.a()
-R = ForwardBiCGSTABFFT.R(X1, X2)
+# xR = ForwardBiCGSTABFFT.xR(NR, rcvr_phi)
+# M = ForwardBiCGSTABFFTwE.M()
+# EMsctCircle = ForwardBiCGSTABFFTwE.EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a)
+# Edata2D = ForwardBiCGSTABFFTwE.Edata2D(EMsctCircle)
+# Hdata2D = ForwardBiCGSTABFFTwE.Hdata2D(EMsctCircle)
+# ForwardBiCGSTABFFTwE.displayEdata(Edata2D, rcvr_phi)
+# ForwardBiCGSTABFFTwE.displayHdata(Hdata2D, rcvr_phi)
 
+R = ForwardBiCGSTABFFT.R(X1, X2)
 CHI_eps = ForwardBiCGSTABFFTwE.CHI_eps(eps_sct, a, R)
 CHI_mu = ForwardBiCGSTABFFTwE.CHI_mu(mu_sct, a, R)
 
-Errcri = ForwardBiCGSTABFFT.Errcri()
-M = ForwardBiCGSTABFFTwE.M()
+# ForwardBiCGSTABFFTwE.plotEMcontrast(X1, X2, CHI_eps, CHI_mu)
 
-EMsctCircle = ForwardBiCGSTABFFTwE.EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a)
-Edata2D = ForwardBiCGSTABFFTwE.Edata2D(EMsctCircle)
-Hdata2D = ForwardBiCGSTABFFTwE.Hdata2D(EMsctCircle)
-
-ForwardBiCGSTABFFTwE.displayEdata(Edata2D, rcvr_phi)
-ForwardBiCGSTABFFTwE.displayHdata(Hdata2D, rcvr_phi)
-
-ForwardBiCGSTABFFTwE.plotEMcontrast(X1, X2, CHI_eps, CHI_mu)
-
+xS = ForwardBiCGSTABFFT.xS()
 IncEMwave = ForwardBiCGSTABFFTwE.IncEMwave(gamma_0, xS, delta, X1, X2)
 E_inc = ForwardBiCGSTABFFTwE.E_inc(IncEMwave)
 ZH_inc = ForwardBiCGSTABFFTwE.ZH_inc(IncEMwave)
 
 itmax = ForwardBiCGSTABFFT.itmax()
 N = ForwardBiCGSTABFFTwE.N(CHI_eps)
-b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc, N)
-w = ForwardBiCGSTABFFTwE.w(b, CHI_eps, E_inc, ZH_inc, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N)
-w_E = ForwardBiCGSTABFFTwE.w_E(w, N1, N2, N)
 
-ForwardBiCGSTABFFTwE.plotContrastSourcewE(w_E, X1, X2)
+
+import scipy.io
+b_matlab = scipy.io.loadmat('b.mat')
+b = np.array(b_matlab['b'])
+
+# b = ForwardBiCGSTABFFTwE.b(CHI_eps, E_inc, N)
+# b_real = np.real(b)
+# b_imag = np.imag(b)
+
+# print("b", b[4142] - (3.944180228434370e-05 - 1.582151986875243e-05j))  # same as 4144 in excel and 4143 in matlab
+# print("\n")
+
+# Errcri = ForwardBiCGSTABFFT.Errcri()
+# w = ForwardBiCGSTABFFTwE.w(b, CHI_eps, FFTG, N1, N2, Errcri, itmax, gamma_0, dx, N)
+# w_E = ForwardBiCGSTABFFTwE.w_E(w, N1, N2, N)
+
+# print(np.sum(np.sum(np.real(w_E[1])))-(-0.001251086990038))
+# print(np.sum(np.sum(np.imag(w_E[1])))-(8.943406881272415e-05))
+# print(np.sum(np.sum(np.real(w_E[2])))-(-8.673617379884035e-19))
+# print(np.sum(np.sum(np.imag(w_E[2])))-(2.439454888092385e-18))
+
+# ForwardBiCGSTABFFTwE.plotContrastSourcewE(w_E, X1, X2)
 
 # E_sct = ForwardBiCGSTABFFTwE.E_sct(w_E, FFTG, gamma_0, dx, N1, N2)
 
-# # print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))))
-# # print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))))
-# # print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))))
-# # print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))))
-
-# # # print("sum(sum(np.real(w_E[1])))", sum(sum(np.real(w_E[1]))) - (-0.001251086990038))
-# # # print("sum(sum(np.imag(w_E[1])))", sum(sum(np.imag(w_E[1]))) - (8.943406881272415e-05))
-# # # print("sum(sum(np.real(w_E[2])))", sum(sum(np.real(w_E[2]))) - (-8.673617379884035e-19))
-# # # print("sum(sum(np.imag(w_E[2])))", sum(sum(np.imag(w_E[2]))) - (2.439454888092385e-18))
+# print("sum(sum(np.real(w_E[1])))", np.sum(np.sum(np.real(w_E[1]))) - (-0.001251086990038))
+# print("sum(sum(np.imag(w_E[1])))", np.sum(np.sum(np.imag(w_E[1]))) - (8.943406881272415e-05))
+# print("sum(sum(np.real(w_E[2])))", np.sum(np.sum(np.real(w_E[2]))) - (-8.673617379884035e-19))
+# print("sum(sum(np.imag(w_E[2])))", np.sum(np.sum(np.imag(w_E[2]))) - (2.439454888092385e-18))
 
 # E = ForwardBiCGSTABFFTwE.E(E_inc, E_sct)
 # phi = ForwardBiCGSTABFFTwE.phi()
