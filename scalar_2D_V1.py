@@ -156,6 +156,62 @@ R = np.sqrt(X1cap**2 + X2cap**2)
 CHI = contrast * (R < a)
 # CHI_diff = mat_checker(CHI, nameof(CHI))
 
+gam_sct = gamma_0 * c_0 / c_sct
+arg0 = gamma_0 * a
+args = gam_sct * a
+M = 100
+
+
+def WavefieldSctCircle(M, arg0, args, gam_sct, gamma_0, xR, xS):
+    A = np.zeros((1, M+1), dtype=np.complex_)
+    for m in range(0, M+1):
+        Ib0 = iv(m, arg0)
+        dIb0 = iv(m+1, arg0) + m / arg0 * Ib0
+        Ibs = iv(m, args)
+        dIbs = iv(m+1, args) + m / args * Ibs
+        Kb0 = kv(m, arg0)
+        dKb0 = -kv(m+1, arg0) + m / arg0 * Kb0
+        A[0, m] = -(gam_sct * dIbs * Ib0 - gamma_0 * dIb0 * Ibs) / (gam_sct * dIbs * Kb0 - gamma_0 * dKb0 * Ibs)
+    rR = np.sqrt(xR[0, :]**2 + xR[1, :]**2)
+    phiR = np.arctan2(xR[1, :], xR[0, :])
+    rS = np.sqrt(xS[0]**2 + xS[1]**2)
+    phiS = np.arctan2(xS[1], xS[0])
+    data2D = A[0, 0] * kv(0, gamma_0*rS) * kv(0, gamma_0*rR)
+    for m in range(1, M+1):
+        factor = 2 * kv(m, gamma_0*rS) * np.cos(m*(phiS - phiR))
+        data2D = data2D + A[0, m] * factor * kv(m, gamma_0*rR)
+    data2D = 1 / (2 * np.pi) * data2D
+    return data2D
+
+# data2D_diff = mat_checker(data2D, nameof(data2D))
+
+
+WavefieldSctCircle = WavefieldSctCircle(M, arg0, args, gam_sct, gamma_0, xR, xS)
+
+
+def angle(rcvr_phi):
+    return rcvr_phi * 180 / np.pi
+
+
+angle = angle(rcvr_phi)
+
+
+def displayDataBesselApproach(WavefieldSctCircle, angle):
+    # Plot data at a number of receivers
+    # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
+    plt.plot(angle.T, np.abs(WavefieldSctCircle).T, label='Bessel-function method')
+    plt.tight_layout()
+    plt.legend(loc='upper right')
+    plt.title('scattered wave data in 2D', fontsize=12)
+    plt.axis('tight')
+    plt.xlabel('observation angle in degrees')
+    plt.xlim([0, 360])
+    plt.ylabel('abs(data) $\\rightarrow$')
+    plt.show()
+
+
+displayDataBesselApproach(WavefieldSctCircle, angle)
+
 
 DISu = np.sqrt((X1cap - xS[0])**2 + (X2cap - xS[1])**2)
 # DISu_diff = mat_checker(DISu, nameof(DISu))
@@ -286,13 +342,6 @@ Dop_diff = mat_checker(Dop, nameof(Dop))
 # Dop_m = mat_loader(nameof(Dop))
 
 
-def angle(rcvr_phi):
-    return rcvr_phi * 180 / np.pi
-
-
-angle = angle(rcvr_phi)
-
-
 def displayDataCSIEApproach(Dop, angle):
     # Plot data at a number of receivers
     # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
@@ -312,7 +361,26 @@ displayDataCSIEApproach(Dop, angle)
 Dop_diff_abs = abs(Dop_diff)
 displayDataCSIEApproach(Dop_diff_abs, angle)
 
-# ForwardBiCGSTABFFT.displayDataCompareApproachs(WavefieldSctCircle, Dop, rcvr_phi)
+
+def displayDataCompareApproachs(WavefieldSctCircle, Dop, angle):
+    error = str(100.00*np.linalg.norm(Dop - WavefieldSctCircle, ord=1)/np.linalg.norm(WavefieldSctCircle, ord=1))
+
+    # Plot data at a number of receivers
+    # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
+    plt.tight_layout()
+    plt.plot(angle.T, np.abs(Dop).T, '--r', angle.T, np.abs(WavefieldSctCircle).T, 'b')
+    plt.legend(['Integral-equation method', 'Bessel-function method'], loc='upper center')
+
+    plt.text(0.5*np.max(angle), 0.8*np.max(np.abs(Dop)), 'Error$^sct$ = ' + error, color='red', ha='center', va='center')
+    plt.title('scattered wave data in 2D', fontsize=12)
+    plt.axis('tight')
+    plt.xlabel('observation angle in degrees')
+    plt.xlim([0, 360])
+    plt.ylabel('abs(data) $\\rightarrow$')
+    plt.show()
+
+
+displayDataCompareApproachs(WavefieldSctCircle, Dop, angle)
 
 # Iterate over local variables and delete the types that are None to keep workspace tidy
 local_variables = list(locals().keys())
