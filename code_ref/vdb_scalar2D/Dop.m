@@ -14,3 +14,5 @@ for p = 1:input.NR
     G = 1 / (2 * pi) .* besselk(0, gam0*DIS);
     data(1, p) = (gam0^2 * dx^2) * factor * sum(G(:).*w(:));
 end % p_loop
+
+DIS_final = DIS

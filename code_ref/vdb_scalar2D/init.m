@@ -22,6 +22,6 @@ input = initFFTGreen(input); % compute FFT of Green function
 
 input = initContrast(input); % add contrast distribution
 
-input.Errcri = 1e-3;
+input.Errcri = 1e-15;
 
 end % function

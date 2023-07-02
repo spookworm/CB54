@@ -13,6 +13,10 @@ plotEMcontrast(input); % plot permittivity / permeability contrast
 tic;
 [w_E] = ITERBiCGSTABwE(E_inc, input);
 
+w_E_0 = w_E{1};
+w_E_1 = w_E{2};
+
+
 disp(sum(sum(real(w_E{1}))))
 disp(sum(sum(imag(w_E{1}))))
 disp(sum(sum(real(w_E{2}))))

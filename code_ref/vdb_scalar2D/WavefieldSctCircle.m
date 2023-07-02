@@ -10,14 +10,6 @@ if exist(fullfile(cd, 'DATA2D.mat'), 'file')
 end
 
 % (1) Compute coefficients of series expansion ----------------------------
-
-
-
-
-
-
-
-
 arg0 = gam0 * input.a;
 args = gam_sct * input.a;
 M = 100; % increase M for more accuracy
