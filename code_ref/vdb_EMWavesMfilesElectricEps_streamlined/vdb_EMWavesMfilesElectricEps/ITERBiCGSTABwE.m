@@ -5,7 +5,9 @@ Errcri = input.Errcri;
 [N, ~] = size(input.CHI_eps(:));
 b(1:N, 1) = input.CHI_eps(:) .* E_inc{1}(:);
 b(N+1:2*N, 1) = input.CHI_eps(:) .* E_inc{2}(:);
-w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax); % call BICGSTAB
+x0 = complex(zeros(size(b)));
+
+w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax, [], [], x0); % call BICGSTAB
 % [w, flag, relres, iter, resvec] = bicgstab(@(w) Aw(w, input), b, Errcri, itmax); % call BICGSTAB
 % display(flag)
 % display(relres)
@@ -20,6 +22,7 @@ function y = Aw(w, input)
 [Kw_E] = KopE(w_E, input);
 y(1:N, 1) = w_E{1}(:) - input.CHI_eps(:) .* Kw_E{1}(:);
 y(N+1:2*N, 1) = w_E{2}(:) - input.CHI_eps(:) .* Kw_E{2}(:);
+% display(max(y))
 end %----------------------------------------------------------------------
 
 function [w_E] = vector2matrix(w, input)

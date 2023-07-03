@@ -8,6 +8,8 @@ plotEMcontrast(input); % plot permittivity / permeability contrast
 
 %  (2) Compute incident field ---------------------------------------------
 [E_inc, ~] = IncEMwave(input);
+E_inc_0 = E_inc{1};
+E_inc_1 = E_inc{2};
 
 %  (3) Solve integral equation for contrast source with FFT ---------------
 tic;
@@ -16,11 +18,10 @@ tic;
 w_E_0 = w_E{1};
 w_E_1 = w_E{2};
 
-
-disp(sum(sum(real(w_E{1}))))
-disp(sum(sum(imag(w_E{1}))))
-disp(sum(sum(real(w_E{2}))))
-disp(sum(sum(imag(w_E{2}))))
+% disp(sum(sum(real(w_E{1}))))
+% disp(sum(sum(imag(w_E{1}))))
+% disp(sum(sum(real(w_E{2}))))
+% disp(sum(sum(imag(w_E{2}))))
 
 toc;
 plotContrastSourcewE(w_E, input);

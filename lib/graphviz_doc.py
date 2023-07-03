@@ -1,3 +1,10 @@
+from fn_graph import Composer
+import importlib
+import graphviz
+import os
+from inspect import getmembers, isfunction
+
+
 def composer_render(composer_call, path_doc, filename):
     import os
     composer_call.graphviz().render(directory=path_doc, filename=filename, format='png')
@@ -5,29 +12,22 @@ def composer_render(composer_call, path_doc, filename):
     return composer_call
 
 
-def workflow_framework(path_doc, filename):
-    import graphviz
-    import os
+def composer_call(subfolder_name, module_name):
+    module = importlib.import_module(f"{subfolder_name}.{module_name}")
+    attributes = [f"{module_name}.{attr}" for attr in dir(module)]
+    composer = Composer().update(attr for attr in attributes)
+    # composer = Composer().update(ForwardBiCGSTABFFT.Aw)
+    return composer
 
-    dot = graphviz.Digraph(
-        node_attr={'shape': 'rectangle', 'color': '#FAB400', 'fillcolor': '#003A69', 'fontcolor': '#FAB400', 'style': 'filled'},
-        edge_attr={'color': '#FAB400'}
-        )
-    dot.attr(label=r'\n\Framework Workflow', labelloc="t", bgcolor='#003A69', fontcolor='#FAB400', fontsize='40', rankdir='TB')
+# import importlib
+# subfolder_name = "lib"
+# module_name = "ForwardBiCGSTABFFT"
+# module = importlib.import_module(f"{subfolder_name}.{module_name}")
+# attributes = [attr for attr in dir(module)]
+# functions_list = {attr: getattr(module, attr) for attr in attributes if callable(getattr(module, attr))}
 
-    dot.node('A')
-    dot.node('B')
-    dot.edge('A', 'B')
-
-    dot.render(directory=path_doc, filename=filename).replace('\\', '/')
-    dot.render(directory=path_doc, filename=filename, view=False, format='png')
-    os.remove(path_doc + filename + '.pdf')
-    os.remove(path_doc + filename)
 
 def workflow_doc(path_doc, filename):
-    import graphviz
-    import os
-
     dot = graphviz.Digraph(
         node_attr={'shape': 'rectangle', 'color': '#FAB400', 'fillcolor': '#003A69', 'fontcolor': '#FAB400', 'style': 'filled'},
         edge_attr={'color': '#FAB400'}
@@ -60,3 +60,19 @@ def workflow_doc(path_doc, filename):
     os.remove(path_doc + filename + '.pdf')
     os.remove(path_doc + filename)
 
+
+def workflow_framework(path_doc, filename):
+    dot = graphviz.Digraph(
+        node_attr={'shape': 'rectangle', 'color': '#FAB400', 'fillcolor': '#003A69', 'fontcolor': '#FAB400', 'style': 'filled'},
+        edge_attr={'color': '#FAB400'}
+        )
+    dot.attr(label=r'\n\Framework Workflow', labelloc="t", bgcolor='#003A69', fontcolor='#FAB400', fontsize='40', rankdir='TB')
+
+    dot.node('A')
+    dot.node('B')
+    dot.edge('A', 'B')
+
+    dot.render(directory=path_doc, filename=filename).replace('\\', '/')
+    dot.render(directory=path_doc, filename=filename, view=False, format='png')
+    os.remove(path_doc + filename + '.pdf')
+    os.remove(path_doc + filename)
