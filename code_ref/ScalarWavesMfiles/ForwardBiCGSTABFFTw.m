@@ -14,3 +14,5 @@ toc;   plotContrastSource(w,input);
 %  (4) Compute synthetic data and plot fields and data --------------------
        data = Dop(w,input);
        displayData(data,input);       
+
+save('.\w_mat.mat', "w");

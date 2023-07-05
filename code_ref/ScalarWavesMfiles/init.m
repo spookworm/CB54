@@ -24,4 +24,4 @@ disp(['wavelength = ' num2str(wavelength)]);
   
   input = initContrast(input);         % add contrast distribution
 
-  input.Errcri = 1e-3;
+  input.Errcri = 1e-13;
