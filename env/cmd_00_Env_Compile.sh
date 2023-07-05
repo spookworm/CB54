@@ -1,4 +1,4 @@
-eval "$('C:/ProgramData/anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
+eval "$('C:/Users/antho/anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
 conda activate base
 # rmdir env /q /s
 # mkdir env
