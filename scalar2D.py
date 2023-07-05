@@ -9,6 +9,7 @@ from lib import workspace_func
 from lib import solveremf2_plot
 import numpy as np
 import sys
+import os
 import time
 from scipy.io import loadmat, savemat
 
@@ -89,4 +90,5 @@ if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errc
     np.max(np.imag(var_diff))
     workspace_func.plotDiff(var_diff, X1cap, X2cap)
     print("Comaprision made...")
+    os.remove('w_P.mat')
 
