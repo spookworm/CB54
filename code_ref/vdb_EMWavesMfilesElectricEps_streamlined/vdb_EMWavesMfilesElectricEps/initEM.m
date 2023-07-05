@@ -4,7 +4,7 @@ function input = initEM()
 % Source wavelet M Z_0 / gamma_0  = 1   (Z_0 M = gamma_0)
 
 input.c_0 = 3e8; % wave speed in embedding
-input.eps_sct = 1.75; % relative permittivity of scatterer
+input.eps_sct = 20; % relative permittivity of scatterer
 input.mu_sct = 1; % relative permeability of scatterer
 
 f = 10e6; % temporal frequency

@@ -13,6 +13,7 @@ def composer_render(composer_call, path_doc, filename):
 
 
 def composer_call(subfolder_name, module_name):
+    # composer = graphviz_doc.composer_render(composer_call("lib", "ForwardBiCGSTABFFT"), '', "digraph")
     module = importlib.import_module(f"{subfolder_name}.{module_name}")
     attributes = [f"{module_name}.{attr}" for attr in dir(module)]
     composer = Composer().update(attr for attr in attributes)

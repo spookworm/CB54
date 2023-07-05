@@ -10,6 +10,7 @@ u_inc = IncWave(input);
 %  (3) Solve integral equation for contrast source with FFT ---------------
 tic;
 w = ITERBiCGSTABw(u_inc, input);
+save('C:\Users\antho\Downloads\_COPIED\CB54\w_mat.mat', "w");
 toc;
 plotContrastSource(w, input);
 

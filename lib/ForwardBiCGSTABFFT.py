@@ -46,15 +46,15 @@ def b(CHI, u_inc, N1, N2):
     return b
 
 
-def b_E(CHI_eps, EM_inc, N1, N2, N):
+def b_E(CHI_eps, E_inc, N):
     # Known 1D vector right-hand side
     b = np.zeros((2*N, 1), dtype=np.complex_, order='F')
     # b(1:N, 1) = input.CHI_eps(:) .* E_inc{1}(:);
-    # b[0:N, 0] = CHI_eps.flatten('F') * EM_inc[0, :, :].flatten('F')
-    b[0:N, 0] = CHI_eps.flatten('F') * EM_inc[0, :, :].flatten('F')
+    # b[0:N, 0] = CHI_eps.flatten('F') * E_inc[0, :, :].flatten('F')
+    b[0:N, 0] = CHI_eps.flatten('F') * E_inc[0, :, :].flatten('F')
     # b(N+1:2*N, 1) = input.CHI_eps(:) .* E_inc{2}(:);
-    # b[N, 2*N, 0] = CHI_eps.flatten('F') * EM_inc[1, :, :].flatten('F')
-    b[N:2*N, 0] = CHI_eps.flatten('F') * EM_inc[1, :, :].flatten('F')
+    # b[N, 2*N, 0] = CHI_eps.flatten('F') * E_inc[1, :, :].flatten('F')
+    b[N:2*N, 0] = CHI_eps.flatten('F') * E_inc[1, :, :].flatten('F')
     # b_diff = mat_checker(b, nameof(b))
     # # b_m = mat_loader(nameof(b))
     return b
@@ -89,13 +89,13 @@ def c_sct(input_):
 def data_load(path, filename):
     # data_load = ForwardBiCGSTABFFT.data_load('', 'data2D.txt')
     # load DATA2D data2D;
-    return np.loadtxt(path + filename).view(np.complex_)
+    return np.loadtxt(path + filename).view(np.float_)
 
 
 def data_save(path, filename, data2D):
     # ForwardBiCGSTABFFT.data_save('', 'data2D', WavefieldSctCircle)
     # save DATA2D data2D;
-    np.savetxt(path + filename + '.txt', data2D.view(np.float_))
+    np.savetxt(path + filename + '.txt', data2D.view(np.complex_))
 
 
 def delta(dx):
@@ -105,15 +105,45 @@ def delta(dx):
 
 
 def Dop(w_out, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2):
+    # Dop_diff = mat_checker(Dop, nameof(Dop))
+    # Dop_m = mat_loader(nameof(Dop))
     data = np.zeros((1, NR), dtype=np.complex_, order='F')
     G = np.zeros((N1, N2), dtype=np.complex_, order='F')
     for p in range(0, NR):
         DIS = np.sqrt((xR[0, p] - X1cap)**2 + (xR[1, p] - X2cap)**2)
         G = 1.0 / (2.0 * np.pi) * kv(0, gamma_0*DIS)
         data[0, p] = (gamma_0**2 * dx**2) * factoru * np.sum(G.flatten('F') * w_out.flatten('F'))
-    # Dop_diff = mat_checker(Dop, nameof(Dop))
-    # Dop_m = mat_loader(nameof(Dop))
     return data
+
+
+def DOPwE(w_E, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru):
+    Edata = np.zeros((1, NR), dtype=np.complex_, order='F')
+    Hdata = np.zeros((1, NR), dtype=np.complex_, order='F')
+    for p in range(1, NR+1):
+        X1_ = xR[0, p-1] - X1cap
+        X2_ = xR[1, p-1] - X1cap
+
+        DIS = np.sqrt(X1_**2 + X2_**2)
+        X1 = X1_ / DIS
+        X2 = X2_ / DIS
+
+        G = factoru * 1.0 / (2.0 * np.pi) * kv(0, gamma_0 * DIS)
+        dG = -factoru * gamma_0 * 1.0 / (2.0 * np.pi) * kv(1, gamma_0 * DIS)
+        d1_G = X1 * dG
+        d2_G = X2 * dG
+
+        dG11 = (2.0 * X1 * X1 - 1.0) * (-dG / DIS) + gamma_0**2 * X1 * X1 * G
+        dG22 = (2.0 * X2 * X2 - 1.0) * (-dG / DIS) + gamma_0**2 * X2 * X2 * G
+        dG21 = (2.0 * X2 * X1      ) * (-dG / DIS) + gamma_0**2 * X2 * X1 * G
+
+        # E1rfl = dx^2 * sum((gam0^2 * G(:) - dG11(:)).*w_E{1}(:) - dG21(:).*w_E{2}(:));
+        E1rfl = dx**2 * np.sum(gamma_0**2 * G.flatten('F') - dG11.flatten('F') * w_E[0].flatten('F') - dG21.flatten('F') * w_E[1].flatten('F'))
+        E2rfl = dx**2 * np.sum(-dG21.flatten('F') * w_E[0].flatten('F') + (gamma_0**2 * G.flatten('F') - dG22.flatten('F')) * w_E[1].flatten('F'))
+        ZH3rfl = gamma_0 * dx**2 * np.sum(d2_G.flatten('F') * w_E[0].flatten('F') - d1_G.flatten('F') * w_E[1].flatten('F'))
+
+        Edata[0, p-1] = np.sqrt(np.abs(E1rfl)**2 + np.abs(E2rfl)**2)
+        Hdata[0, p-1] = np.abs(ZH3rfl)
+    return Edata, Hdata
 
 
 def dx(input_):
@@ -125,30 +155,9 @@ def Edata2D(EMsctCircle):
     return EMsctCircle[0]
 
 
-def EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a):
-    gam_sct = gamma_0 * (eps_sct * mu_sct)**(0.5)
-    Z_sct = (mu_sct/eps_sct)**(0.5)
-
-    # Compute reflected field at receivers (data)
-    # rR = sqrt(xR(1, :).^2+xR(2, :).^2)
-    # rR = np.sqrt(xR[0, :]**2 + xR[1, :]**2)
-    rR = np.linalg.norm(xR, axis=0)
-
-    # phiR = atan2(xR(2, :), xR(1, :))
-    phiR = np.arctan2(xR[1, :], xR[0, :])
-
-    # rS = sqrt(xS(1)^2+xS(2)^2)
-    # rS = np.sqrt(xS[0]**2 + xS[1]**2)
-    rS = np.linalg.norm(xS, axis=0)
-
-    # phiS = atan2(xS(2), xS(1))
-    phiS = np.arctan2(xS[1], xS[0])
-
+def EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a, gamma_sct, Z_sct, arg0, args, rR, phiR, rS, phiS):
     # Compute coefficients of series expansion
-    arg0 = gamma_0 * a
-    args = gam_sct * a
-    A = np.zeros(M, dtype=np.complex_)
-
+    A = np.zeros((1, M+1), dtype=np.complex_)
     for m in range(1, M+1):
         Ib0 = iv(m, arg0)
         dIb0 = iv(m+1, arg0) + m / arg0 * Ib0
@@ -157,7 +166,7 @@ def EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a):
         Kb0 = kv(m, arg0)
         dKb0 = -kv(m+1, arg0) + m / arg0 * Kb0
         denominator = Z_sct * dIbs * Kb0 - dKb0 * Ibs
-        A[m-1] = -(Z_sct * dIbs * Ib0 - dIb0 * Ibs) / denominator
+        A[0, m-1] = -(Z_sct * dIbs * Ib0 - dIb0 * Ibs) / denominator
 
     Er = np.zeros(rR.shape, dtype=np.complex_)
     Ephi = np.zeros(rR.shape, dtype=np.complex_)
@@ -168,9 +177,9 @@ def EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a):
         Kb0 = kv(m, arg0)
         dKb0 = -kv(m+1, arg0) + m / arg0 * Kb0
         KbS = kv(m, gamma_0 * rS)
-        Er = Er + A[m-1] * 2 * m**2 * Kb0 * KbS * np.cos(m*(phiR - phiS))
-        Ephi = Ephi - A[m-1] * 2 * m * dKb0 * KbS * np.sin(m*(phiR - phiS))
-        ZH3 = ZH3 - A[m-1] * 2 * m * Kb0 * KbS * np.sin(m*(phiR - phiS))
+        Er = Er + A[0, m-1] * 2 * m**2 * Kb0 * KbS * np.cos(m*(phiR - phiS))
+        Ephi = Ephi - A[0, m-1] * 2 * m * dKb0 * KbS * np.sin(m*(phiR - phiS))
+        ZH3 = ZH3 - A[0, m-1] * 2 * m * Kb0 * KbS * np.sin(m*(phiR - phiS))
 
     Er = 1.0 / (2.0 * np.pi) * Er / rR / rS
     Ephi = gamma_0 * 1.0 / (2.0 * np.pi) * Ephi / rS
@@ -180,7 +189,7 @@ def EMsctCircle(c_0, eps_sct, mu_sct, gamma_0, xR, xS, M, a):
     E[1] = np.cos(phiR) * Er - np.sin(phiR) * Ephi
     E[2] = np.sin(phiR) * Er + np.cos(phiR) * Ephi
 
-    Edata2D = np.zeros((1, 180), dtype=np.complex_)
+    Edata2D = np.zeros((1, E[1].size), dtype=np.complex_)
     Edata2D = np.sqrt(np.abs(E[1])**2 + np.abs(E[2])**2)
     Hdata2D = np.abs(ZH3)
     return Edata2D, Hdata2D
@@ -260,10 +269,6 @@ def gamma_0(s, c_0):
     return s / c_0
 
 
-def gam_sct(gamma_0, c_0, c_sct):
-    return gamma_0 * c_0 / c_sct
-
-
 def Hdata2D(EMsctCircle):
     return EMsctCircle[1]
 
@@ -321,23 +326,28 @@ def IntG(dx, gamma_0, X1fftcap, X2fftcap, N1, N2, delta):
     return IntG
 
 
-def ITERBiCGSTABw(b, CHI, u_inc, FFTG, N1, N2, Errcri, itmax, x0):
+def ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
     norm_b = np.linalg.norm(b)
 
     def callback(xk):
-        # print("Current solution:", xk)
+        # Define the callback function
         # relative residual norm(b-A*x)/norm(b)
         callback.iter_count += 1
         # residual = np.linalg.norm(b - Aw_operator.dot(xk))/norm_b
-        residual = norm_b
+        # residual_norm = np.linalg.norm(b - Aw_operator(xk))
+        residual_norm = norm_b
         # residuals.append(residual)
-        if residual < Errcri:
+        # CHECK: Not sure that this time is correct
+        callback.time_total = time.time() - callback.start_time
+        # print("Current solution:", xk)
+        # print("Iteration:", callback.iter_count, "Residual norm:", residual_norm, "Time:", time.time() - callback.start_time)
+        if residual_norm < Errcri:
             return True
         else:
             return False
-        print("Iteration:", "\t", "Residual norm:", "\t", "Time:")
-        print(residual)
+        print(callback.iter_count, "\t", residual_norm, "\t", callback.time_total)
+        print(residual_norm)
 
     # Initialise iteration count
     callback.iter_count = 0
@@ -373,7 +383,6 @@ def itmax(input_):
 
 
 def Kop(w_E, FFTG):
-    # print("w_E.shape", w_E.shape)
     # Make FFT grid
     N1, N2 = w_E.shape
     Cv = np.zeros(FFTG.shape, dtype=np.complex_, order='F')
@@ -426,6 +435,14 @@ def phi():
     return np.arange(0, 2.0*np.pi, 0.01)
 
 
+def phiR(xR):
+    return np.arctan2(xR[1, :], xR[0, :])
+
+
+def phiS(xS):
+    return np.arctan2(xS[1], xS[0])
+
+
 def R(X1cap, X2cap):
     R = np.sqrt(X1cap**2 + X2cap**2)
     # R_diff = mat_checker(R, nameof(R))
@@ -438,6 +455,14 @@ def rcvr_phi(NR):
     rcvr_phi[0, 0:NR] = np.arange(1, NR+1, 1) * 2.0 * np.pi / NR
     # mat_checker(rcvr_phi, nameof(rcvr_phi))
     return rcvr_phi
+
+
+def rR(xR):
+    return np.sqrt(xR[0, :]**2 + xR[1, :]**2)
+
+
+def rS(xS):
+    return np.sqrt(xS[0]**2 + xS[1]**2)
 
 
 def s(f):
@@ -462,9 +487,9 @@ def vector2matrix(w, N1, N2):
     return w.reshape((N1, N2), order='F')
 
 
-def WavefieldSctCircle(M, arg0, args, gam_sct, gamma_0, xR, xS):
-    A = np.zeros((1, M+1), dtype=np.complex_)
+def WavefieldSctCircle(M, arg0, args, gamma_sct, gamma_0, xR, xS, rR, phiR, rS, phiS):
     # Compute coefficients of series expansion
+    A = np.zeros((1, M+1), dtype=np.complex_)
     for m in range(0, M+1):
         Ib0 = iv(m, arg0)
         dIb0 = iv(m+1, arg0) + m / arg0 * Ib0
@@ -472,17 +497,9 @@ def WavefieldSctCircle(M, arg0, args, gam_sct, gamma_0, xR, xS):
         dIbs = iv(m+1, args) + m / args * Ibs
         Kb0 = kv(m, arg0)
         dKb0 = -kv(m+1, arg0) + m / arg0 * Kb0
-        A[0, m] = -(gam_sct * dIbs * Ib0 - gamma_0 * dIb0 * Ibs) / (gam_sct * dIbs * Kb0 - gamma_0 * dKb0 * Ibs)
 
-    # Compute reflected field at receivers (data)
-    # rR = sqrt(xR(1, :).^2+xR(2, :).^2)
-    rR = np.sqrt(xR[0, :]**2 + xR[1, :]**2)
-    # phiR = atan2(xR(2, :), xR(1, :))
-    phiR = np.arctan2(xR[1, :], xR[0, :])
-    # rS = sqrt(xS(1)^2+xS(2)^2)
-    rS = np.sqrt(xS[0]**2 + xS[1]**2)
-    # phiS = atan2(xS(2), xS(1))
-    phiS = np.arctan2(xS[1], xS[0])
+        A[0, m] = -(gamma_sct * dIbs * Ib0 - gamma_0 * dIb0 * Ibs) / (gamma_sct * dIbs * Kb0 - gamma_0 * dKb0 * Ibs)
+
     # data2D = A(1) * besselk(0, gam0*rS) .* besselk(0, gam0*rR);
     data2D = A[0, 0] * kv(0, gamma_0*rS) * kv(0, gamma_0*rR)
     for m in range(1, M+1):

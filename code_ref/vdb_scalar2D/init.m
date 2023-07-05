@@ -3,11 +3,11 @@ function input = init()
 % Spatial units is in m
 % Source wavelet  Q = 1
 
-input.c_0 = 1500; % wave speed in embedding
-input.c_sct = 3000; % wave speed in scatterer
+input.c_0 = 3e8; % wave speed in embedding
+input.c_sct = input.c_0*2.75; % wave speed in scatterer
 
 
-f = 50; % temporal frequency
+f = 10e6; % temporal frequency
 wavelength = input.c_0 / f; % wavelength
 s = 1e-16 - 1i * 2 * pi * f; % LaPlace parameter
 input.gamma_0 = s / input.c_0; % propagation coefficient

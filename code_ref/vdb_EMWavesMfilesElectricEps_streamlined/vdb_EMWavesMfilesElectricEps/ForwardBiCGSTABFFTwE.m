@@ -14,6 +14,7 @@ E_inc_1 = E_inc{2};
 %  (3) Solve integral equation for contrast source with FFT ---------------
 tic;
 [w_E] = ITERBiCGSTABwE(E_inc, input);
+save('C:\Users\antho\Downloads\_COPIED\CB54\w_E_mat_final.mat', "w_E");
 
 w_E_0 = w_E{1};
 w_E_1 = w_E{2};

@@ -19,7 +19,7 @@ phiS = atan2(xS(2), xS(1));
 % (2) Compute coefficients of Bessel series expansion ---------------------
 arg0 = gam0 * input.a;
 args = gam_sct * input.a;
-M = 20;
+M = 100;
 A = zeros(1, M); % increase M for more accuracy
 for m = 1:M
     Ib0 = besseli(m, arg0);
