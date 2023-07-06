@@ -2,7 +2,7 @@ clear all; clc; close all; clear workspace
 input = init();
 
 %  (1) Compute analytically scattered field data --------------------------
-       ForwardCanonicalObjects  
+       % ForwardCanonicalObjects  
 
 %  (2) Compute incident field ---------------------------------------------      
        u_inc = IncWave(input);

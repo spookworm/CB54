@@ -4,7 +4,15 @@ itmax  = 1000;
 Errcri = input.Errcri;    
 
 b = input.CHI(:) .* u_inc(:);                           % known 1D vector
-w = bicgstab(@(w) Aw(w,input), b, Errcri, itmax);       % call BiCGSTAB
+x0 = zeros(size(b));
+
+% w = bicgstab(@(w) Aw(w,input), b, Errcri, itmax);       % call BiCGSTAB
+[w, flag, relres, iter, resvec] = bicgstab(@(w) Aw(w, input), b, Errcri, itmax, [], [], x0);
+
+% display(flag)
+display(relres) % Final
+display(iter)
+display(resvec)
 
 w = vector2matrix(w,input);                             % output matrix
 

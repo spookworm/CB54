@@ -69,7 +69,7 @@ u_inc = solver_func.u_inc(gamma_0, xS, X1cap, X2cap, factoru)
 b = solver_func.b(CHI, u_inc, N1, N2)
 x0 = solver_func.x0(b)
 
-w_out = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+w_out, exit_code = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
 solveremf2_plot.plotContrastSource(w_out, CHI, X1cap, X2cap)
 
 Dop_val = solver_func.Dop(w_out, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
