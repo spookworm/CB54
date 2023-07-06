@@ -20,7 +20,7 @@ get_ipython().run_line_magic('clear', '-sf')
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=18)
 
-start_time_wp = time.time()
+time_start_wp = time.time()
 c_0 = solver_func.c_0(1500)
 c_sct = solver_func.c_sct(c_0*2.0)
 f = solver_func.f(50.0)
@@ -69,13 +69,16 @@ u_inc = solver_func.u_inc(gamma_0, xS, X1cap, X2cap, factoru)
 b = solver_func.b(CHI, u_inc, N1, N2)
 x0 = solver_func.x0(b)
 
-w_out, exit_code = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+w_out, exit_code, residuals, time_total = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
 solveremf2_plot.plotContrastSource(w_out, CHI, X1cap, X2cap)
+
+for i, residual in enumerate(residuals):
+    print(f"Iteration {i+1}: {residual}")
 
 Dop_val = solver_func.Dop(w_out, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
 solveremf2_plot.displayDataCSIEApproach(Dop_val, angle)
 solveremf2_plot.displayDataCompareApproachs(WavefieldSctCircle, Dop_val, angle)
-time_total_wp = time.time() - start_time_wp
+time_total_wp = time.time() - time_start_wp
 workspace_func.tidy_workspace()
 
 # Validate code against MATLAB output

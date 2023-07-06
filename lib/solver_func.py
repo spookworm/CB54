@@ -173,29 +173,29 @@ def IntG(dx, gamma_0, X1fftcap, X2fftcap, N1, N2, delta):
 
 def ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
-    norm_b = np.linalg.norm(b)
-    print(norm_b)
+    # norm_b = np.linalg.norm(b)
+    # print(norm_b)
 
     def callback(xk):
         # Define the callback function
         callback.iter_count += 1
         residual_norm = np.linalg.norm(Aw_operator(xk).T - b.T)
-        callback.residuals.append(residual_norm)
+        residuals.append(residual_norm)
         # CHECK: Not sure that this time is correct
         callback.time_total = time.time() - callback.start_time
         # print("Current solution:", xk)
-        print()
-        print(residual_norm)
-        if residual_norm < Errcri:
-            return True
-        else:
-            return False
-        print("Iteration:", callback.iter_count, "Residual norm:", residual_norm, "Time:", time.time() - callback.start_time)
+        # print()
+        # print(residual_norm)
+        # if residual_norm < Errcri:
+        #     return True
+        # else:
+        #     return False
+        # print("Iteration:", callback.iter_count, "Residual norm:", residual_norm, "Time:", time.time() - callback.start_time)
 
     # Initialise iteration count
     callback.iter_count = 0
     callback.start_time = time.time()
-    callback.residuals = []
+    residuals = []
 
     # Call bicgstab with the LinearOperator instance and other inputs
     # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
@@ -209,7 +209,7 @@ def ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
     start_time = time.time()
     w, exit_code = bicgstab(Aw_operator, b, x0=x0, tol=Errcri, maxiter=itmax, callback=callback)
     time_total = time.time() - start_time
-    print("time_total", time_total)
+    # print("time_total", time_total)
 
     # Output Matrix
     # w = vector2matrix(w, N1, N2)
@@ -217,9 +217,11 @@ def ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
     # # Display the convergence information
     # print("Convergence information:", exit_code)
     # print(exit_code)
-    print("Iteration:", callback.iter_count)
+    # print("Iteration:", callback.iter_count)
     # print("time_total", callback.time_total)
-    return w, exit_code
+    # print("time_total", residuals)
+    # print("type(residuals)", type(residuals))
+    return w, exit_code, residuals, time_total
 
 
 def itmax(input_):
