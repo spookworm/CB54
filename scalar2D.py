@@ -71,49 +71,53 @@ b = solver_func.b(CHI, u_inc, N1, N2)
 
 x0 = solver_func.x0_naive(b)
 time_start_wp = time.time()
-w_out, exit_code, iterative_information = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+w_naive, exit_code_naive, iterative_info_naive = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
 time_total_wp = time.time() - time_start_wp
-solveremf2_plot.graph_resivec_ter(iterative_information)
-savemat('w_P.mat', {'w': w_out})
+solveremf2_plot.graph_resivec_iter(iterative_info_naive)
+savemat('w_P.mat', {'w': w_naive})
 
 # Display the convergence information
-print("exit_code:", exit_code)
+print("exit_code:", exit_code_naive)
 print("iter,\tresvec,\ttime_total")
-for i, row in enumerate(iterative_information):
+for i, row in enumerate(iterative_info_naive):
     print(f"{row[0]}\t{row[1]}\t{row[2]}")
     print()
 
-relres = iterative_information[-1, 1]/np.linalg.norm(b)
+relres = iterative_info_naive[-1, 1]/np.linalg.norm(b)
 print("relres", relres)
 # matlab_relres = 0.00000000000008873759176939078997
 # relres - matlab_relres
 print("time_total_wp", time_total_wp)
 
 
-x0 = w_out.flatten('F')
+x0 = w_naive.flatten('F') * np.random.rand(*w_naive.shape).flatten('F')
 time_start_model = time.time()
-w_model, exit_code, iterative_information = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+w_model, exit_code_model, iterative_info_model = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
 time_total_model = time.time() - time_start_model
-solveremf2_plot.graph_resivec_ter(iterative_information)
+solveremf2_plot.graph_resivec_iter(iterative_info_model)
 savemat('w_P.mat', {'w': w_model})
 
 
 # Display the convergence information
-print("exit_code:", exit_code)
+print("exit_code:", exit_code_model)
 print("iter,\tresvec,\ttime_total")
-for i, row in enumerate(iterative_information):
+for i, row in enumerate(iterative_info_model):
     print(f"{row[0]}\t{row[1]}\t{row[2]}")
     print()
 
-relres = iterative_information[-1, 1]/np.linalg.norm(b)
+relres = iterative_info_model[-1, 1]/np.linalg.norm(b)
 print("relres", relres)
 # matlab_relres = 0.00000000000008873759176939078997
 # relres - matlab_relres
 print("time_total_model", time_total_model)
 
 
-solveremf2_plot.plotContrastSource(w_out, CHI, X1cap, X2cap)
-Dop_val = solver_func.Dop(w_out, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
+# COMPARE THE RESVEC GRAPHS FOR THE NAIVE AND THE MODEL INFORMED ITERATIVE INFORMATION
+
+
+
+solveremf2_plot.plotContrastSource(w_model, CHI, X1cap, X2cap)
+Dop_val = solver_func.Dop(w_model, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
 solveremf2_plot.displayDataCSIEApproach(Dop_val, angle)
 solveremf2_plot.displayDataCompareApproachs(WavefieldSctCircle, Dop_val, angle)
 
@@ -121,7 +125,7 @@ workspace_func.tidy_workspace()
 
 # Validate code against MATLAB output
 if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errcri == 1e-13):
-    savemat('w_P.mat', {'w': w_out})
+    savemat('w_P.mat', {'w': w_model})
     var_name_pyt = loadmat('w_P.mat')['w']
     var_name_mat = loadmat('./code_ref/ScalarWavesMfiles/w_mat.mat')['w']
 

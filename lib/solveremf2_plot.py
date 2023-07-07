@@ -46,7 +46,7 @@ def displayDataCSIEApproach(Dop, angle):
     plt.show()
 
 
-def graph_resivec_ter(iterative_information):
+def graph_resivec_iter(iterative_information):
     """
     Plot the resvec at each iteration
     iter
