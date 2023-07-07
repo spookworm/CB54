@@ -46,6 +46,43 @@ def displayDataCSIEApproach(Dop, angle):
     plt.show()
 
 
+def graph_resivec_ter(iterative_information):
+    """
+    Plot the resvec at each iteration
+    iter
+    tresvec
+    time_total
+    """
+    x1 = iterative_information[:, 0]
+    y = iterative_information[:, 1]
+    x2 = iterative_information[:, 2]
+
+    fig, axs = plt.subplots(2, dpi=300)
+    fig.suptitle('Initial Error: ' + str(y[0]))
+    plt.subplots_adjust(top=0.85)
+
+    axs[0].plot(x1, y, 'r-o', linewidth=1, markersize=2)
+    axs[0].set_title('Residual Norm versus Iteration Count')
+    axs[0].set_xlim(np.min(x1), np.max(x1))
+
+    axs[1].plot(x2, y, 'b-o', linewidth=1, markersize=2)
+    axs[1].set_title('Residual Norm versus Computation Time')
+    axs[1].set_xlim(np.min(x2), np.max(x2))
+
+    # plt.subplots_adjust(wspace=1.5)
+    plt.subplots_adjust(hspace=0.75)
+
+    area1 = np.trapz(y, x1)
+    axs[0].text(0.5*np.max(x1), 0.8*np.max(np.abs(y)), 'Area: ' + str(area1) + ';\nIter Count: ' + str(int(np.max(x1))), color='red', ha='center', va='center', fontsize=12)
+
+    area2 = np.trapz(y, x2)
+    axs[1].text(0.5*np.max(x2), 0.8*np.max(np.abs(y)), 'Area: ' + str(area2) + ';\nTime (sec): ' + str(np.max(x2)), color='red', ha='center', va='center', fontsize=12)
+
+
+    plt.show()
+
+
+
 def plotContrastSource(ITERBiCGSTABw, CHI, X1, X2):
     # Plot 2D contrast/source distribution
     # x1 = ForwardBiCGSTABFFT.input.X1(:, 1);

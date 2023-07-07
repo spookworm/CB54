@@ -68,29 +68,13 @@ factoru = solver_func.factoru(gamma_0, delta)
 
 u_inc = solver_func.u_inc(gamma_0, xS, X1cap, X2cap, factoru)
 b = solver_func.b(CHI, u_inc, N1, N2)
+
 x0 = solver_func.x0(b)
 
 time_start_wp = time.time()
 w_out, exit_code, iterative_information = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
 time_total_wp = time.time() - time_start_wp
-
-
-# plot the resvec iteration decreasing
-import matplotlib.pyplot as plt
-# Extract the x and y values from the numpy array
-y = iterative_information[:, 1]  # Third column as the first x-axis
-x1 = iterative_information[:, 0]  # Second column as the y-axis
-x2 = iterative_information[:, 2]  # First column as the second x-axis
-
-fig, axs = plt.subplots(2)
-fig.suptitle('Vertically stacked subplots')
-axs[0].plot(x1, y, 'r-o')
-axs[1].plot(x2, y, 'b-o')
-
-area1 = np.trapz(y, x1)
-print("Area under the graph 1:", area1)
-area2 = np.trapz(y, x2)
-print("Area under the graph 2:", area2)
+solveremf2_plot.graph_resivec_ter(iterative_information)
 
 # Display the convergence information
 print("exit_code:", exit_code)
