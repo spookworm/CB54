@@ -20,9 +20,9 @@ get_ipython().run_line_magic('clear', '-sf')
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=20)
 
-c_0 = solver_func.c_0(1500)
+c_0 = solver_func.c_0(1500.0)
 c_sct = solver_func.c_sct(c_0*2.0)
-f = solver_func.f(50.0)
+f = solver_func.f(50)
 NR = solver_func.NR(180)
 Errcri = solver_func.Errcri(1e-13)
 a = solver_func.a(40)
@@ -69,12 +69,12 @@ factoru = solver_func.factoru(gamma_0, delta)
 u_inc = solver_func.u_inc(gamma_0, xS, X1cap, X2cap, factoru)
 b = solver_func.b(CHI, u_inc, N1, N2)
 
-x0 = solver_func.x0(b)
-
+x0 = solver_func.x0_naive(b)
 time_start_wp = time.time()
 w_out, exit_code, iterative_information = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
 time_total_wp = time.time() - time_start_wp
 solveremf2_plot.graph_resivec_ter(iterative_information)
+savemat('w_P.mat', {'w': w_out})
 
 # Display the convergence information
 print("exit_code:", exit_code)
@@ -88,6 +88,28 @@ print("relres", relres)
 # matlab_relres = 0.00000000000008873759176939078997
 # relres - matlab_relres
 print("time_total_wp", time_total_wp)
+
+
+x0 = w_out.flatten('F')
+time_start_model = time.time()
+w_model, exit_code, iterative_information = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+time_total_model = time.time() - time_start_model
+solveremf2_plot.graph_resivec_ter(iterative_information)
+savemat('w_P.mat', {'w': w_model})
+
+
+# Display the convergence information
+print("exit_code:", exit_code)
+print("iter,\tresvec,\ttime_total")
+for i, row in enumerate(iterative_information):
+    print(f"{row[0]}\t{row[1]}\t{row[2]}")
+    print()
+
+relres = iterative_information[-1, 1]/np.linalg.norm(b)
+print("relres", relres)
+# matlab_relres = 0.00000000000008873759176939078997
+# relres - matlab_relres
+print("time_total_model", time_total_model)
 
 
 solveremf2_plot.plotContrastSource(w_out, CHI, X1cap, X2cap)
@@ -109,4 +131,4 @@ if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errc
     np.max(np.imag(var_diff))
     workspace_func.plotDiff(var_diff, X1cap, X2cap)
     print("Comaprision made...")
-    os.remove('w_P.mat')
+    # os.remove('w_P.mat')

@@ -178,6 +178,12 @@ def IntG(dx, gamma_0, X1fftcap, X2fftcap, N1, N2, delta):
 def ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
 
+    # Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
+    def custom_matvec(w):
+        return Aw(w, N1, N2, FFTG, CHI)
+
+    Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=custom_matvec)
+
     def callback(xk):
         callback.iter += 1
         resvec = np.linalg.norm(Aw_operator(xk).T - b.T)
@@ -188,14 +194,11 @@ def ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
     # Initialise iteration count
     callback.start_time = time.time()
     callback.iter = 0
-    callback.information = np.array([callback.iter, np.linalg.norm(b.T), time.time() - callback.start_time])
+    # callback.information = np.array([[callback.iter, np.linalg.norm(b), time.time() - callback.start_time]])
+    callback.information = np.array([[callback.iter, np.linalg.norm(Aw_operator(x0).T - b.T), time.time() - callback.start_time]])
+    # callback.information = np.empty((1, 3))
 
     # Call bicgstab with the LinearOperator instance and other inputs
-    # Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
-    def custom_matvec(w):
-        return Aw(w, N1, N2, FFTG, CHI)
-
-    Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=custom_matvec)
     w, exit_code = bicgstab(Aw_operator, b, x0=x0, tol=Errcri, maxiter=itmax, callback=callback)
 
     # Output Matrix
@@ -322,7 +325,7 @@ def wavelength(c_0, f):
     return c_0 / f
 
 
-def x0(b):
+def x0_naive(b):
     # Initial Guess
     x0 = np.zeros(b.shape, dtype=np.complex128)
     return x0

@@ -78,9 +78,7 @@ def graph_resivec_ter(iterative_information):
     area2 = np.trapz(y, x2)
     axs[1].text(0.5*np.max(x2), 0.8*np.max(np.abs(y)), 'Area: ' + str(area2) + ';\nTime (sec): ' + str(np.max(x2)), color='red', ha='center', va='center', fontsize=12)
 
-
     plt.show()
-
 
 
 def plotContrastSource(ITERBiCGSTABw, CHI, X1, X2):

@@ -8,8 +8,7 @@ b = input.CHI(:) .* u_inc(:);                           % known 1D vector
 % x0 = zeros(size(b));
 
 temp = importdata('C:\Users\antho\Downloads\_COPIED\CB54\w_P.mat');
-x0 = temp(:);
-clear temp;
+
 
 % w = bicgstab(@(w) Aw(w,input), b, Errcri, itmax);       % call BiCGSTAB
 [w, flag, relres, iter, resvec] = bicgstab(@(w) Aw(w, input), b, Errcri, itmax, [], [], x0);
