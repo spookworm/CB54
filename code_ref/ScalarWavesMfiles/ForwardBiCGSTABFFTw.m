@@ -1,4 +1,6 @@
 clear all; clc; close all; clear workspace
+format long;
+
 input = init();
 
 %  (1) Compute analytically scattered field data --------------------------

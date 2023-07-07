@@ -34,7 +34,7 @@ def Aw(w, N1, N2, FFTG, CHI):
     # # Define the matrix-vector multiplication function Aw
     w = np.reshape(w, (N1, N2), order='F')
     # print("w.shape reshaped", w.shape)
-    y = np.zeros((N1, N2), dtype=np.complex_, order='F')
+    y = np.zeros((N1, N2), dtype=np.complex128, order='F')
     # print("y.shape zeros", y.shape)
     y = w - CHI * Kop(w, FFTG)
     # print("y.shape", y.shape)
@@ -46,7 +46,7 @@ def Aw(w, N1, N2, FFTG, CHI):
 def b(CHI, u_inc, N1, N2):
     # Known 1D vector right-hand side
     # b = CHI(:) * u_inc(:)
-    b = np.zeros((N1*N2, 1), dtype=np.complex_, order='F')
+    b = np.zeros((N1*N2, 1), dtype=np.complex128, order='F')
     # b = np.multiply(CHI.flatten('F'), u_inc.flatten('F'))
     b[:, 0] = CHI.flatten('F') * u_inc.flatten('F')
     # b_diff = mat_checker(b, nameof(b))
@@ -79,8 +79,8 @@ def delta(dx):
 def Dop(w_out, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2):
     # Dop_diff = mat_checker(Dop, nameof(Dop))
     # Dop_m = mat_loader(nameof(Dop))
-    data = np.zeros((1, NR), dtype=np.complex_, order='F')
-    G = np.zeros((N1, N2), dtype=np.complex_, order='F')
+    data = np.zeros((1, NR), dtype=np.complex128, order='F')
+    G = np.zeros((N1, N2), dtype=np.complex128, order='F')
     for p in range(0, NR):
         DIS = np.sqrt((xR[0, p] - X1cap)**2 + (xR[1, p] - X2cap)**2)
         G = 1.0 / (2.0 * np.pi) * kv(0, gamma_0*DIS)
@@ -116,6 +116,10 @@ def FFTG(IntG):
 def gamma_0(s, c_0):
     # Propagation Co-efficient
     return s / c_0
+
+
+def gamma_sct(gamma_0, c_0, c_sct):
+    return gamma_0 * c_0 / c_sct
 
 
 def initFFTGreen(x1fft, x2fft):
@@ -154,7 +158,7 @@ def IntG(dx, gamma_0, X1fftcap, X2fftcap, N1, N2, delta):
     # DIS_diff = mat_checker(DIS, nameof(DIS))
 
     # G = 1 / (2 * pi) .* besselk(0, gamma_0*DIS);
-    G = np.zeros((N1, N2), dtype=np.complex_, order='F')
+    G = np.zeros((N1, N2), dtype=np.complex128, order='F')
     G = 1 / (2 * np.pi) * kv(0, gamma_0*DIS)
     # G_diff = mat_checker(G, nameof(G))
 
@@ -173,55 +177,31 @@ def IntG(dx, gamma_0, X1fftcap, X2fftcap, N1, N2, delta):
 
 def ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
-    # norm_b = np.linalg.norm(b)
-    # print(norm_b)
 
     def callback(xk):
-        # Define the callback function
-        callback.iter_count += 1
-        residual_norm = np.linalg.norm(Aw_operator(xk).T - b.T)
-        residuals.append(residual_norm)
-        # CHECK: Not sure that this time is correct
+        callback.iter += 1
+        resvec = np.linalg.norm(Aw_operator(xk).T - b.T)
         callback.time_total = time.time() - callback.start_time
-        # print("Current solution:", xk)
-        # print()
-        # print(residual_norm)
-        # if residual_norm < Errcri:
-        #     return True
-        # else:
-        #     return False
-        # print("Iteration:", callback.iter_count, "Residual norm:", residual_norm, "Time:", time.time() - callback.start_time)
+        row = np.array([callback.iter, resvec, callback.time_total])
+        callback.information = np.vstack((callback.information, row))
 
     # Initialise iteration count
-    callback.iter_count = 0
     callback.start_time = time.time()
-    residuals = []
+    callback.iter = 0
+    callback.information = np.array([callback.iter, np.linalg.norm(b.T), time.time() - callback.start_time])
 
     # Call bicgstab with the LinearOperator instance and other inputs
-    # w = bicgstab(@(w) Aw(w, input), b, Errcri, itmax);
-
     # Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
     def custom_matvec(w):
         return Aw(w, N1, N2, FFTG, CHI)
 
     Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=custom_matvec)
-
-    start_time = time.time()
     w, exit_code = bicgstab(Aw_operator, b, x0=x0, tol=Errcri, maxiter=itmax, callback=callback)
-    time_total = time.time() - start_time
-    # print("time_total", time_total)
 
     # Output Matrix
     # w = vector2matrix(w, N1, N2)
     w = w.reshape((N1, N2), order='F')
-    # # Display the convergence information
-    # print("Convergence information:", exit_code)
-    # print(exit_code)
-    # print("Iteration:", callback.iter_count)
-    # print("time_total", callback.time_total)
-    # print("time_total", residuals)
-    # print("type(residuals)", type(residuals))
-    return w, exit_code, residuals, time_total
+    return w, exit_code, callback.information
 
 
 def itmax(input_):
@@ -231,12 +211,12 @@ def itmax(input_):
 def Kop(w_E, FFTG):
     # Make FFT grid
     N1, N2 = w_E.shape
-    Cv = np.zeros(FFTG.shape, dtype=np.complex_, order='F')
+    Cv = np.zeros(FFTG.shape, dtype=np.complex128, order='F')
     Cv[0:N1, 0:N2] = w_E.copy()
     # Convolution by FFT
     Cv = np.fft.fftn(Cv)
     Cv = np.fft.ifftn(FFTG * Cv)
-    Kv = np.zeros((N1, N2), dtype=np.complex_, order='F')
+    Kv = np.zeros((N1, N2), dtype=np.complex128, order='F')
     Kv[0:N1, 0:N2] = Cv[0:N1, 0:N2]
     return Kv
 
@@ -313,7 +293,7 @@ def u_inc(gamma_0, xS, X1cap, X2cap, factoru):
 
 def WavefieldSctCircle(M, arg0, args, gamma_sct, gamma_0, xR, xS, rR, phiR, rS, phiS):
     # Compute coefficients of series expansion
-    A = np.zeros((1, M+1), dtype=np.complex_)
+    A = np.zeros((1, M+1), dtype=np.complex128)
     for m in range(0, M+1):
         Ib0 = iv(m, arg0)
         dIb0 = iv(m+1, arg0) + m / arg0 * Ib0
@@ -344,7 +324,7 @@ def wavelength(c_0, f):
 
 def x0(b):
     # Initial Guess
-    x0 = np.zeros(b.shape, dtype=np.complex_)
+    x0 = np.zeros(b.shape, dtype=np.complex128)
     return x0
 
 

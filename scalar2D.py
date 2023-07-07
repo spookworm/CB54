@@ -18,33 +18,35 @@ get_ipython().run_line_magic('clear', '-sf')
 # get_ipython().run_line_magic('reset', '-sf')
 
 np.set_printoptions(threshold=sys.maxsize)
-np.set_printoptions(precision=18)
+np.set_printoptions(precision=20)
 
-time_start_wp = time.time()
 c_0 = solver_func.c_0(1500)
 c_sct = solver_func.c_sct(c_0*2.0)
 f = solver_func.f(50.0)
-s = solver_func.s(f)
-wavelength = solver_func.wavelength(c_0, f)
-gamma_0 = solver_func.gamma_0(s, c_0)
-xS = solver_func.xS()
 NR = solver_func.NR(180)
 Errcri = solver_func.Errcri(1e-13)
-rcvr_phi = solver_func.rcvr_phi(NR)
-xR = solver_func.xR(NR, rcvr_phi)
 a = solver_func.a(40)
 N1 = solver_func.N1(120)
 N2 = solver_func.N2(100)
 dx = solver_func.dx(2.0)
+M = solver_func.M(100)
+itmax = solver_func.itmax(1000)
+
+xS = solver_func.xS()
+rcvr_phi = solver_func.rcvr_phi(NR)
+xR = solver_func.xR(NR, rcvr_phi)
+
+s = solver_func.s(f)
+wavelength = solver_func.wavelength(c_0, f)
+gamma_0 = solver_func.gamma_0(s, c_0)
 initGrid = solver_func.initGrid(N1, N2, dx)
 X1cap = solver_func.X1cap(initGrid)
 X2cap = solver_func.X2cap(initGrid)
-M = solver_func.M(100)
 x1fft = solver_func.x1fft(N1, dx)
 x2fft = solver_func.x2fft(N2, dx)
 angle = solver_func.angle(rcvr_phi)
 
-gamma_sct = gamma_0 * c_0 / c_sct
+gamma_sct = solver_func.gamma_sct(gamma_0, c_0, c_sct)
 arg0 = solver_func.arg0(gamma_0, a)
 args = solver_func.args(gamma_sct, a)
 
@@ -63,22 +65,52 @@ FFTG = solver_func.FFTG(IntG)
 R = solver_func.R(X1cap, X2cap)
 CHI = solver_func.CHI(c_0, c_sct, R, a)
 factoru = solver_func.factoru(gamma_0, delta)
-itmax = solver_func.itmax(1000)
 
 u_inc = solver_func.u_inc(gamma_0, xS, X1cap, X2cap, factoru)
 b = solver_func.b(CHI, u_inc, N1, N2)
 x0 = solver_func.x0(b)
 
-w_out, exit_code, residuals, time_total = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+time_start_wp = time.time()
+w_out, exit_code, iterative_information = solver_func.ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+time_total_wp = time.time() - time_start_wp
+
+
+# plot the resvec iteration decreasing
+import matplotlib.pyplot as plt
+# Extract the x and y values from the numpy array
+y = iterative_information[:, 1]  # Third column as the first x-axis
+x1 = iterative_information[:, 0]  # Second column as the y-axis
+x2 = iterative_information[:, 2]  # First column as the second x-axis
+
+fig, axs = plt.subplots(2)
+fig.suptitle('Vertically stacked subplots')
+axs[0].plot(x1, y, 'r-o')
+axs[1].plot(x2, y, 'b-o')
+
+area1 = np.trapz(y, x1)
+print("Area under the graph 1:", area1)
+area2 = np.trapz(y, x2)
+print("Area under the graph 2:", area2)
+
+# Display the convergence information
+print("exit_code:", exit_code)
+print("iter,\tresvec,\ttime_total")
+for i, row in enumerate(iterative_information):
+    print(f"{row[0]}\t{row[1]}\t{row[2]}")
+    print()
+
+relres = iterative_information[-1, 1]/np.linalg.norm(b)
+print("relres", relres)
+# matlab_relres = 0.00000000000008873759176939078997
+# relres - matlab_relres
+print("time_total_wp", time_total_wp)
+
+
 solveremf2_plot.plotContrastSource(w_out, CHI, X1cap, X2cap)
-
-for i, residual in enumerate(residuals):
-    print(f"Iteration {i+1}: {residual}")
-
 Dop_val = solver_func.Dop(w_out, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
 solveremf2_plot.displayDataCSIEApproach(Dop_val, angle)
 solveremf2_plot.displayDataCompareApproachs(WavefieldSctCircle, Dop_val, angle)
-time_total_wp = time.time() - time_start_wp
+
 workspace_func.tidy_workspace()
 
 # Validate code against MATLAB output
@@ -94,4 +126,3 @@ if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errc
     workspace_func.plotDiff(var_diff, X1cap, X2cap)
     print("Comaprision made...")
     os.remove('w_P.mat')
-

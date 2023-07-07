@@ -12,8 +12,8 @@ x0 = zeros(size(b));
 % display(flag)
 display(relres) % Final
 display(iter)
-display(resvec)
-
+% display(resvec)
+display(vpa(resvec, 20));
 w = vector2matrix(w,input);                             % output matrix
 
 end %----------------------------------------------------------------------
