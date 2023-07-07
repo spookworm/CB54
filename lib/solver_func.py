@@ -99,6 +99,21 @@ def c_sct(c_0, contrast_sct):
     return c_0 * contrast_sct
 
 
+def data_gen(b, CHI, FFTG, N1, N2, Errcri, itmax, x0):
+    time_start = time.time()
+    w, exit_code, iterative_info = ITERBiCGSTABw(b, CHI, FFTG, N1, N2, Errcri, itmax, x0)
+    time_total = time.time() - time_start
+    # Display the convergence information
+    print("exit_code:", exit_code)
+    # print("iter,\tresvec,\ttime_total")
+    # for i, row in enumerate(iterative_info):
+    #     print(f"{row[0]}\t{row[1]}\t{row[2]}")
+    #     print()
+    # relres = iterative_info[-1, 1]/np.linalg.norm(b)
+    # print("relres", relres)
+    return time_total, w, exit_code, iterative_info
+
+
 def delta(dx):
     # Radius circle with area of dx^2
     # delta = (pi)^(-1 / 2) * dx;
@@ -371,9 +386,9 @@ def wavelength(c_0, f):
     return c_0 / f
 
 
-def x0_naive(b):
+def x0_naive(N1, N2):
     # Initial Guess
-    x0 = np.zeros(b.shape, dtype=np.complex128)
+    x0 = np.zeros((N1*N2, 1), dtype=np.complex128, order='F')
     return x0
 
 
@@ -426,8 +441,9 @@ def xR(NR, rcvr_phi):
     return xR
 
 
-def xS():
+def xS(x, y):
     # Source Position
     xS = np.zeros((1, 2), dtype=float)
-    xS = [-170, 0]
+    # xS = [-170, 0]
+    xS = [x, y]
     return xS
