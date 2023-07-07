@@ -6,7 +6,7 @@ from scipy.sparse.linalg import bicgstab, LinearOperator
 
 def a(radius: float) -> float:
     """
-    This is a custom function that takes the input for cylinder radius and returns it.
+    This takes the input for cylinder radius in meters and returns it.
     Args:
         input_ (float): The cylinder radius.
 
@@ -61,13 +61,42 @@ def CHI(c_0, c_sct, R, a):
 
 
 def c_0(input_):
-    # wave speed in embedding
+    """
+    This takes the input for wave speed in embedding in meters per second and returns it.
+    Args:
+        input_ (float): wave speed in embedding.
+
+    Returns:
+        float: wave speed in embedding.
+    """
+    # help(solver_func.c_0)
     return input_
 
 
-def c_sct(input_):
-    # wave speed in scatterer
+def contrast_sct(input_):
+    """
+    This takes the input for contrast of scatterer and returns it.
+    Args:
+        input_ (float): contrast of scatterer.
+
+    Returns:
+        float: contrast of scatterer.
+    """
+    # help(solver_func.contrast_sct)
     return input_
+
+
+def c_sct(c_0, contrast_sct):
+    """
+    This takes the input for wave speed in embedding and the contrast of the scatterer in meters per second and returns the wave speed in the scatterer.
+    Args:
+        input_ (float): wave speed in scatterer.
+
+    Returns:
+        float: wave speed in scatterer.
+    """
+    # help(solver_func.c_sct)
+    return c_0 * contrast_sct
 
 
 def delta(dx):
@@ -94,11 +123,28 @@ def dx(input_):
 
 
 def Errcri(input_):
+    """
+    This takes the input for the tolerance of the BICGSTAB method.
+    Args:
+        input_ (float): tolerance
+
+    Returns:
+        float: tolerance
+    """
+    # help(solver_func.Errcri)
     return input_
 
 
 def f(input_):
-    # temporal frequency
+    """
+    This takes the input for the carrier temporal frequency in Hz and returns the carrier temporal frequency in Hz.
+    Args:
+        input_ (float): the carrier temporal frequency in Hz.
+
+    Returns:
+        float: the carrier temporal frequency in Hz.
+    """
+    # help(solver_func.f)
     return input_
 
 
@@ -242,7 +288,7 @@ def N2(input_):
 
 
 def NR(input_):
-    # Reciever Count
+    # help(solver_func.NR)
     return input_
 
 
