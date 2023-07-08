@@ -44,6 +44,9 @@ contrast_sct = solver_func.contrast_sct(2)
 
 for holder_loop in np.arange(0, 1, 1):
 
+    # HOW TO LOOP GEOMETERY? THIS MEANS CREATING A GEOMETRY SECTION.
+    # NEED TO SAVE OUTPUTS SOMEHOW SYSTEMATICALLY
+
     c_sct = solver_func.c_sct(c_0, contrast_sct)
     s = solver_func.s(f)
     wavelength = solver_func.wavelength(c_0, f)
@@ -60,7 +63,9 @@ for holder_loop in np.arange(0, 1, 1):
     IntG = solver_func.IntG(dx, gamma_0, X1fftcap, X2fftcap, N1, N2, delta)
     FFTG = solver_func.FFTG(IntG)
     R = solver_func.R(X1cap, X2cap)
+
     CHI = solver_func.CHI(c_0, c_sct, R, a)
+
     factoru = solver_func.factoru(gamma_0, delta)
     u_inc = solver_func.u_inc(gamma_0, xS, X1cap, X2cap, factoru)
 
@@ -82,41 +87,41 @@ for holder_loop in np.arange(0, 1, 1):
     loop_counter += 1
 
 
+solveremf2_plot.plotComplexArray(u_inc, cmap_min=0, cmap_max=1)
 
-# # solveremf2_plot.plotContrastSource(w_model, CHI, X1cap, X2cap)
 
-# bessel_check = 0
-# if bessel_check == 1:
-#     M = solver_func.M(100)
-#     NR = solver_func.NR(180)
-#     rcvr_phi = solver_func.rcvr_phi(NR)
-#     xR = solver_func.xR(NR, rcvr_phi)
-#     Dop_val = solver_func.Dop(w_model, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
-#     angle = solver_func.angle(rcvr_phi)
-#     solveremf2_plot.displayDataCSIEApproach(Dop_val, angle)
-#     gamma_sct = solver_func.gamma_sct(gamma_0, c_0, c_sct)
-#     arg0 = solver_func.arg0(gamma_0, a)
-#     args = solver_func.args(gamma_sct, a)
-#     rR = solver_func.rR(xR)
-#     phiR = solver_func.phiR(xR)
-#     rS = solver_func.rS(xS)
-#     phiS = solver_func.phiS(xS)
-#     WavefieldSctCircle = solver_func.WavefieldSctCircle(M, arg0, args, gamma_sct, gamma_0, xR, xS, rR, phiR, rS, phiS)
-#     solveremf2_plot.displayDataBesselApproach(WavefieldSctCircle, angle)
-#     solveremf2_plot.displayDataCompareApproachs(WavefieldSctCircle, Dop_val, angle)
+bessel_check = 1
+if bessel_check == 1:
+    M = solver_func.M(100)
+    NR = solver_func.NR(180)
+    rcvr_phi = solver_func.rcvr_phi(NR)
+    xR = solver_func.xR(NR, rcvr_phi)
+    Dop_val = solver_func.Dop(w, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
+    angle = solver_func.angle(rcvr_phi)
+    solveremf2_plot.displayDataCSIEApproach(Dop_val, angle)
+    gamma_sct = solver_func.gamma_sct(gamma_0, c_0, c_sct)
+    arg0 = solver_func.arg0(gamma_0, a)
+    args = solver_func.args(gamma_sct, a)
+    rR = solver_func.rR(xR)
+    phiR = solver_func.phiR(xR)
+    rS = solver_func.rS(xS)
+    phiS = solver_func.phiS(xS)
+    WavefieldSctCircle = solver_func.WavefieldSctCircle(M, arg0, args, gamma_sct, gamma_0, xR, xS, rR, phiR, rS, phiS)
+    solveremf2_plot.displayDataBesselApproach(WavefieldSctCircle, angle)
+    solveremf2_plot.displayDataCompareApproachs(WavefieldSctCircle, Dop_val, angle)
 
-# # Validate code against MATLAB output
-# if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errcri == 1e-13):
-#     savemat('w_P.mat', {'w': w_model})
-#     var_name_pyt = loadmat('w_P.mat')['w']
-#     var_name_mat = loadmat('./code_ref/ScalarWavesMfiles/w_mat.mat')['w']
+# Validate code against MATLAB output
+if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errcri == 1e-13):
+    savemat('w_P.mat', {'w': w})
+    var_name_pyt = loadmat('w_P.mat')['w']
+    var_name_mat = loadmat('./code_ref/ScalarWavesMfiles/w_mat.mat')['w']
 
-#     var_diff = var_name_pyt - var_name_mat
-#     np.max(var_diff)
-#     np.max(np.real(var_diff))
-#     np.max(np.imag(var_diff))
-#     workspace_func.plotDiff(var_diff, X1cap, X2cap)
-#     print("Comaprision made...")
-#     # os.remove('w_P.mat')
+    var_diff = var_name_pyt - var_name_mat
+    np.max(var_diff)
+    np.max(np.real(var_diff))
+    np.max(np.imag(var_diff))
+    workspace_func.plotDiff(var_diff, X1cap, X2cap)
+    print("Comaprision made...")
+    # os.remove('w_P.mat')
 
-# workspace_func.tidy_workspace()
+workspace_func.tidy_workspace()

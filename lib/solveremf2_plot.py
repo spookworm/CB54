@@ -81,6 +81,29 @@ def graph_resivec_iter(iterative_information):
     plt.show()
 
 
+def plotComplexArray(u_inc, cmap_min, cmap_max):
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(1, 3)
+
+    # Plot the real part
+    axes[0].imshow(np.real(u_inc), cmap='jet', vmin=cmap_min, vmax=cmap_max)
+    axes[0].set_title('Real Part')
+
+    # Plot the imaginary part
+    axes[1].imshow(np.imag(u_inc), cmap='jet', vmin=cmap_min, vmax=cmap_max)
+    axes[1].set_title('Imaginary Part')
+
+    # Plot the absolute part
+    axes[2].imshow(np.abs(u_inc), cmap='jet', vmin=cmap_min, vmax=cmap_max)
+    axes[2].set_title('Absolute Part')
+
+    # Adjust the layout
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
+
 def plotContrastSource(ITERBiCGSTABw, CHI, X1, X2):
     # Plot 2D contrast/source distribution
     # x1 = ForwardBiCGSTABFFT.input.X1(:, 1);
