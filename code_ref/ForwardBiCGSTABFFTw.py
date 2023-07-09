@@ -67,7 +67,7 @@ def init():
     # compute FFT of Green function
     FFTG = initFFTGreen(N1, N2, dx, gamma_0)
 
-    def initContrast(c_0, c_sct, X1):
+    def initContrast(c_0, c_sct, X1, X2):
         # half width slab / radius circle cylinder / radius sphere
         a = 40
         contrast = 1 - c_0**2/c_sct**2
@@ -76,7 +76,7 @@ def init():
         return a, CHI
 
     # add contrast distribution
-    a, CHI = initContrast(c_0, c_sct, X1)
+    a, CHI = initContrast(c_0, c_sct, X1, X2)
 
     Errcri = 1e-18
     return c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI, Errcri
