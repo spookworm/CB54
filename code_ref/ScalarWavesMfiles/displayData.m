@@ -13,6 +13,7 @@ if nDIM == 1     % display scattered data at two receivers
 elseif nDIM == 2  % plot data at a number of receivers -------------------
   if exist(fullfile(cd,'DATA2D.mat'), 'file');      load DATA2D data2D; 
      error = num2str(norm(data(:)-data2D(:),1)/norm(data2D(:),1));
+     % display(vpa(error, 20));
      disp(['error=' error]);  
   end  
   set(figure,'Units','centimeters','Position', [5 5 18 7]);

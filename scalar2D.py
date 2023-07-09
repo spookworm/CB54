@@ -87,41 +87,83 @@ for holder_loop in np.arange(0, 1, 1):
     loop_counter += 1
 
 
-solveremf2_plot.plotComplexArray(u_inc, cmap_min=0, cmap_max=1)
+solveremf2_plot.subplotsComplexArray(u_inc, cmap_min=0, cmap_max=1)
 
 
-bessel_check = 1
-if bessel_check == 1:
-    M = solver_func.M(100)
-    NR = solver_func.NR(180)
-    rcvr_phi = solver_func.rcvr_phi(NR)
-    xR = solver_func.xR(NR, rcvr_phi)
-    Dop_val = solver_func.Dop(w, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
-    angle = solver_func.angle(rcvr_phi)
-    solveremf2_plot.displayDataCSIEApproach(Dop_val, angle)
-    gamma_sct = solver_func.gamma_sct(gamma_0, c_0, c_sct)
-    arg0 = solver_func.arg0(gamma_0, a)
-    args = solver_func.args(gamma_sct, a)
-    rR = solver_func.rR(xR)
-    phiR = solver_func.phiR(xR)
-    rS = solver_func.rS(xS)
-    phiS = solver_func.phiS(xS)
-    WavefieldSctCircle = solver_func.WavefieldSctCircle(M, arg0, args, gamma_sct, gamma_0, xR, xS, rR, phiR, rS, phiS)
-    solveremf2_plot.displayDataBesselApproach(WavefieldSctCircle, angle)
-    solveremf2_plot.displayDataCompareApproachs(WavefieldSctCircle, Dop_val, angle)
+print("real min", np.min(np.real(u_inc)))
+print("real max", np.max(np.real(u_inc)))
+print("imag min", np.min(np.imag(u_inc)))
+print("imag max", np.max(np.imag(u_inc)))
+print("abs min", np.min(np.abs(u_inc)))
+print("abs max", np.max(np.abs(u_inc)))
 
-# Validate code against MATLAB output
-if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errcri == 1e-13):
-    savemat('w_P.mat', {'w': w})
-    var_name_pyt = loadmat('w_P.mat')['w']
-    var_name_mat = loadmat('./code_ref/ScalarWavesMfiles/w_mat.mat')['w']
 
-    var_diff = var_name_pyt - var_name_mat
-    np.max(var_diff)
-    np.max(np.real(var_diff))
-    np.max(np.imag(var_diff))
-    workspace_func.plotDiff(var_diff, X1cap, X2cap)
-    print("Comaprision made...")
-    # os.remove('w_P.mat')
+def plotComplexArray(cmd, array, cmap_name, cmap_min, cmap_max, title):
+    import numpy as np
+    from skimage import io
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    if cmd == 'real':
+        array = np.real(array)
+    elif cmd == 'imag':
+        array = np.imag(array)
+    elif cmd == 'abs':
+        array = np.abs(array)
+    else:
+        print("error input cmd string")
+    normalized_array = (array - cmap_min) / (cmap_max - cmap_min)
+    colormap = cm.get_cmap('jet')
+    colored_array = colormap(normalized_array)
+    colored_array = (colored_array * 255).astype(np.uint8)
+    io.imsave('output.png', colored_array)
 
-workspace_func.tidy_workspace()
+    # Plot the image
+    plt.imshow(colored_array)
+
+    # Add a colorbar
+    cbar = plt.colorbar()
+    cbar.set_label('Value')
+
+    # Display the plot
+    plt.show()
+
+
+plotComplexArray(cmd='real', array=u_inc, cmap_name='jet', cmap_min=0, cmap_max=0.125, title='real_part')
+plotComplexArray(cmd='imag', array=u_inc, cmap_name='jet', cmap_min=0, cmap_max=0.125, title='real_part')
+plotComplexArray(cmd='abs', array=u_inc, cmap_name='jet', cmap_min=0, cmap_max=0.125, title='real_part')
+
+# bessel_check = 1
+# if bessel_check == 1:
+#     M = solver_func.M(100)
+#     NR = solver_func.NR(180)
+#     rcvr_phi = solver_func.rcvr_phi(NR)
+#     xR = solver_func.xR(NR, rcvr_phi)
+#     Dop_val = solver_func.Dop(w, gamma_0, dx, xR, NR, X1cap, X2cap, delta, factoru, N1, N2)
+#     angle = solver_func.angle(rcvr_phi)
+#     solveremf2_plot.displayDataCSIEApproach(Dop_val, angle)
+#     gamma_sct = solver_func.gamma_sct(gamma_0, c_0, c_sct)
+#     arg0 = solver_func.arg0(gamma_0, a)
+#     args = solver_func.args(gamma_sct, a)
+#     rR = solver_func.rR(xR)
+#     phiR = solver_func.phiR(xR)
+#     rS = solver_func.rS(xS)
+#     phiS = solver_func.phiS(xS)
+#     WavefieldSctCircle = solver_func.WavefieldSctCircle(M, arg0, args, gamma_sct, gamma_0, xR, xS, rR, phiR, rS, phiS)
+#     solveremf2_plot.displayDataBesselApproach(WavefieldSctCircle, angle)
+#     solveremf2_plot.displayDataCompareApproachs(WavefieldSctCircle, Dop_val, angle)
+
+# # Validate code against MATLAB output
+# if (c_0 == 1500) and (c_sct == 3000) and (f == 50) and (itmax == 1000) and (Errcri == 1e-13):
+#     savemat('w_P.mat', {'w': w})
+#     var_name_pyt = loadmat('w_P.mat')['w']
+#     var_name_mat = loadmat('./code_ref/ScalarWavesMfiles/w_mat.mat')['w']
+
+#     var_diff = var_name_pyt - var_name_mat
+#     np.max(var_diff)
+#     np.max(np.real(var_diff))
+#     np.max(np.imag(var_diff))
+#     workspace_func.plotDiff(var_diff, X1cap, X2cap)
+#     print("Comaprision made...")
+#     # os.remove('w_P.mat')
+
+# workspace_func.tidy_workspace()

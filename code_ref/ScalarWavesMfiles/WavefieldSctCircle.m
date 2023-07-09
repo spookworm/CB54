@@ -28,3 +28,4 @@ if exist(fullfile(cd, 'DATA2D.mat'), 'file');   delete DATA2D.mat;   end
       end % m_loop
       data2D = 1/(2*pi) * data2D;                          
       displayData(data2D,input);                       save DATA2D data2D;
+      save('.\data2D.mat', "data2D");
