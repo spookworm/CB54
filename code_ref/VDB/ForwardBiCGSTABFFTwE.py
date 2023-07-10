@@ -11,32 +11,32 @@ np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=20)
 
 
-# def mat_checker(variable, var_name):
-#     import scipy.io
-#     # mat_checker(x1fft, nameof(x1fft))
-#     var_name_matlab = scipy.io.loadmat(var_name + '.mat')
-#     var_name_m = np.array(var_name_matlab[var_name])
-#     are_equal = np.array_equal(variable, var_name_m)
-#     if are_equal is False:
-#         print(var_name, "are_equal:", are_equal)
-#     are_close = np.allclose(variable, var_name_m, atol=1e-15)
-#     if are_close is False:
-#         print(var_name, "are_close:", are_close)
-#     var_diff = variable - var_name_m
-#     max_test = np.max(var_diff)
-#     if max_test != 0.0:
-#         print(var_name, "max diff: ", max_test)
-#         return var_diff
-#     else:
-#         return None
+def mat_checker(variable, var_name):
+    import scipy.io
+    # mat_checker(x1fft, nameof(x1fft))
+    var_name_matlab = scipy.io.loadmat(var_name + '.mat')
+    var_name_m = np.array(var_name_matlab[var_name])
+    are_equal = np.array_equal(variable, var_name_m)
+    if are_equal is False:
+        print(var_name, "are_equal:", are_equal)
+    are_close = np.allclose(variable, var_name_m, atol=1e-15)
+    if are_close is False:
+        print(var_name, "are_close:", are_close)
+    var_diff = variable - var_name_m
+    max_test = np.max(var_diff)
+    if max_test != 0.0:
+        print(var_name, "max diff: ", max_test)
+        return var_diff
+    else:
+        return None
 
 
-# def mat_loader(var_name):
-#     import scipy.io
-#     # x1fft_m = mat_loader(nameof(x1fft))
-#     var_name_matlab = scipy.io.loadmat(var_name + '.mat')
-#     var_name_m = np.array(var_name_matlab[var_name], dtype=np.complex_)
-#     return var_name_m
+def mat_loader(var_name):
+    import scipy.io
+    # x1fft_m = mat_loader(nameof(x1fft))
+    var_name_matlab = scipy.io.loadmat(var_name + '.mat')
+    var_name_m = np.array(var_name_matlab[var_name], dtype=np.complex_)
+    return var_name_m
 
 
 def initEM():
@@ -574,16 +574,18 @@ error = str(np.linalg.norm(Hdata.flatten('F') - Hdata2D.flatten('F'), ord=1)/np.
 print("Hdata2D error", error)
 
 
-def displayDataCompareApproachs(WavefieldSctCircle, Dop, angle):
+def displayDataCompareApproachs(bessel_approach, CIS_approach, angle):
     import matplotlib.pyplot as plt
-    error_num = np.linalg.norm(Dop.flatten('F') - WavefieldSctCircle.flatten('F'), ord=1) / np.linalg.norm(WavefieldSctCircle.flatten('F'), ord=1)
-    error = format(error_num, 'f')
+    error_num = np.linalg.norm(CIS_approach.flatten('F') - bessel_approach.flatten('F'), ord=1) / np.linalg.norm(bessel_approach.flatten('F'), ord=1)
+    # error = format(error_num, 'f')
+    error = str(error_num)
+    print("error_num", error_num)
     # Plot data at a number of receivers
     # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
     plt.tight_layout()
-    plt.plot(angle.T, np.abs(Dop).T, '--r', angle.T, np.abs(WavefieldSctCircle).T, 'b')
+    plt.plot(angle.T, np.abs(CIS_approach).T, '--r', angle.T, np.abs(bessel_approach).T, 'b')
     plt.legend(['Integral-equation method', 'Bessel-function method'], loc='upper center')
-    plt.text(0.5*np.max(angle), 0.8*np.max(np.abs(Dop)), 'Error$^{sct}$ = ' + error, color='red', ha='center', va='center')
+    plt.text(0.5*np.max(angle), 0.8*np.max(np.abs(CIS_approach)), 'Error$^{sct}$ = ' + error, color='red', ha='center', va='center')
     plt.title('scattered wave data in 2D', fontsize=12)
     plt.axis('tight')
     plt.xlabel('observation angle in degrees')
@@ -592,5 +594,5 @@ def displayDataCompareApproachs(WavefieldSctCircle, Dop, angle):
     plt.show()
 
 
-displayDataCompareApproachs(Edata, Edata2D, angle)
-displayDataCompareApproachs(Hdata, Hdata2D, angle)
+displayDataCompareApproachs(Edata2D, Edata, angle)
+displayDataCompareApproachs(Hdata2D, Hdata, angle)

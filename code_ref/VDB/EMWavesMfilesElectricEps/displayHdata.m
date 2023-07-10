@@ -7,6 +7,7 @@ if nDIM == 2   % plot data at a number of receivers -----------------------
      load HDATA2D Hdata2D; 
       H_error = num2str(norm(Hdata(:)-Hdata2D(:),1)/norm(Hdata2D(:),1));    
       disp(['H-error=' H_error]);
+      display(vpa(norm(Hdata(:)-Hdata2D(:),1)/norm(Hdata2D(:),1), 20));
    end
    set(figure,'Units','centimeters','Position', [5 5 18 7]);
    angle = input.rcvr_phi * 180 / pi;
