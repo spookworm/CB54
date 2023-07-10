@@ -45,11 +45,13 @@ def init():
     # Source wavelet  Q = 1
 
     # wave speed in embedding
-    c_0 = 1500
+    # c_0 = 1500
+    c_0 = 3e8
     # wave speed in scatterer
-    c_sct = 3000
+    # c_sct = 3000
+    c_sct = 5.25e8
     # temporal frequency
-    f = 50
+    f = 10e6
     # wavelength
     wavelength = c_0 / f
     # Laplace parameter

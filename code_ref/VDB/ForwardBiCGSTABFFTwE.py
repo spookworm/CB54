@@ -87,7 +87,7 @@ def initEM():
     # add contrast distribution
     a, CHI_eps, CHI_mu = initEMContrast(eps_sct, mu_sct, X1, X2)
 
-    Errcri = 1e-10
+    Errcri = 1e-18
     return c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri
 
 
@@ -193,7 +193,7 @@ def EMsctCircle():
     arg0 = gamma_0 * a
     args = gam_sct*a
     # increase M for more accuracy
-    M = 20
+    M = 100
 
     A = np.zeros((1, M), dtype=np.complex128)
     for m in range(1, M+1):

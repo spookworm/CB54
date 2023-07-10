@@ -23,6 +23,7 @@ def init():
     xS, NR, rcvr_phi, xR = initSourceReceiver()
 
     # add grid in either 1D, 2D or 3D
+    # initGrid() and initGridEM() are equivalent
     N1, N2, dx, X1, X2 = initGrid()
 
     # compute FFT of Green function
@@ -33,9 +34,9 @@ def init():
         a = 40
         R = np.sqrt(X1**2 + X2**2)
         contrast = 1 - c_0**2/c_sct**2
-
-
         CHI = contrast * (R < a)
+
+
 
 
 

@@ -34,6 +34,7 @@ def initEM():
         a = 40
         R = np.sqrt(X1**2 + X2**2)
 
+
         # (1) Compute permittivity contrast
         CHI_eps = (1-eps_sct) * (R < a)
 
@@ -56,18 +57,10 @@ def EMsctCircle():
     c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = initEM()
 
     gam0 = gamma_0
-    gam_sct = gam0 * np.sqrt(eps_sct*mu_sct)
+    gam_sct = gamma_0 * np.sqrt(eps_sct*mu_sct)
     Z_sct = np.sqrt(mu_sct/eps_sct)
 
-    # (1) Transform Cartesian coordinates to polar coordinates
-    rR = np.zeros((1, xR.shape[1]), dtype=np.complex128, order='F')
-    rR[0, :] = np.sqrt(xR[0, :]**2 + xR[1, :]**2)
-    phiR = np.zeros((1, xR.shape[1]), dtype=np.complex128, order='F')
-    phiR[0, :] = np.arctan2(xR[1, :], xR[0, :])
-    rS = np.sqrt(xS[0, 0]**2 + xS[0, 1]**2)
-    phiS = np.arctan2(xS[0, 1], xS[0, 0])
-
-    # (2) Compute coefficients of Bessel series expansion
+    # (1) Compute coefficients of Bessel series expansion
     arg0 = gamma_0 * a
     args = gam_sct*a
     # increase M for more accuracy
@@ -82,6 +75,14 @@ def EMsctCircle():
         Kb0 = kv(m, arg0)
         dKb0 = -kv(m+1, arg0) + m/arg0 * Kb0
         A[0, m-1] = - (Z_sct * dIbs*Ib0 - dIb0*Ibs) / (Z_sct * dIbs*Kb0 - dKb0*Ibs)
+
+    # (2) Transform Cartesian coordinates to polar coordinates
+    rR = np.zeros((1, xR.shape[1]), dtype=np.complex128, order='F')
+    rR[0, :] = np.sqrt(xR[0, :]**2 + xR[1, :]**2)
+    phiR = np.zeros((1, xR.shape[1]), dtype=np.complex128, order='F')
+    phiR[0, :] = np.arctan2(xR[1, :], xR[0, :])
+    rS = np.sqrt(xS[0, 0]**2 + xS[0, 1]**2)
+    phiS = np.arctan2(xS[0, 1], xS[0, 0])
 
     # (3) Compute reflected Er field at receivers (data)
     Er = np.zeros(rR.shape, dtype=np.complex128, order='F')
