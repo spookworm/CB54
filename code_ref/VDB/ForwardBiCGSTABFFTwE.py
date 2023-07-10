@@ -56,7 +56,6 @@ def initEM():
     # wavelength
     wavelength = c_0 / f
     # Laplace parameter
-    # s = 1e-16 - 1j*2*np.pi*f
     s = 1e-16 - 1j*2*np.pi*f
     # propagation coefficient
     gamma_0 = s/c_0
