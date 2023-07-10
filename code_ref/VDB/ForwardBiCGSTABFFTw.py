@@ -45,17 +45,14 @@ def init():
     # Source wavelet  Q = 1
 
     # wave speed in embedding
-    # c_0 = 1500
-    c_0 = 3e8
+    c_0 = 1500
     # wave speed in scatterer
-    # c_sct = 3000
-    c_sct = 5.25e8
+    c_sct = 3000
     # temporal frequency
-    f = 10e6
+    f = 50
     # wavelength
     wavelength = c_0 / f
     # Laplace parameter
-    # s = 1e-16 - 1j*2*np.pi*f
     s = 1e-16 - 1j*2*np.pi*f
     # propagation coefficient
     gamma_0 = s/c_0
@@ -179,7 +176,7 @@ def WavefieldSctCircle():
     arg0 = gamma_0 * a
     args = gam_sct*a
     # increase M for more accuracy
-    M = 100
+    M = 20
 
     A = np.zeros((1, M+1), dtype=np.complex128)
     for m in range(0, M+1):
