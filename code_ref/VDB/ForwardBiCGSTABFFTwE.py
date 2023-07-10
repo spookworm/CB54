@@ -71,14 +71,6 @@ def initEM():
     # compute FFT of Green function
     FFTG = initFFTGreen(N1, N2, dx, gamma_0)
 
-    def initContrast(c_0, c_sct, X1):
-        # half width slab / radius circle cylinder / radius sphere
-        a = 40
-        contrast = 1 - c_0**2/c_sct**2
-        R = np.sqrt(X1**2 + X2**2)
-        CHI = contrast * (R < a)
-        return a, CHI
-
     def initEMContrast(eps_sct, mu_sct, X1, X2):
         # half width slab / radius circle cylinder / radius sphere
         a = 40
@@ -546,34 +538,6 @@ def DOPwE(w_E, gamma_0, dx, xR, NR, X1, X2):
     return Edata, Hdata
 
 
-# START OF ForwardBiCGSTABFFTwE
-Edata2D, Hdata2D = EMsctCircle()
-c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = initEM()
-plotEMContrast(CHI_eps, CHI_mu, X1, X2)
-E_inc, ZH_inc = IncEMwave(gamma_0, xS, dx, X1, X2)
-
-tic = time.time()
-w_E, exit_code, information = ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, x0=None)
-toc = time.time() - tic
-
-tic = time.time()
-w_E, exit_code, information = ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, x0=w_E.flatten('F'))
-toc = time.time() - tic
-
-plotContrastSourcewE(w_E, X1, X2)
-E_sct = KopE(w_E, gamma_0)
-E_val = E(E_inc, E_sct)
-plotEtotalwavefield(E_val, a, X1, X2, N1, N2)
-Edata, Hdata = DOPwE(w_E, gamma_0, dx, xR, NR, X1, X2)
-angle = rcvr_phi * 180 / np.pi
-displayDataBesselApproach(Edata, angle)
-error = str(np.linalg.norm(Edata.flatten('F') - Edata2D.flatten('F'), ord=1)/np.linalg.norm(Edata2D.flatten('F'), ord=1))
-print("Edata2D error", error)
-displayDataBesselApproach(Hdata, angle)
-error = str(np.linalg.norm(Hdata.flatten('F') - Hdata2D.flatten('F'), ord=1)/np.linalg.norm(Hdata2D.flatten('F'), ord=1))
-print("Hdata2D error", error)
-
-
 def displayDataCompareApproachs(bessel_approach, CIS_approach, angle):
     import matplotlib.pyplot as plt
     error_num = np.linalg.norm(CIS_approach.flatten('F') - bessel_approach.flatten('F'), ord=1) / np.linalg.norm(bessel_approach.flatten('F'), ord=1)
@@ -594,5 +558,28 @@ def displayDataCompareApproachs(bessel_approach, CIS_approach, angle):
     plt.show()
 
 
+# START OF ForwardBiCGSTABFFTwE
+Edata2D, Hdata2D = EMsctCircle()
+c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = initEM()
+plotEMContrast(CHI_eps, CHI_mu, X1, X2)
+E_inc, ZH_inc = IncEMwave(gamma_0, xS, dx, X1, X2)
+
+tic0 = time.time()
+w_E, exit_code, information = ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, x0=None)
+toc0 = time.time() - tic0
+print("toc", toc0)
+tic1 = time.time()
+w_E, exit_code, information = ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, x0=w_E.copy().flatten('F'))
+toc1 = time.time() - tic1
+print("toc", toc1)
+
+plotContrastSourcewE(w_E, X1, X2)
+E_sct = KopE(w_E, gamma_0)
+E_val = E(E_inc, E_sct)
+plotEtotalwavefield(E_val, a, X1, X2, N1, N2)
+Edata, Hdata = DOPwE(w_E, gamma_0, dx, xR, NR, X1, X2)
+angle = rcvr_phi * 180 / np.pi
+displayDataBesselApproach(Edata, angle)
+displayDataBesselApproach(Hdata, angle)
 displayDataCompareApproachs(Edata2D, Edata, angle)
 displayDataCompareApproachs(Hdata2D, Hdata, angle)

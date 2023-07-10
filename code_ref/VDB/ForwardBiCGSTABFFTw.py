@@ -366,16 +366,18 @@ def displayDataCSIEApproach(Dop, angle):
     plt.show()
 
 
-def displayDataCompareApproachs(WavefieldSctCircle, Dop, angle):
+def displayDataCompareApproachs(bessel_approach, CIS_approach, angle):
     import matplotlib.pyplot as plt
-    error_num = np.linalg.norm(Dop.flatten('F') - WavefieldSctCircle.flatten('F'), ord=1) / np.linalg.norm(WavefieldSctCircle.flatten('F'), ord=1)
-    error = format(error_num, 'f')
+    error_num = np.linalg.norm(CIS_approach.flatten('F') - bessel_approach.flatten('F'), ord=1) / np.linalg.norm(bessel_approach.flatten('F'), ord=1)
+    # error = format(error_num, 'f')
+    error = str(error_num)
+    print("error_num", error_num)
     # Plot data at a number of receivers
     # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
     plt.tight_layout()
-    plt.plot(angle.T, np.abs(Dop).T, '--r', angle.T, np.abs(WavefieldSctCircle).T, 'b')
+    plt.plot(angle.T, np.abs(CIS_approach).T, '--r', angle.T, np.abs(bessel_approach).T, 'b')
     plt.legend(['Integral-equation method', 'Bessel-function method'], loc='upper center')
-    plt.text(0.5*np.max(angle), 0.8*np.max(np.abs(Dop)), 'Error$^{sct}$ = ' + error, color='red', ha='center', va='center')
+    plt.text(0.5*np.max(angle), 0.8*np.max(np.abs(CIS_approach)), 'Error$^{sct}$ = ' + error, color='red', ha='center', va='center')
     plt.title('scattered wave data in 2D', fontsize=12)
     plt.axis('tight')
     plt.xlabel('observation angle in degrees')
@@ -407,9 +409,9 @@ c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI, Err
 u_inc = IncWave(gamma_0, xS, dx, X1, X2)
 
 # (3) Solve integral equation for contrast source with FFT
-tic = time.time()
+tic0 = time.time()
 w, exit_code, information = ITERBiCGSTABw(u_inc, CHI, Errcri)
-toc = time.time() - tic
+toc0 = time.time() - tic0
 
 # from varname import nameof
 # w_diff = mat_checker(w, nameof(w))
@@ -432,7 +434,5 @@ data = Dop(w, NR, N1, N2, xR, gamma_0, dx, X1, X2)
 angle = rcvr_phi * 180 / np.pi
 displayDataCSIEApproach(data, angle)
 displayDataCompareApproachs(data2D, data, angle)
-
-
 error = str(np.linalg.norm(data.flatten('F') - data2D.flatten('F'), ord=1)/np.linalg.norm(data2D.flatten('F'), ord=1))
 error
