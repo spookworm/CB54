@@ -6,6 +6,9 @@ import time
 from IPython import get_ipython
 import matplotlib.pyplot as plt
 from lib import custom_functions
+import json
+import pandas as pd
+import matplotlib.colors as mcolors
 
 # Clear workspace
 get_ipython().run_line_magic('clear', '-sf')
@@ -21,14 +24,15 @@ seedling = 0
 random.seed(42)
 
 # Number of samples to generate
-seed_count = 2
+seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
 # Folder to save solved scene arrays and solution metric information
 output_folder = "instances_output"
 # Look-up table for material properties
 path_lut = './lut/tissues.json'
-
+# The scene will have up to four different materials: 'vacuum'; 'normal tissue'; 'benign tumor'; 'cancer'.
+scene_tissues = ["vacuum", "normal tissue", "benign tumor", "cancer"]
 
 # ESTABLISH EM PARAMETERS
 # Time factor = exp(-iwt)
@@ -39,36 +43,123 @@ path_lut = './lut/tissues.json'
 input_disc_per_lambda = 10
 
 # wave speed in embedding
-c_0 = 3e8
-# c_0 = 2.99792458e8
-# relative permittivity of scatterer
-eps_sct = 1.75
-# relative permeability of scatterer
-mu_sct = 1.0
-
+c_0 = 2.99792458e8
+# Photo dimensions
+length_x_side = 0.42
+length_y_side = length_x_side
+# length_y_side = length_x_side
 # temporal frequency (Hz)
-f = 10e6
+f = 0.5e9
 # wavelength
 wavelength = c_0 / f
-# Laplace parameter where 2.0 * np.pi * f is the angular frequency (rad/s)
-s = 1e-16 - 1j*2*np.pi*f
+# angular frequency (rad/s)
+angular_frequency = 2.0 * np.pi * f
+# Laplace parameter
+s = 1e-16 - 1j*angular_frequency
 # propagation coefficient
 gamma_0 = s/c_0
 
+with open(path_lut, 'rb') as fid:
+    raw = fid.read()
+    str = raw.decode('utf-8')
+
+materials_master = pd.DataFrame(json.loads(str))
+materials_master = materials_master[materials_master['name'].isin(scene_tissues)]
+materials_master = materials_master.reset_index(drop=True)
+unique_integers = np.sort(np.unique(materials_master['uint8']))
+
+materials_master['RGB'] = materials_master['HEX'].apply(lambda x: mcolors.hex2color(x))
+markerColor = pd.DataFrame(materials_master['RGB'])
+
+materials_master['epsilonr'] = None
+materials_master['sigma'] = None
+materials_master['epsilonr_complex'] = None
+materials_master['mur'] = None
+materials_master['mur_complex'] = 1.0 - (0.0 * 1j)
+materials_master['cr'] = None
+materials_master['cr_complex'] = None
+materials_master['kr'] = None
+materials_master['kr_complex'] = None
+for k in range(0, len(unique_integers+1)):
+    materials_master.loc[k, 'epsilonr'], materials_master.loc[k, 'sigma'], materials_master.loc[k, 'epsilonr_complex'] = custom_functions.tissuePermittivity(materials_master['name'][k], f)
+    materials_master.loc[k, 'mur'] = 1.0
+    materials_master.loc[k, 'mur_complex'] = 1.0 - (0.0 * 1j)
+    materials_master.loc[k, 'cr'] = 1.0 / np.sqrt(materials_master.loc[k, 'epsilonr'] * epsilon0 * materials_master.loc[k, 'mur'] * mu0)
+    materials_master.loc[k, 'cr_complex'] = 1.0 / np.sqrt(materials_master.loc[k, 'epsilonr_complex'] * epsilon0 * materials_master.loc[k, 'mur'] * mu0)
+    # Propagation constants
+    materials_master.loc[k, 'kr'] = angular_frequency * np.sqrt(materials_master.loc[k, 'epsilonr'] * epsilon0 * materials_master.loc[k, 'mur'] * mu0)
+    materials_master.loc[k, 'kr_complex'] = angular_frequency * np.sqrt(materials_master.loc[k, 'epsilonr_complex'] * epsilon0 * materials_master.loc[k, 'mur'] * mu0)
+
+# Choose the smallest lambda (wavelength) of all materials in the configuration.
+lambda_smallest = np.min(materials_master['cr']) / f
+
+"""
+Typical image size in Mammography:
+    4,000 pixels by 5,000 pixels.
+Pixel size can is typically around 100 to 200 micrometers
+This results in an image size of approximately 10 cm by 12.5 cm.
+Therefore aim for:
+    dx = 200e-6
+    length_x_side = 12.5e-2
+    length_y_side = 10e-2
+    N1 = 5000
+    N2 = 4000
+
+make a square 4000 x 4000 pixels where the dx is set by the lambda and the
+N = 4000
+dx = 200e-6
+4000 * 200e-6
+
+length_x_side =
+lambda_smallest =
+input_disc_per_lambda =
+
+N = np.floor(length_x_side/(np.abs(lambda_smallest) / input_disc_per_lambda))
+"""
+if length_x_side > length_y_side:
+    # force N = multp 4
+    N = np.floor(length_x_side/(np.abs(lambda_smallest) / input_disc_per_lambda))
+    fourth_of_N = np.ceil(N/4)
+    while (np.mod(N, fourth_of_N) != 0):
+        N = N + 1
+    delta_x = length_x_side / N
+    # force M = multp 4, size dy near dx
+    M = np.floor(length_y_side/(delta_x))
+    fourth_of_M = np.ceil(M/4)
+    while (np.mod(M, fourth_of_M) != 0):
+        M = M + 1
+    delta_y = length_y_side / M
+    M = int(M)
+    N = int(N)
+else:
+    # force N = multp 4
+    M = np.floor(length_y_side/(np.abs(lambda_smallest) / input_disc_per_lambda))
+    fourth_of_M = np.ceil(M/4)
+    while (np.mod(M, fourth_of_M) != 0):
+        M = M + 1
+    delta_y = length_y_side / M
+    # force N = multp 4, size dx near dy
+    N = np.floor(length_x_side/(delta_y))
+    fourth_of_N = np.ceil(N/4)
+    while (np.mod(N, fourth_of_N) != 0):
+        N = N + 1
+    delta_x = length_x_side / N
+    M = int(M)
+    N = int(N)
+
+
+# relative permittivity of scatterer
+# eps_sct = 1.75
+eps_sct = materials_master.loc[materials_master.loc[materials_master['name'] == 'cancer'].index[0], 'epsilonr']
+# relative permeability of scatterer
+mu_sct = 1.0
+# mu_sct = materials_master.loc[materials_master.loc[materials_master['name'] == 'cancer'].index[0], 'mur']
 # number of samples in x_1
-N1 = 120
+N1 = N
 # number of samples in x_2
-N2 = 100
+N2 = M
 # with meshsize dx
-dx = 2
-
-
-
-
-
-
-
-
+dx = delta_x
 
 # GENERATE GEOMETRY
 radius_min_pix = int(0.05 * np.minimum(N1, N2))
@@ -81,7 +172,12 @@ custom_functions.generate_random_circles(N1, N2, radius_min_pix, radius_max_pix,
 # INITIALISE SCENE AND SAVE OUTPUTS
 xS, NR, rcvr_phi, xR, X1, X2, FFTG, Errcri = custom_functions.initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx)
 E_inc, ZH_inc = custom_functions.IncEMwave(gamma_0, xS, dx, X1, X2)
-
+custom_functions.plotComplexArray(cmd='abs', array=E_inc[0], cmap_name='jet', cmap_min=0, cmap_max=np.max(np.abs(E_inc)), title='abs')
+custom_functions.plotComplexArray(cmd='abs', array=E_inc[1], cmap_name='jet', cmap_min=0, cmap_max=np.max(np.abs(E_inc)), title='abs')
+custom_functions.plotComplexArray(cmd='real', array=E_inc[0], cmap_name='jet', cmap_min=0, cmap_max=np.max(np.abs(E_inc)), title='real_part')
+custom_functions.plotComplexArray(cmd='real', array=E_inc[1], cmap_name='jet', cmap_min=0, cmap_max=np.max(np.abs(E_inc)), title='real_part')
+custom_functions.plotComplexArray(cmd='imag', array=E_inc[0], cmap_name='jet', cmap_min=0, cmap_max=np.max(np.abs(E_inc)), title='imag')
+custom_functions.plotComplexArray(cmd='imag', array=E_inc[1], cmap_name='jet', cmap_min=0, cmap_max=np.max(np.abs(E_inc)), title='imag')
 
 # Create the output folder if it doesn't exist
 if not os.path.exists(output_folder):
@@ -107,6 +203,7 @@ for file_name in numpy_files:
     a, CHI_eps, CHI_mu = custom_functions.initEMContrast(eps_sct, mu_sct, X1, X2, geometry_file)
 
     tic0 = time.time()
+    print("tic0", tic0)
     w_E_o, exit_code_o, information_o = custom_functions.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0)
     toc0 = time.time() - tic0
     # print("information[-1, :]", information_o[-1, :])
@@ -130,10 +227,8 @@ for file_name in numpy_files:
     print("array.shape", array.shape)
     # print(array.shape)
     custom_functions.plotEMContrast(np.real(array[0, :, :]), np.real(array[1, :, :]), X1, X2)
-    # custom_functions.plotContrastSourcewE(array[2:5], X1, X2)
+    custom_functions.plotContrastSourcewE(array[2:5], X1, X2)
 
-
-# custom_functions.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
 
 # x0 = np.concatenate([w_E_o[0, :, :].flatten('F'), w_E_o[1, :, :].flatten('F')], axis=0)
 

@@ -7,11 +7,35 @@ import time
 from scipy.special import kv, iv
 
 
+def tissuePermittivity(mtls, fc):
+    # This is based on https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5879051/ @0.5e9 Hz only. Only the absolute values were available so these were used as the real parts.
+    epsilon0 = 8.854187817e-12
+    mtlLib = {
+        # Name                  a          b   c        d
+        'vacuum':               [1.0,      0,  0.0,     0.0],
+        'normal tissue':        [9.070,    0,  0.245,   0.0],
+        'benign tumor':         [24.842,   0,  0.279,   0.0],
+        'cancer':               [66.696,   0,  1.697,   0.0],
+    }
+    fcGHz = fc/1e9
+    value = mtlLib.get(mtls)
+    if value:
+        # epsilon = [mtlParams{libIdx, 1}] .* (fcGHz.^[mtlParams{libIdx, 2}]);
+        epsilon = value[0] * fcGHz**value[1]
+        # sigma = [mtlParams{libIdx, 3}] .* (fcGHz.^[mtlParams{libIdx, 4}]);
+        sigma = value[2] * fcGHz**value[3]
+        # complexEpsilon = epsilon - 1i*sigma/(2*pi*fc*epsilon0);
+        complexEpsilon = epsilon - 1j*sigma/(2*np.pi*fc*epsilon0)
+        return epsilon, sigma, complexEpsilon
+    return None
+
+
 def generate_random_circles(N1, N2, radius_min_pix, radius_max_pix, seedling, seed_count, subfolder):
+    from skimage import io
+    import matplotlib.cm as cm
     for seed in range(seedling, seedling+seed_count):
 
         shape_array = np.zeros((N2, N1))
-
         radius = random.uniform(radius_min_pix, radius_max_pix)
         center_x = random.uniform(radius, N1 - radius)
         center_y = random.uniform(radius, N2 - radius)
@@ -21,19 +45,16 @@ def generate_random_circles(N1, N2, radius_min_pix, radius_max_pix, seedling, se
                 if np.sqrt((j - center_x) ** 2 + (i - center_y) ** 2) <= radius:
                     shape_array[i, j] = 1
 
-        fig, ax = plt.subplots()
-        ax.imshow(shape_array, cmap='binary', interpolation='none')
-        ax.axis('off')
-        # plt.savefig(os.path.join(subfolder, f"instance_{seed}.png"), bbox_inches='tight', pad_inches=0)
-        plt.savefig(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.png"), bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # Only use as visualisation, not input data. Use the npy array as input data to avoid clipping etc.
+        colored_image = cm.gray(shape_array.T)
+        io.imsave(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.png"), colored_image, check_contrast=False)
         np.save(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.npy"), shape_array)
-        # np.save(os.path.join(subfolder, f"instance_{seed}.npy"), shape_array)
+        print("np.shape(shape_array)", np.shape(shape_array))
 
 
 def initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx):
     # add location of source/receiver
-    xS, NR, rcvr_phi, xR = initSourceReceiver()
+    xS, NR, rcvr_phi, xR = initSourceReceiver(N1, dx)
 
     # add grid in either 1D, 2D or 3D
     # initGrid() and initGridEM() are equivalent
@@ -46,10 +67,11 @@ def initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx):
     return xS, NR, rcvr_phi, xR, X1, X2, FFTG, Errcri
 
 
-def initSourceReceiver():
+def initSourceReceiver(N1, dx):
     # Source Position
     xS = np.zeros((1, 2), dtype=np.float64, order='F')
-    xS[0, 0] = -170.0
+    # xS[0, 0] = -170.0
+    xS[0, 0] = -N1*dx
     xS[0, 1] = 0.0
 
     # Receiver Positions
@@ -59,8 +81,8 @@ def initSourceReceiver():
     rcvr_phi[0, 0:NR] = np.arange(1, NR+1, 1) * 2.0 * np.pi / NR
 
     xR = np.zeros((2, NR), dtype=np.float64, order='F')
-    xR[0, 0:NR] = 150 * np.cos(rcvr_phi)
-    xR[1, 0:NR] = 150 * np.sin(rcvr_phi)
+    xR[0, 0:NR] = (N1*dx) * np.cos(rcvr_phi)
+    xR[1, 0:NR] = (N1*dx) * np.sin(rcvr_phi)
     return xS, NR, rcvr_phi, xR
 
 
@@ -167,6 +189,38 @@ def plotEMContrast(CHI_eps, CHI_mu, X1, X2):
     plt.show()
 
 
+def plotComplexArray(cmd, array, cmap_name, cmap_min, cmap_max, title):
+    import numpy as np
+    from skimage import io
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+
+    if cmd == 'real':
+        array = np.real(array)
+    elif cmd == 'imag':
+        array = np.imag(array)
+    elif cmd == 'abs':
+        array = np.abs(array)
+    else:
+        print("error input cmd string")
+    normalized_array = (array - cmap_min) / (cmap_max - cmap_min)
+    # colormap = cm.get_cmap('jet')
+    colormap = mpl.colormaps['jet']
+    colored_array = colormap(normalized_array)
+    colored_array = (colored_array * 255).astype(np.uint8)
+    # io.imsave('output.png', colored_array)
+
+    # Plot the image
+    plt.imshow(colored_array)
+
+    # Add a colorbar
+    cbar = plt.colorbar()
+    cbar.set_label('Value')
+
+    # Display the plot
+    plt.show()
+
+
 def IncEMwave(gamma_0, xS, dx, X1, X2):
     # incident wave from electric dipole in negative x_1
 
@@ -223,6 +277,8 @@ def ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None):
         callback.time_total = time.time() - callback.start_time
         row = np.array([callback.iter, resvec, callback.time_total])
         callback.information = np.vstack((callback.information, row))
+        if callback.iter % 50 == 0:
+            print("iter: ", callback.iter)
 
     # Initialise iteration count
     callback.start_time = time.time()
