@@ -24,7 +24,8 @@ seedling = 0
 random.seed(42)
 
 # Number of samples to generate
-seed_count = 1
+seed_count = 36000
+# seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
 # Folder to save solved scene arrays and solution metric information
@@ -224,7 +225,7 @@ for file_name in numpy_files:
     # Load the numpy array
     geometry_file = os.path.join(output_folder, file_name)
     array = np.load(geometry_file)
-    print("array.shape", array.shape)
+    # print("array.shape", array.shape)
     # print(array.shape)
     custom_functions.plotEMContrast(np.real(array[0, :, :]), np.real(array[1, :, :]), X1, X2)
     custom_functions.plotContrastSourcewE(array[2:5], X1, X2)
@@ -261,7 +262,7 @@ for file_name in numpy_files:
     # Load the numpy array
     geometry_file = os.path.join(output_folder, file_name)
     array = np.load(geometry_file)
-    print(array.shape)
+    # print(array.shape)
 
     # Plot the data
     plt.plot(array[:, 0], array[:, 1])

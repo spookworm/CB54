@@ -49,7 +49,7 @@ def generate_random_circles(N1, N2, radius_min_pix, radius_max_pix, seedling, se
         colored_image = cm.gray(shape_array.T)
         io.imsave(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.png"), colored_image, check_contrast=False)
         np.save(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.npy"), shape_array)
-        print("np.shape(shape_array)", np.shape(shape_array))
+        # print("np.shape(shape_array)", np.shape(shape_array))
 
 
 def initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx):
