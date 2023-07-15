@@ -14,12 +14,29 @@ get_ipython().run_line_magic('clear', '-sf')
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=20)
 
+# HARD-CODED VARIABLES
+epsilon0 = 8.854187817e-12
+mu0 = 4.0 * np.pi * 1.0e-7
+seedling = 0
 random.seed(42)
+
+# Number of samples to generate
+seed_count = 2
+# Folder to save contrast scene array and visualisation
+input_folder = "instances"
+# Folder to save solved scene arrays and solution metric information
+output_folder = "instances_output"
+# Look-up table for material properties
+path_lut = './lut/tissues.json'
+
 
 # ESTABLISH EM PARAMETERS
 # Time factor = exp(-iwt)
 # Spatial units is in m
 # Source wavelet M Z_0 / gamma_0  = 1   (Z_0 M = gamma_0)
+
+# chosen accuracy
+input_disc_per_lambda = 10
 
 # wave speed in embedding
 c_0 = 3e8
@@ -29,11 +46,11 @@ eps_sct = 1.75
 # relative permeability of scatterer
 mu_sct = 1.0
 
-# temporal frequency
+# temporal frequency (Hz)
 f = 10e6
 # wavelength
 wavelength = c_0 / f
-# Laplace parameter
+# Laplace parameter where 2.0 * np.pi * f is the angular frequency (rad/s)
 s = 1e-16 - 1j*2*np.pi*f
 # propagation coefficient
 gamma_0 = s/c_0
@@ -46,23 +63,25 @@ N2 = 100
 dx = 2
 
 
+
+
+
+
+
+
+
 # GENERATE GEOMETRY
-seedling = 0
-seed_count = 2
 radius_min_pix = int(0.05 * np.minimum(N1, N2))
 radius_max_pix = int(0.15 * np.minimum(N1, N2))
 
-subfolder = "instances"
-os.makedirs(subfolder, exist_ok=True)
+os.makedirs(input_folder, exist_ok=True)
 
-custom_functions.generate_random_circles(N1, N2, radius_min_pix, radius_max_pix, seedling, seed_count, subfolder)
+custom_functions.generate_random_circles(N1, N2, radius_min_pix, radius_max_pix, seedling, seed_count, input_folder)
 
 # INITIALISE SCENE AND SAVE OUTPUTS
 xS, NR, rcvr_phi, xR, X1, X2, FFTG, Errcri = custom_functions.initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx)
 E_inc, ZH_inc = custom_functions.IncEMwave(gamma_0, xS, dx, X1, X2)
 
-input_folder = "instances"
-output_folder = "instances_output"
 
 # Create the output folder if it doesn't exist
 if not os.path.exists(output_folder):
