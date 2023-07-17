@@ -24,7 +24,7 @@ seedling = 0
 random.seed(42)
 
 # Number of samples to generate
-seed_count = 36000
+seed_count = 300
 # seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
@@ -205,78 +205,83 @@ for file_name in numpy_files:
 
     tic0 = time.time()
     print("tic0", tic0)
-    w_E_o, exit_code_o, information_o = custom_functions.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0)
+    w_E_o, exit_code_o, information_o = custom_functions.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=1)
     toc0 = time.time() - tic0
     # print("information[-1, :]", information_o[-1, :])
     print("toc", toc0)
+    if exit_code_o == 0:
+        # Save the result in the output folder with the same file name
+        output_file_path = os.path.join(output_folder, file_name)
+        final_array = np.concatenate((np.expand_dims(CHI_eps, axis=0), np.expand_dims(CHI_mu, axis=0), w_E_o), axis=0)
+        np.save(output_file_path, final_array)
 
-    # Save the result in the output folder with the same file name
-    output_file_path = os.path.join(output_folder, file_name)
-    final_array = np.concatenate((np.expand_dims(CHI_eps, axis=0), np.expand_dims(CHI_mu, axis=0), w_E_o), axis=0)
-    np.save(output_file_path, final_array)
-
-    output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info")
-    np.save(output_file_path_info, information_o)
-
-
-numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
-# Iterate over each numpy file
-for file_name in numpy_files:
-    # Load the numpy array
-    geometry_file = os.path.join(output_folder, file_name)
-    array = np.load(geometry_file)
-    # print("array.shape", array.shape)
-    # print(array.shape)
-    custom_functions.plotEMContrast(np.real(array[0, :, :]), np.real(array[1, :, :]), X1, X2)
-    custom_functions.plotContrastSourcewE(array[2:5], X1, X2)
+        output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info")
+        np.save(output_file_path_info, information_o)
+    else:
+        print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
 
 
-# x0 = np.concatenate([w_E_o[0, :, :].flatten('F'), w_E_o[1, :, :].flatten('F')], axis=0)
-
-# tic1 = time.time()
-# w_E, exit_code, information = custom_functions.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0)
-# toc1 = time.time() - tic1
-# # print("information[-1, :]", information[-1, :])
-# print("toc", toc1)
-
-# print("fewer iterations by", information_o[-1, 0] - information[-1, 0])
-# print("closer by", information_o[-1, 1] - information[-1, 1])
-# print("faster by", information_o[-1, 2] - information[-1, 2])
-
-# E_sct = custom_functions.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
-
-# custom_functions.plotContrastSourcewE(w_E, X1, X2)
-# E_val = custom_functions.E(E_inc, E_sct)
-# custom_functions.plotEtotalwavefield(E_val, a, X1, X2, N1, N2)
+# numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
+# # Iterate over each numpy file
+# for file_name in numpy_files:
+#     # Load the numpy array
+#     geometry_file = os.path.join(output_folder, file_name)
+#     array = np.load(geometry_file)
+#     # print("array.shape", array.shape)
+#     # print(array.shape)
+#     custom_functions.plotEMContrast(np.real(array[0, :, :]), np.real(array[1, :, :]), X1, X2)
+#     custom_functions.plotContrastSourcewE(array[2:5], X1, X2)
 
 
-# ITERATION INFORMATION
-E_inc = np.load(os.path.join(output_folder, 'E_inc.npy'))
-ZH_inc = np.load(os.path.join(output_folder, 'ZH_inc.npy'))
-X1 = np.load(os.path.join(output_folder, 'X1.npy'))
-X2 = np.load(os.path.join(output_folder, 'X2.npy'))
+# # x0 = np.concatenate([w_E_o[0, :, :].flatten('F'), w_E_o[1, :, :].flatten('F')], axis=0)
 
-numpy_files = [f for f in os.listdir(output_folder) if f.endswith("_info.npy")]
-# Iterate over each numpy file
-for file_name in numpy_files:
-    # Load the numpy array
-    geometry_file = os.path.join(output_folder, file_name)
-    array = np.load(geometry_file)
-    # print(array.shape)
+# # tic1 = time.time()
+# # w_E, exit_code, information = custom_functions.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0)
+# # toc1 = time.time() - tic1
+# # # print("information[-1, :]", information[-1, :])
+# # print("toc", toc1)
 
-    # Plot the data
-    plt.plot(array[:, 0], array[:, 1])
-    plt.yscale('log')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Plot of first column (X) vs. second column (Y)')
-    plt.show()
+# # print("fewer iterations by", information_o[-1, 0] - information[-1, 0])
+# # print("closer by", information_o[-1, 1] - information[-1, 1])
+# # print("faster by", information_o[-1, 2] - information[-1, 2])
 
-    # Plot the data
-    plt.plot(array[:, 0], array[:, 2])
-    plt.yscale('log')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Plot of first column (X) vs. third column (Y)')
-    plt.show()
+# # E_sct = custom_functions.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
 
+# # custom_functions.plotContrastSourcewE(w_E, X1, X2)
+# # E_val = custom_functions.E(E_inc, E_sct)
+# # custom_functions.plotEtotalwavefield(E_val, a, X1, X2, N1, N2)
+
+
+# # ITERATION INFORMATION
+# E_inc = np.load(os.path.join(output_folder, 'E_inc.npy'))
+# ZH_inc = np.load(os.path.join(output_folder, 'ZH_inc.npy'))
+# X1 = np.load(os.path.join(output_folder, 'X1.npy'))
+# X2 = np.load(os.path.join(output_folder, 'X2.npy'))
+
+# numpy_files = [f for f in os.listdir(output_folder) if f.endswith("_info.npy")]
+# # Iterate over each numpy file
+# for file_name in numpy_files:
+#     # Load the numpy array
+#     geometry_file = os.path.join(output_folder, file_name)
+#     array = np.load(geometry_file)
+#     # print(array.shape)
+
+#     # Plot the data
+#     plt.plot(array[:, 0], array[:, 1])
+#     plt.yscale('log')
+#     plt.xlabel('X')
+#     plt.ylabel('Y')
+#     plt.title('Plot of first column (X) vs. second column (Y)')
+#     plt.show()
+
+#     # Plot the data
+#     plt.plot(array[:, 0], array[:, 2])
+#     plt.yscale('log')
+#     plt.xlabel('X')
+#     plt.ylabel('Y')
+#     plt.title('Plot of first column (X) vs. third column (Y)')
+#     plt.show()
+
+# # Review individual information for _0 and _m
+# array_0 = np.load('./instances_output_600_0/instance_0000000046_info.npy')
+# array_m = np.load('./instances_output_600_m/instance_0000000046_info.npy')

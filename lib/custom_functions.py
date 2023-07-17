@@ -7,6 +7,128 @@ import time
 from scipy.special import kv, iv
 
 
+def unet(input_shape):
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Concatenate
+
+    # Input layer
+    inputs = Input(input_shape)
+
+    # Contracting path
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(inputs)
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
+    pool1 = MaxPooling2D(pool_size=(1, 1))(conv1)
+
+    conv2 = Conv2D(32, 3, activation='relu', padding='same')(pool1)
+    conv2 = Conv2D(32, 3, activation='relu', padding='same')(conv2)
+    pool2 = MaxPooling2D(pool_size=(1, 1))(conv2)
+
+    conv3 = Conv2D(16, 3, activation='relu', padding='same')(pool2)
+    conv3 = Conv2D(16, 3, activation='relu', padding='same')(conv3)
+    pool3 = MaxPooling2D(pool_size=(1, 1))(conv3)
+
+    # Bottom layer
+    conv4 = Conv2D(8, 3, activation='relu', padding='same')(pool3)
+    conv4 = Conv2D(8, 3, activation='relu', padding='same')(conv4)
+
+    # Expanding path
+    up5 = UpSampling2D(size=(1, 1))(conv4)
+    up5 = Conv2D(16, 2, activation='relu', padding='same')(up5)
+    merge5 = Concatenate(axis=-1)([conv3, up5])
+    conv5 = Conv2D(16, 3, activation='relu', padding='same')(merge5)
+    conv5 = Conv2D(16, 3, activation='relu', padding='same')(conv5)
+
+    up6 = UpSampling2D(size=(1, 1))(conv5)
+    up6 = Conv2D(32, 2, activation='relu', padding='same')(up6)
+    merge6 = Concatenate(axis=-1)([conv2, up6])
+    conv6 = Conv2D(32, 3, activation='relu', padding='same')(merge6)
+    conv6 = Conv2D(32, 3, activation='relu', padding='same')(conv6)
+
+    up7 = UpSampling2D(size=(1, 1))(conv6)
+    up7 = Conv2D(64, 2, activation='relu', padding='same')(up7)
+    merge7 = Concatenate(axis=-1)([conv1, up7])
+    conv7 = Conv2D(64, 3, activation='relu', padding='same')(merge7)
+    conv7 = Conv2D(64, 3, activation='relu', padding='same')(conv7)
+
+    # Output layer
+    # outputs = Conv2D(60, 1)(conv7)
+    outputs = Conv2D(60, 1)(conv7)
+
+    # Create the model
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
+
+
+def prescient2DL_data(data_folder, field, train_list, val_list, test_list):
+    x_train = []
+    y_train = []
+    for file in train_list:
+        data = np.load(os.path.join(data_folder, file))
+        input_data = np.abs(data[0, :, :])
+        if field == "real":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.real(data[2, :, :])
+        elif field == "imag":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.imag(data[2, :, :])
+        elif field == "abs":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.abs(data[2, :, :])
+        x_train.append(input_data)
+        y_train.append(output_data)
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    # Step 2: Reshape the data
+    x_train = np.reshape(x_train, (x_train.shape[0], 1, 60, 60))
+    y_train = np.reshape(y_train, (y_train.shape[0], 1, 60, 60))
+
+    x_test = []
+    y_test = []
+    for file in test_list:
+        data = np.load(os.path.join(data_folder, file))
+        input_data = np.abs(data[0, :, :])
+        if field == "real":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.real(data[2, :, :])
+        elif field == "imag":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.imag(data[2, :, :])
+        elif field == "abs":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.abs(data[2, :, :])
+        x_test.append(input_data)
+        y_test.append(output_data)
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+    # Step 2: Reshape the data
+    x_test = np.reshape(x_test, (x_test.shape[0], 1, 60, 60))
+    y_test = np.reshape(y_test, (y_test.shape[0], 1, 60, 60))
+
+    x_val = []
+    y_val = []
+    for file in val_list:
+        data = np.load(os.path.join(data_folder, file))
+        input_data = np.abs(data[0, :, :])
+        if field == "real":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.real(data[2, :, :])
+        elif field == "imag":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.imag(data[2, :, :])
+        elif field == "abs":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.abs(data[2, :, :])
+        x_val.append(input_data)
+        y_val.append(output_data)
+    x_val = np.array(x_val)
+    y_val = np.array(y_val)
+    # Step 2: Reshape the data
+    x_val = np.reshape(x_val, (x_val.shape[0], 1, 60, 60))
+    y_val = np.reshape(y_val, (y_val.shape[0], 1, 60, 60))
+
+    return x_train, y_train, x_test, y_test, x_val, y_val
+
+
 def tissuePermittivity(mtls, fc):
     # This is based on https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5879051/ @0.5e9 Hz only. Only the absolute values were available so these were used as the real parts.
     epsilon0 = 8.854187817e-12
@@ -47,7 +169,8 @@ def generate_random_circles(N1, N2, radius_min_pix, radius_max_pix, seedling, se
 
         # Only use as visualisation, not input data. Use the npy array as input data to avoid clipping etc.
         colored_image = cm.gray(shape_array.T)
-        io.imsave(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.png"), colored_image, check_contrast=False)
+        image_uint8 = (colored_image * 255).astype(np.uint8)
+        io.imsave(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.png"), image_uint8, check_contrast=False)
         np.save(os.path.join(subfolder, f"instance_{str(seed).zfill(10)}.npy"), shape_array)
         # print("np.shape(shape_array)", np.shape(shape_array))
 
@@ -262,9 +385,17 @@ def ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None):
     b[0:N, 0] = CHI_eps.flatten('F') * E_inc[0, :].flatten('F')
     b[N:2*N, 0] = CHI_eps.flatten('F') * E_inc[1, :].flatten('F')
 
-    if x0 is None:
+    if x0 == 0:
         # Create an array of zeros
         x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
+    else:
+        from keras.models import load_model
+        model_re = load_model('model_re.keras')
+        model_im = load_model('model_im.keras')
+        # x0 = np.concatenate([w_E_o[0, :, :].flatten('F'), w_E_o[1, :, :].flatten('F')], axis=0)
+        x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
+        x0_2D = np.squeeze(model_re.predict(np.real(CHI_eps.reshape(-1, 1, 60, 60))) + 1j*model_im.predict(np.imag(CHI_eps.reshape(-1, 1, 60, 60))))
+        x0[0:N, 0] = x0_2D.copy().flatten('F')
 
     def custom_matvec(w):
         return Aw(w, N1, N2, dx, FFTG, CHI_eps, gamma_0)
