@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from tensorflow import keras
 from keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from lib import custom_functions
@@ -31,7 +32,7 @@ file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and not f.
 train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
 train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
 
-batch_size = 1000
+batch_size = 256
 # epochs = int((x_train.size/batch_size)*0.5)
 epochs = 36
 # np.shape(x_val)
