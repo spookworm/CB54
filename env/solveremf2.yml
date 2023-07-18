@@ -20,6 +20,7 @@ dependencies:
   - blas=1.0=mkl
   - bleach=4.1.0=pyhd3eb1b0_0
   - blosc=1.21.3=h6c2663c_0
+  - boltons=23.0.0=py310haa95532_0
   - brotli=1.0.9=h2bbff1b_7
   - brotli-bin=1.0.9=h2bbff1b_7
   - brotlipy=0.7.0=py310h2bbff1b_1002
@@ -35,6 +36,9 @@ dependencies:
   - cloudpickle=2.0.0=pyhd3eb1b0_0
   - colorama=0.4.6=py310haa95532_0
   - comm=0.1.2=py310haa95532_0
+  - conda=23.5.2=py310h5588dad_0
+  - conda-package-handling=2.1.0=py310haa95532_0
+  - conda-package-streaming=0.8.0=py310haa95532_0
   - cookiecutter=1.7.3=pyhd3eb1b0_0
   - cryptography=39.0.1=py310h21b164f_0
   - cudatoolkit=11.2.2=h933977f_10
@@ -78,6 +82,8 @@ dependencies:
   - jinja2=3.0.3=pyhd3eb1b0_0
   - jinja2-time=0.2.0=pyhd3eb1b0_3
   - jpeg=9e=h2bbff1b_0
+  - jsonpatch=1.32=pyhd3eb1b0_0
+  - jsonpointer=2.1=pyhd3eb1b0_0
   - jsonschema=3.2.0=pyhd3eb1b0_2
   - jupyter_client=8.1.0=py310haa95532_0
   - jupyter_core=5.3.0=py310haa95532_0
@@ -112,6 +118,7 @@ dependencies:
   - markupsafe=2.1.1=py310h2bbff1b_0
   - matplotlib-inline=0.1.2=pyhd3eb1b0_2
   - mccabe=0.7.0=pyhd3eb1b0_0
+  - menuinst=1.4.19=py310h59b6b97_0
   - mistune=0.8.4=py310h2bbff1b_1000
   - mkl=2023.1.0=h8bd8f75_46356
   - mkl-service=2.4.0=py310h2bbff1b_1
@@ -150,6 +157,7 @@ dependencies:
   - ptyprocess=0.7.0=pyhd3eb1b0_2
   - pure_eval=0.2.2=pyhd3eb1b0_0
   - pycodestyle=2.10.0=py310haa95532_0
+  - pycosat=0.6.4=py310h2bbff1b_0
   - pycparser=2.21=pyhd3eb1b0_0
   - pydocstyle=6.3.0=py310haa95532_0
   - pyflakes=3.0.1=py310haa95532_0
@@ -169,6 +177,7 @@ dependencies:
   - python-lsp-jsonrpc=1.0.0=pyhd3eb1b0_0
   - python-lsp-server=1.7.2=py310haa95532_0
   - python-slugify=5.0.2=pyhd3eb1b0_0
+  - python_abi=3.10=2_cp310
   - pytoolconfig=1.2.5=py310haa95532_1
   - pytz=2023.3=pyhd8ed1ab_0
   - pywavelets=1.4.1=py310h2bbff1b_0
@@ -185,6 +194,8 @@ dependencies:
   - requests=2.27.1=pyhd3eb1b0_0
   - rope=1.7.0=py310haa95532_0
   - rtree=1.0.1=py310h2eaa2aa_0
+  - ruamel.yaml=0.17.21=py310h2bbff1b_0
+  - ruamel.yaml.clib=0.2.6=py310h2bbff1b_1
   - scikit-image=0.20.0=py310h3513d60_0
   - scipy=1.10.1=py310h309d312_1
   - sip=6.6.2=py310hd77b12b_0
@@ -217,10 +228,10 @@ dependencies:
   - tomlkit=0.11.1=py310haa95532_0
   - toolz=0.12.0=py310haa95532_0
   - tornado=6.2=py310h2bbff1b_0
+  - tqdm=4.65.0=py310h9909e9c_0
   - traitlets=5.7.1=py310haa95532_0
   - typing-extensions=4.1.1=hd3eb1b0_0
   - typing_extensions=4.1.1=pyh06a4308_0
-  - tzdata=2023c=h71feb2d_0
   - ujson=5.4.0=py310hd77b12b_0
   - unidecode=1.2.0=pyhd3eb1b0_0
   - urllib3=1.26.8=pyhd3eb1b0_0
@@ -240,6 +251,7 @@ dependencies:
   - zfp=0.5.5=hd77b12b_6
   - zipp=3.7.0=pyhd3eb1b0_0
   - zlib=1.2.13=h8cc25b3_0
+  - zstandard=0.19.0=py310h2bbff1b_0
   - zstd=1.5.2=h19a0ad4_0
   - pip:
       - absl-py==1.4.0
@@ -264,6 +276,7 @@ dependencies:
       - matplotlib==3.7.2
       - oauthlib==3.2.2
       - opt-einsum==3.3.0
+      - pandas==2.0.3
       - pip==23.2
       - protobuf==3.19.6
       - pyasn1==0.5.0
@@ -276,15 +289,14 @@ dependencies:
       - rsa==4.9
       - scikit-learn==1.3.0
       - setuptools==68.0.0
-      - sklearn==0.0.post5
       - tensorboard==2.10.1
       - tensorboard-data-server==0.6.1
       - tensorboard-plugin-wit==1.8.1
       - tensorflow==2.10.1
       - tensorflow-estimator==2.10.0
-      - tensorflow-intel==2.13.0
       - tensorflow-io-gcs-filesystem==0.31.0
       - termcolor==2.3.0
       - threadpoolctl==3.2.0
+      - tzdata==2023.3
       - werkzeug==2.3.6
 prefix: C:\Users\antho\anaconda3\envs\solveremf2

@@ -1,3 +1,4 @@
+import tensorflow
 import random
 import numpy as np
 import os
@@ -5,10 +6,10 @@ import sys
 import time
 from IPython import get_ipython
 import matplotlib.pyplot as plt
-from lib import custom_functions
+import matplotlib.colors as mcolors
 import json
 import pandas as pd
-import matplotlib.colors as mcolors
+from lib import custom_functions
 
 # Clear workspace
 get_ipython().run_line_magic('clear', '-sf')
@@ -24,7 +25,7 @@ seedling = 0
 random.seed(42)
 
 # Number of samples to generate
-seed_count = 300
+seed_count = 3
 # seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
@@ -50,7 +51,7 @@ length_x_side = 0.42
 length_y_side = length_x_side
 # length_y_side = length_x_side
 # temporal frequency (Hz)
-f = 0.5e9
+f = 2.225e9
 # wavelength
 wavelength = c_0 / f
 # angular frequency (rad/s)
@@ -282,6 +283,6 @@ for file_name in numpy_files:
 #     plt.title('Plot of first column (X) vs. third column (Y)')
 #     plt.show()
 
-# # Review individual information for _0 and _m
-# array_0 = np.load('./instances_output_600_0/instance_0000000046_info.npy')
-# array_m = np.load('./instances_output_600_m/instance_0000000046_info.npy')
+# Review individual information for _0 and _m
+array_0 = np.load('./instances_output_300_0/instance_0000000046_info.npy')
+array_m = np.load('./instances_output_300_m/instance_0000000046_info.npy')

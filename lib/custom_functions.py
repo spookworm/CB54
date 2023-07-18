@@ -130,7 +130,8 @@ def prescient2DL_data(data_folder, field, train_list, val_list, test_list):
 
 
 def tissuePermittivity(mtls, fc):
-    # This is based on https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5879051/ @0.5e9 Hz only. Only the absolute values were available so these were used as the real parts.
+    # This is based on https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5879051/ @0.5e9 Hz only.
+    # Only the absolute values were available so these were used as the real parts.
     epsilon0 = 8.854187817e-12
     mtlLib = {
         # Name                  a          b   c        d
@@ -394,7 +395,7 @@ def ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None):
         model_im = load_model('model_im.keras')
         # x0 = np.concatenate([w_E_o[0, :, :].flatten('F'), w_E_o[1, :, :].flatten('F')], axis=0)
         x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
-        x0_2D = np.squeeze(model_re.predict(np.real(CHI_eps.reshape(-1, 1, 60, 60))) + 1j*model_im.predict(np.imag(CHI_eps.reshape(-1, 1, 60, 60))))
+        x0_2D = np.squeeze(model_re.predict(np.real(CHI_eps.reshape(-1, 1, N1, N2))) + 1j*model_im.predict(np.imag(CHI_eps.reshape(-1, 1, N1, N2))))
         x0[0:N, 0] = x0_2D.copy().flatten('F')
 
     def custom_matvec(w):
