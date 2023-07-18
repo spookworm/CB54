@@ -1,4 +1,4 @@
-import tensorflow
+import tensorflow as tf
 import random
 import numpy as np
 import os
@@ -17,6 +17,8 @@ get_ipython().run_line_magic('clear', '-sf')
 
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=20)
+print(tf.config.list_physical_devices('GPU'))
+
 
 # HARD-CODED VARIABLES
 epsilon0 = 8.854187817e-12
@@ -25,7 +27,7 @@ seedling = 0
 random.seed(42)
 
 # Number of samples to generate
-seed_count = 3
+seed_count = 3000
 # seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
@@ -51,7 +53,8 @@ length_x_side = 0.42
 length_y_side = length_x_side
 # length_y_side = length_x_side
 # temporal frequency (Hz)
-f = 2.225e9
+# f = 2.225e9
+f = 1.1125e9
 # wavelength
 wavelength = c_0 / f
 # angular frequency (rad/s)
@@ -169,7 +172,7 @@ radius_max_pix = int(0.15 * np.minimum(N1, N2))
 
 os.makedirs(input_folder, exist_ok=True)
 
-custom_functions.generate_random_circles(N1, N2, radius_min_pix, radius_max_pix, seedling, seed_count, input_folder)
+custom_functions.generate_random_circles(N1,  N2, radius_min_pix, radius_max_pix, seedling, seed_count, input_folder)
 
 # INITIALISE SCENE AND SAVE OUTPUTS
 xS, NR, rcvr_phi, xR, X1, X2, FFTG, Errcri = custom_functions.initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx)
@@ -206,7 +209,7 @@ for file_name in numpy_files:
 
     tic0 = time.time()
     print("tic0", tic0)
-    w_E_o, exit_code_o, information_o = custom_functions.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=1)
+    w_E_o, exit_code_o, information_o = custom_functions.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=0)
     toc0 = time.time() - tic0
     # print("information[-1, :]", information_o[-1, :])
     print("toc", toc0)

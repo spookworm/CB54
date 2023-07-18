@@ -187,7 +187,7 @@ def initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx):
     # compute FFT of Green function
     FFTG = initFFTGreen(N1, N2, dx, gamma_0)
 
-    Errcri = 1e-18
+    Errcri = 1e-10
     return xS, NR, rcvr_phi, xR, X1, X2, FFTG, Errcri
 
 

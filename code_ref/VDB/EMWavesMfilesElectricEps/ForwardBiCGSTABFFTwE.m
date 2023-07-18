@@ -16,8 +16,9 @@ plotEMcontrast(input); % plot permittivity / permeability contrast
 tic;
 [w_E] = ITERBiCGSTABwE(E_inc,input);
 toc;
-w_E1=w_E{1};
-w_E2=w_E{2};
+w_E1=w_E{1}(:);
+w_E2=w_E{2}(:);
+w_ET=cat(1,w_E1,w_E2);
 
 plotContrastSourcewE(w_E,input);
 [E_sct] = KopE(w_E,input); 

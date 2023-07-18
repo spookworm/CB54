@@ -55,7 +55,7 @@ end
 vacuum_kr = materials_master(strcmp(materials_master.('name'), 'vacuum'),:).('kr');
 
 % VISUALISE
-% image_object_render(image_object, materials_master, markerColor, 'Material Configuration Before Scaling for f')
+image_object_render(image_object, materials_master, markerColor, 'Material Configuration Before Scaling for f')
 
 % This assumes that the scale of the imported geometry is 1m per cell in both directions.
 % As a result, the room in the original code will not work properly. Use
