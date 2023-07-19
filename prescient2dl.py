@@ -18,7 +18,7 @@ from lib import custom_functions
 # holding everything else as constant.
 # """
 
-data_folder = "instances_output_36000_0"
+data_folder = "instances_output"
 # X1 = np.load(os.path.join(data_folder, 'X1.npy'))
 # X2 = np.load(os.path.join(data_folder, 'X2.npy'))
 # E_inc = np.load(os.path.join(data_folder, 'E_inc.npy'))
@@ -36,13 +36,16 @@ batch_size = 256
 # epochs = int((x_train.size/batch_size)*0.5)
 epochs = 36
 # np.shape(x_val)
-input_shape = (1, 60, 60)
+E_inc = np.load(os.path.join(data_folder, 'E_inc.npy'))
+N1 = E_inc.shape[1]
+N2 = E_inc.shape[2]
+input_shape = (1, N1, N2)
 
 # Create the U-Net model
 model_re = custom_functions.unet(input_shape)
 model_re.compile(optimizer='adam', loss='mean_squared_error')
 model_re.summary()
-# x_train_re, y_train_re, x_test_re, y_test_re, x_val_re, y_val_re = custom_functions.prescient2DL_data(data_folder, "real", train_list, val_list, test_list)
+# x_train_re, y_train_re, x_test_re, y_test_re, x_val_re, y_val_re = custom_functions.prescient2DL_data(data_folder, "real", train_list, val_list, test_list, N1, N2)
 # np.save('x_train_re', x_train_re)
 # np.save('y_train_re', y_train_re)
 # np.save('x_test_re', x_test_re)
@@ -63,7 +66,7 @@ history_re = model_re.fit(x_train_re, y_train_re, batch_size=batch_size, epochs=
 model_im = custom_functions.unet(input_shape)
 model_im.compile(optimizer='adam', loss='mean_squared_error')
 model_im.summary()
-# x_train_im, y_train_im, x_test_im, y_test_im, x_val_im, y_val_im = custom_functions.prescient2DL_data(data_folder, "imag", train_list, val_list, test_list)
+# x_train_im, y_train_im, x_test_im, y_test_im, x_val_im, y_val_im = custom_functions.prescient2DL_data(data_folder, "imag", train_list, val_list, test_list, N1, N2)
 # np.save('x_train_im', x_train_im)
 # np.save('y_train_im', y_train_im)
 # np.save('x_test_im', x_test_im)

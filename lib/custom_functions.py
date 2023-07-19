@@ -15,7 +15,11 @@ def unet(input_shape):
     inputs = Input(input_shape)
 
     # Contracting path
-    conv1 = Conv2D(64, 3, activation='relu', padding='same')(inputs)
+    conv0 = Conv2D(128, 3, activation='relu', padding='same')(inputs)
+    conv0 = Conv2D(128, 3, activation='relu', padding='same')(conv0)
+    pool0 = MaxPooling2D(pool_size=(1, 1))(conv0)
+
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(pool0)
     conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
     pool1 = MaxPooling2D(pool_size=(1, 1))(conv1)
 
@@ -50,16 +54,22 @@ def unet(input_shape):
     conv7 = Conv2D(64, 3, activation='relu', padding='same')(merge7)
     conv7 = Conv2D(64, 3, activation='relu', padding='same')(conv7)
 
+    up8 = UpSampling2D(size=(1, 1))(conv7)
+    up8 = Conv2D(128, 2, activation='relu', padding='same')(up8)
+    merge8 = Concatenate(axis=-1)([conv1, up8])
+    conv8 = Conv2D(128, 3, activation='relu', padding='same')(merge8)
+    conv8 = Conv2D(128, 3, activation='relu', padding='same')(conv8)
+
     # Output layer
     # outputs = Conv2D(60, 1)(conv7)
-    outputs = Conv2D(60, 1)(conv7)
+    outputs = Conv2D(128, 1)(conv8)
 
     # Create the model
     model = Model(inputs=inputs, outputs=outputs)
     return model
 
 
-def prescient2DL_data(data_folder, field, train_list, val_list, test_list):
+def prescient2DL_data(data_folder, field, train_list, val_list, test_list, N1, N2):
     x_train = []
     y_train = []
     for file in train_list:
@@ -79,8 +89,8 @@ def prescient2DL_data(data_folder, field, train_list, val_list, test_list):
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     # Step 2: Reshape the data
-    x_train = np.reshape(x_train, (x_train.shape[0], 1, 60, 60))
-    y_train = np.reshape(y_train, (y_train.shape[0], 1, 60, 60))
+    x_train = np.reshape(x_train, (x_train.shape[0], 1, N1, N2))
+    y_train = np.reshape(y_train, (y_train.shape[0], 1, N1, N2))
 
     x_test = []
     y_test = []
@@ -101,8 +111,8 @@ def prescient2DL_data(data_folder, field, train_list, val_list, test_list):
     x_test = np.array(x_test)
     y_test = np.array(y_test)
     # Step 2: Reshape the data
-    x_test = np.reshape(x_test, (x_test.shape[0], 1, 60, 60))
-    y_test = np.reshape(y_test, (y_test.shape[0], 1, 60, 60))
+    x_test = np.reshape(x_test, (x_test.shape[0], 1, N1, N2))
+    y_test = np.reshape(y_test, (y_test.shape[0], 1, N1, N2))
 
     x_val = []
     y_val = []
@@ -123,8 +133,8 @@ def prescient2DL_data(data_folder, field, train_list, val_list, test_list):
     x_val = np.array(x_val)
     y_val = np.array(y_val)
     # Step 2: Reshape the data
-    x_val = np.reshape(x_val, (x_val.shape[0], 1, 60, 60))
-    y_val = np.reshape(y_val, (y_val.shape[0], 1, 60, 60))
+    x_val = np.reshape(x_val, (x_val.shape[0], 1, N1, N2))
+    y_val = np.reshape(y_val, (y_val.shape[0], 1, N1, N2))
 
     return x_train, y_train, x_test, y_test, x_val, y_val
 

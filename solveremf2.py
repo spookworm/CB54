@@ -172,7 +172,7 @@ radius_max_pix = int(0.15 * np.minimum(N1, N2))
 
 os.makedirs(input_folder, exist_ok=True)
 
-custom_functions.generate_random_circles(N1,  N2, radius_min_pix, radius_max_pix, seedling, seed_count, input_folder)
+# custom_functions.generate_random_circles(N1,  N2, radius_min_pix, radius_max_pix, seedling, seed_count, input_folder)
 
 # INITIALISE SCENE AND SAVE OUTPUTS
 xS, NR, rcvr_phi, xR, X1, X2, FFTG, Errcri = custom_functions.initEM(c_0, eps_sct, mu_sct, gamma_0, N1, N2, dx)
