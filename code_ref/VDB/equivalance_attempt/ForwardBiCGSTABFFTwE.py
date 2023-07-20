@@ -175,11 +175,11 @@ def EMsctCircle():
     import os
 
     c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = initEM()
-
     gam0 = gamma_0
     gam_sct = gam0 * np.sqrt(eps_sct*mu_sct)
-    Z_sct = np.sqrt(mu_sct/eps_sct)
 
+
+    Z_sct = np.sqrt(mu_sct/eps_sct)
     # (1) Transform Cartesian coordinates to polar coordinates
     rR = np.zeros((1, xR.shape[1]), dtype=np.complex128, order='F')
     rR[0, :] = np.sqrt(xR[0, :]**2 + xR[1, :]**2)
@@ -450,7 +450,9 @@ def graddiv(v, dx, N1, N2):
 def plotContrastSourcewE(w_E, X1, X2):
     import matplotlib.pyplot as plt
     # Plot 2D contrast/source distribution
+
     x1 = X1[:, 0]
+
     x2 = X2[0, :]
     fig = plt.figure(figsize=(7.09, 4.72))
     fig.subplots_adjust(wspace=0.3)
@@ -535,6 +537,21 @@ def DOPwE(w_E, gamma_0, dx, xR, NR, X1, X2):
         Edata[0, p-1] = np.sqrt(np.abs(E1rfl)**2 + np.abs(E2rfl)**2)
         Hdata[0, p-1] = np.abs(ZH3rfl)
     return Edata, Hdata
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def displayDataCompareApproachs(bessel_approach, CIS_approach, angle):

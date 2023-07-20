@@ -75,12 +75,13 @@ def init():
         a = 40
         R = np.sqrt(X1**2 + X2**2)
 
+
         CHI = (1-c_sct) * (R < a)
 
 
 
-
         return a, CHI
+
 
     # add contrast distribution
     a, CHI = initContrast(X1, X2, c_sct)
@@ -169,7 +170,6 @@ def initFFTGreen(N1, N2, dx, gamma_0):
     return FFTG
 
 
-
 def WavefieldSctCircle():
     from scipy.special import kv, iv
     import os
@@ -209,10 +209,38 @@ def WavefieldSctCircle():
         factor = 2 * kv(m, gamma_0*rS) * np.cos(m*(phiS-phiR))
         data2D = data2D + A[0, m] * factor * kv(m, gamma_0*rR)
 
+
+
+
+
+
+
+
+
+
     data2D = 1/(2*np.pi) * data2D
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    np.savez('data2D.npz', data=data2D)
+
+
     angle = rcvr_phi * 180 / np.pi
     displayDataBesselApproach(data2D, angle)
-    np.savez('data2D.npz', data=data2D)
     return data2D
 
 
@@ -232,19 +260,64 @@ def displayDataBesselApproach(WavefieldSctCircle, angle):
     plt.show()
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def IncWave(gamma_0, xS, dx, X1, X2):
     from scipy.special import kv, iv
     # incident wave on two-dimensional grid
-    DIS = np.sqrt((X1-xS[0, 0])**2 + (X2-xS[0, 1])**2)
-    G = 1/(2*np.pi) * kv(0, gamma_0*DIS)
 
     # radius circle with area of dx^2
     delta = (np.pi)**(-1/2) * dx
     factor = 2 * iv(1, gamma_0*delta) / (gamma_0*delta)
 
+
+
+    DIS = np.sqrt((X1-xS[0, 0])**2 + (X2-xS[0, 1])**2)
+
+
+
     # factor for weak form if DIS > delta
-    u_inc = factor * G
-    return u_inc
+    G = factor * 1/(2*np.pi) * kv(0, gamma_0*DIS)
+
+
+
+
+
+
+
+
+
+
+
+
+    return G
 
 
 def ITERBiCGSTABw(u_inc, CHI, Errcri, x0=None):
@@ -252,15 +325,16 @@ def ITERBiCGSTABw(u_inc, CHI, Errcri, x0=None):
 
     # BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
     itmax = 1000
+
     # Known 1D vector right-hand side
     # b = CHI(:) * u_inc(:)
     b = np.zeros((u_inc.flatten('F').shape[0], 1), dtype=np.complex128, order='F')
     b[:, 0] = CHI.flatten('F') * u_inc.flatten('F')
 
+
     if x0 is None:
         # Create an array of zeros
         x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
-
     # Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
     def custom_matvec(w):
         return Aw(w, N1, N2, FFTG, CHI)
@@ -291,8 +365,11 @@ def ITERBiCGSTABw(u_inc, CHI, Errcri, x0=None):
 
 
 def Aw(w, N1, N2, FFTG, CHI):
+
     # Convert 1D vector to matrix
     w = vector2matrix(w, N1, N2)
+
+
     y = w - CHI * Kop(w, FFTG)
     # Convert matrix to 1D vector
     y = y.flatten('F')
@@ -302,7 +379,26 @@ def Aw(w, N1, N2, FFTG, CHI):
 def vector2matrix(w, N1, N2):
     # Modify vector output from 'bicgstab' to matrix for further computations
     w = w.reshape((N1, N2), order='F')
+
+
+
+
+
     return w
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def Kop(v, FFTG):
@@ -316,6 +412,39 @@ def Kop(v, FFTG):
     Kv = np.zeros((N1, N2), dtype=np.complex128, order='F')
     Kv[0:N1, 0:N2] = Cv[0:N1, 0:N2]
     return Kv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def plotContrastSource(w, CHI, X1, X2):
@@ -344,17 +473,69 @@ def plotContrastSource(w, CHI, X1, X2):
     plt.show()
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def Dop(w, NR, N1, N2, xR, gamma_0, dx, X1, X2):
     # (4) Compute synthetic data and plot fields and data
     from scipy.special import kv, iv
-    data = np.zeros((1, NR), dtype=np.complex128, order='F')
+
+
     delta = (np.pi)**(-1/2) * dx
+
     factor = 2 * iv(1, gamma_0*delta) / (gamma_0*delta)
+    data = np.zeros((1, NR), dtype=np.complex128, order='F')
     G = np.zeros((N1, N2), dtype=np.complex128, order='F')
+
+
     for p in range(0, NR):
+
+
+
         DIS = np.sqrt((xR[0, p-1] - X1)**2 + (xR[1, p-1] - X2)**2)
+
+
+
         G = 1.0 / (2.0 * np.pi) * kv(0, gamma_0*DIS)
+
+
+
+
+
+
+
+
+
+
+
+
+
         data[0, p-1] = (gamma_0**2 * dx**2) * factor * np.sum(G.flatten('F') * w.flatten('F'))
+
     return data
 
 
