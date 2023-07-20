@@ -265,6 +265,8 @@ def ITERBiCGSTABw(u_inc, CHI, Errcri, x0=None):
         callback.time_total = time.time() - callback.start_time
         row = np.array([callback.iter, resvec, callback.time_total])
         callback.information = np.vstack((callback.information, row))
+        if callback.iter % 50 == 0:
+            print("iter: ", callback.iter)
 
     # Initialise iteration count
     callback.start_time = time.time()
