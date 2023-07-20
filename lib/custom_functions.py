@@ -1,4 +1,5 @@
 # import graphviz
+import sys
 import os
 import numpy as np
 import time
@@ -90,16 +91,16 @@ def c_sct(c_0, contrast_sct):
     return c_0 * contrast_sct
 
 
-def CHI(CHI_Bessel=None):
+def CHI(CHI_array=None):
     """
     CHECK
     # add contrast distribution
     """
-    if CHI_Bessel is None:
-        print("IMPLEMENT COMPLICATED GEOMETRY")
+    if CHI_array is None:
+        print("IMPLEMENT GEOMETRY")
+        sys.exit()
     else:
-        CHI = CHI_Bessel.copy()
-        return CHI
+        return CHI_array
 
 
 def CHI_Bessel(c_0, c_sct, R, a):

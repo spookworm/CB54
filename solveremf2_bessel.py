@@ -57,8 +57,8 @@ Green = custom_functions.Green(dx, gamma_0, X1fft, X2fft)
 FFTG = custom_functions.FFTG(Green)
 R = custom_functions.R(X1, X2)
 
-CHI_Bessel = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
-CHI = custom_functions.CHI(CHI_Bessel)
+CHI_array = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
+CHI = custom_functions.CHI(CHI_array)
 
 data2D = custom_functions.WavefieldSctCircle(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI, Errcri)
 

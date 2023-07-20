@@ -57,10 +57,8 @@ Green = custom_functions.Green(dx, gamma_0, X1fft, X2fft)
 FFTG = custom_functions.FFTG(Green)
 R = custom_functions.R(X1, X2)
 
-CHI_Bessel = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
-CHI = custom_functions.CHI(CHI_Bessel)
-
-data2D = custom_functions.WavefieldSctCircle(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI, Errcri)
+CHI_array = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
+CHI = custom_functions.CHI(CHI_array)
 
 u_inc = custom_functions.u_inc(gamma_0, xS, dx, X1, X2)
 itmax = custom_functions.itmax(CHI)
@@ -78,10 +76,6 @@ custom_functions.plotContrastSource(w, CHI, X1, X2)
 data = custom_functions.Dop(w, NR, N1, N2, xR, gamma_0, dx, X1, X2)
 angle = custom_functions.angle(rcvr_phi)
 custom_functions.displayDataCSIEApproach(data, angle)
-
-custom_functions.displayDataCompareApproachs(data2D, data, angle)
-error = str(np.linalg.norm(data.flatten('F') - data2D.flatten('F'), ord=1)/np.linalg.norm(data2D.flatten('F'), ord=1))
-print("error", error)
 
 
 """
@@ -106,22 +100,21 @@ def composer_call():
             # list of custom functions goes here
             custom_functions.a,
             custom_functions.angle,
-            custom_functions.Aw,
             custom_functions.b,
             custom_functions.CHI,
             custom_functions.CHI_Bessel,
             custom_functions.contrast_sct,
             custom_functions.c_0,
             custom_functions.c_sct,
+            custom_functions.displayDataCSIEApproach,
             custom_functions.Dop,
             custom_functions.dx,
             custom_functions.Errcri,
             custom_functions.exit_code,
             custom_functions.f,
+            custom_functions.FFTG,
             custom_functions.gamma_0,
             custom_functions.Green,
-            # custom_functions.init,
-            custom_functions.FFTG,
             custom_functions.information,
             custom_functions.initFFTGreenGrid,
             custom_functions.initGrid,
@@ -139,10 +132,9 @@ def composer_call():
             custom_functions.u_inc,
             custom_functions.w,
             custom_functions.wavelength,
-            custom_functions.WavefieldSctCircle,
             custom_functions.X1,
-            custom_functions.X2,
             custom_functions.X1fft,
+            custom_functions.X2,
             custom_functions.X2fft,
             custom_functions.xR,
             custom_functions.xS,
