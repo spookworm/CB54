@@ -2,10 +2,12 @@ import tensorflow as tf
 from IPython import get_ipython
 import numpy as np
 import sys
+import os
 import time
 import pandas as pd
 import json
 import matplotlib.colors as mcolors
+import random
 from lib import custom_functions
 
 # Clear workspace
@@ -24,10 +26,12 @@ This file is the script for the adapted Scalar 2D VDB code.
     Source wavelet  Q = 1
 help(custom_functions.f)
 """
+random.seed(42)
 
 # USER INPUTS
 # Number of samples to generate
-seed_count = 3000
+seedling = 0
+seed_count = 3
 # seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
@@ -65,9 +69,9 @@ angular_frequency = custom_functions.angular_frequency(f)
 
 with open(path_lut, 'rb') as fid:
     raw = fid.read()
-    str = raw.decode('utf-8')
+    string = raw.decode('utf-8')
 
-materials_master = pd.DataFrame(json.loads(str))
+materials_master = pd.DataFrame(json.loads(string))
 materials_master = materials_master[materials_master['name'].isin(scene_tissues)]
 materials_master = materials_master.reset_index(drop=True)
 unique_integers = np.sort(np.unique(materials_master['uint8']))
@@ -171,35 +175,145 @@ R = custom_functions.R(X1, X2)
 u_inc = custom_functions.u_inc(gamma_0, xS, dx, X1, X2)
 
 
-# contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'cancer'].index[0], 'epsilonr'])
+# DEFAULT SETTING
+# The default primary scatter is 'normal tissue'. It will take up a circle which is the same as the Bessel-Aprroach geometry.
 contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr'])
 c_sct = custom_functions.c_sct(c_0, contrast_sct)
 CHI_array = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
 CHI = custom_functions.CHI(CHI_array)
-
-itmax = custom_functions.itmax(CHI)
-b = custom_functions.b(CHI, u_inc)
-
-tic0 = time.time()
-ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None)
-toc0 = time.time() - tic0
-w = custom_functions.w(ITERBiCGSTABw)
-exit_code = custom_functions.exit_code(ITERBiCGSTABw)
-information = custom_functions.information(ITERBiCGSTABw)
-
-
 custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
-custom_functions.plotContrastSource(w, CHI, X1, X2)
-custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
+itmax = custom_functions.itmax(CHI)
 
-data = custom_functions.Dop(w, NR, N1, N2, xR, gamma_0, dx, X1, X2)
-angle = custom_functions.angle(rcvr_phi)
-# custom_functions.displayDataCSIEApproach(data, angle)
 
-data2D = custom_functions.WavefieldSctCircle(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI, Errcri)
-custom_functions.displayDataCompareApproachs(data2D, data, angle)
-error = np.linalg.norm(data.flatten('F') - data2D.flatten('F'), ord=1)/np.linalg.norm(data2D.flatten('F'), ord=1)
-print("error", error)
+# Generate the regions of interest
+# The geometric dimensions of benign and cancerous tissue are comparable with the aim of classifying cancerous tissue before reaching fatal sizes.
+# Set the max radius of benign tissue at 5% of the normal tissue area:
+radius_max_pix_b = int(np.floor(np.sqrt(0.05)*np.minimum(N1, N2)))
+# Set the max radius of cancerous tissue at 2.5% of the normal tissue area:
+radius_max_pix_c = int(np.floor(np.sqrt(0.025)*np.minimum(N1, N2)))
+# Set the min area of all non-normal tissue equal to four pixel to avoid simulating normal samples repeatidly
+radius_min_pix = 4
+
+def generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a):
+    from skimage import io
+    import matplotlib.cm as cm
+    import matplotlib.pyplot as plt
+    c_b = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'benign tumor'].index[0], 'epsilonr'])
+    print("c_b", c_b)
+    # contrast_c = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'cancer'].index[0], 'epsilonr'])
+    for seed in range(seedling, seedling+seed_count):
+
+        shape_array = CHI.copy()
+        # Generate some benign tissue
+        radius = random.uniform(radius_min_pix, radius_max_pix_b)
+        center_x = random.uniform(radius, N1 - radius)
+        center_y = random.uniform(radius, N2 - radius)
+
+        for i in range(N2):
+            for j in range(N1):
+                if np.sqrt((j - center_x) ** 2 + (i - center_y) ** 2) <= radius:
+                    shape_array[i, j] = 1 - c_b
+
+        # if not in the original "normal tissue" region then set to zero.
+        # A certain amount of the tumour tissues will land beyond the normal tissue region contributing to missed captures at the photo stage.
+        shape_array[R > a] = 0.0
+
+        # Only use as visualisation, not input data. Use the npy array as input data to avoid clipping etc.
+        plt.imsave(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.png"), shape_array, cmap='gray')
+        np.save(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.npy"), shape_array)
+    return shape_array
+
+
+# GENERATE GEOMETRY SAMPLES
+os.makedirs(input_folder, exist_ok=True)
+generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a)
+# SOLVE THE SCENES AND SAVE OUTPUTS
+# Get the list of numpy files in the input folder
+numpy_files = [f for f in os.listdir(input_folder) if f.endswith(".npy")]
+
+os.makedirs(output_folder, exist_ok=True)
+# Iterate over each numpy file
+for file_name in numpy_files:
+    # Load the numpy array
+    geometry_file = os.path.join(input_folder, file_name)
+    CHI = np.load(geometry_file)
+
+    # Solve the instances
+    b = custom_functions.b(CHI, u_inc)
+    tic0 = time.time()
+    print("tic0", tic0)
+    ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None)
+    toc0 = time.time() - tic0
+    print("toc", toc0)
+    # Save the result in the output folder with the same file name
+    exit_code_o = custom_functions.exit_code(ITERBiCGSTABw)
+    if exit_code_o == 0:
+        w_o = custom_functions.w(ITERBiCGSTABw)
+        information_o = custom_functions.information(ITERBiCGSTABw)
+
+        output_file_path = os.path.join(output_folder, file_name)
+        # final_array = np.concatenate((u_inc, CHI, w_o), axis=0)
+        final_array = np.concatenate([u_inc[np.newaxis, :, :], CHI[np.newaxis, :, :], w_o[np.newaxis, :, :]], axis=0)
+
+        np.save(output_file_path, final_array)
+
+        output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info")
+        np.save(output_file_path_info, information_o)
+    else:
+        print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
+
+
+numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
+# Iterate over each numpy file
+for file_name in numpy_files:
+    # Load the numpy array
+    geometry_file = os.path.join(output_folder, file_name)
+    array = np.load(geometry_file)
+    # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
+    custom_functions.plotContrastSource(np.abs(array[0, :, :]), np.abs(array[1, :, :]), X1, X2)
+    # custom_functions.plotContrastSource(w, CHI, X1, X2)
+    custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
+    # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
+    custom_functions.plotContrastSource(np.abs(array[0, :, :]+array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
+
+    test = array[0, :, :]+array[2, :, :]
+
+
+
+# import matplotlib.pyplot as plt
+
+# # Create a complex array
+# complex_array = test
+
+# # Get the real and imaginary parts
+# real_part = np.real(complex_array)
+# imaginary_part = np.imag(complex_array)
+
+# # Find the maximum and minimum values
+# max_value = np.max(np.abs(complex_array))
+# min_value = -max_value
+
+# # Plot the real part
+# plt.imshow(real_part, cmap='jet', vmin=min_value, vmax=max_value)
+# plt.colorbar()
+# plt.title('Real Part')
+# plt.show()
+
+# # Plot the imaginary part
+# plt.imshow(imaginary_part, cmap='jet', vmin=min_value, vmax=max_value)
+# plt.colorbar()
+# plt.title('Imaginary Part')
+# plt.show()
+
+
+# data = custom_functions.Dop(w, NR, N1, N2, xR, gamma_0, dx, X1, X2)
+# angle = custom_functions.angle(rcvr_phi)
+# # custom_functions.displayDataCSIEApproach(data, angle)
+
+# data2D = custom_functions.WavefieldSctCircle(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI, Errcri)
+# custom_functions.displayDataCompareApproachs(data2D, data, angle)
+# error = np.linalg.norm(data.flatten('F') - data2D.flatten('F'), ord=1)/np.linalg.norm(data2D.flatten('F'), ord=1)
+# print("error", error)
 
 """
 Documentation

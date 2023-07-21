@@ -777,7 +777,7 @@ def WavefieldSctCircle(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1
         data2D = data2D + A[0, m] * factor * kv(m, gamma_0*rR)
 
     data2D = 1/(2*np.pi) * data2D
-    angle = rcvr_phi * 180 / np.pi
+    # angle = rcvr_phi * 180 / np.pi
     # displayDataBesselApproach(data2D, angle)
     np.savez('data2D.npz', data=data2D)
     return data2D
