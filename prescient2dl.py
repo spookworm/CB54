@@ -22,7 +22,7 @@ import pickle
 # holding everything else as constant.
 # """
 
-data_folder = "instances_output"
+data_folder = "E:\\instances_output"
 # X1 = np.load(os.path.join(data_folder, 'X1.npy'))
 # X2 = np.load(os.path.join(data_folder, 'X2.npy'))
 # E_inc = np.load(os.path.join(data_folder, 'E_inc.npy'))
@@ -44,19 +44,19 @@ N2 = sample.shape[2]
 input_shape = (1, N1, N2)
 
 # Create the U-Net model
-model = custom_functions.unet(input_shape)
+# model = custom_functions.unet(input_shape)
+model = custom_functions.unet_elu(input_shape)
 plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
 
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 model.summary()
 # x_train, y_train, x_test, y_test, x_val, y_val = custom_functions.prescient2DL_data(data_folder, "real", train_list, val_list, test_list, N1, N2)
-x_train, y_train, x_test, y_test, x_val, y_val = custom_functions.prescient2DL_data(data_folder, "real", train_list, val_list, test_list, N1, N2)
-np.save('x_train', x_train)
-np.save('y_train', y_train)
-np.save('x_test', x_test)
-np.save('y_test', y_test)
-np.save('x_val', x_val)
-np.save('y_val', y_val)
+# np.save('x_train', x_train)
+# np.save('y_train', y_train)
+# np.save('x_test', x_test)
+# np.save('y_test', y_test)
+# np.save('x_val', x_val)
+# np.save('y_val', y_val)
 x_train = np.load('x_train.npy')
 y_train = np.load('y_train.npy')
 x_test = np.load('x_test.npy')
@@ -81,13 +81,12 @@ total_samples = len(x_train)
 #         break
 
 # print('Maximum batch size:', max_batch_size)
-batch_size = 32
 max_batch_size = 1024
-batch_size = int(max_batch_size/2)
+batch_size = int(max_batch_size/32)
 # Calculate the number of steps per epoch
 steps_per_epoch = total_samples // batch_size
 # Set the number of epochs
-num_epochs = 10
+num_epochs = 100
 
 # Train the model
 
@@ -141,13 +140,14 @@ if os.path.exists(os.getcwd() + '\\' + 'training_history.pkl'):
     initial_epoch = len(history['loss'])
 
 
-if os.path.exists('model_checkpoint.h5') and os.path.exists('training_history.pkl'):
-    if num_epochs < len(history['loss']):
-        history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, initial_epoch=len(history['loss']), callbacks=[checkpoint, plot_history])
-        print("Running with history!")
-    print("Already complete epochs!")
-else:
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
+# if os.path.exists('model_checkpoint.h5') and os.path.exists('training_history.pkl'):
+#     if num_epochs < len(history['loss']):
+#         history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, initial_epoch=len(history['loss']), callbacks=[checkpoint, plot_history])
+#         print("Running with history!")
+#     print("Already complete epochs!")
+# else:
+#     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
+history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
 
 # Step 5: Evaluate the model
 # Evaluate the model using your test dataset
@@ -199,7 +199,6 @@ def plot_prediction(model, input_data, output_data):
     plt.show()
 
 
-print(history.history.keys())
 
 # Select an input from the test set
 plot_prediction(model, x_test[0], y_test[0])
@@ -213,4 +212,5 @@ score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])
 print('Test mean absolute error:', score[1])
 
+print(history.history.keys())
 plot_loss(history)

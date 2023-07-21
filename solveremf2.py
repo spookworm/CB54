@@ -30,13 +30,12 @@ random.seed(42)
 
 # USER INPUTS
 # Number of samples to generate
-seedling = 0
-seed_count = 5000
-# seed_count = 1
+seedling = 5000
+seed_count = 80000-seedling
 # Folder to save contrast scene array and visualisation
-input_folder = "instances"
+input_folder = "E:\\instances"
 # Folder to save solved scene arrays and solution metric information
-output_folder = "instances_output"
+output_folder = "E:\\instances_output"
 # Look-up table for material properties
 path_lut = './lut/tissues.json'
 # The scene will have up to four different materials: 'vacuum'; 'normal tissue'; 'benign tumor'; 'cancer'.
@@ -209,6 +208,7 @@ radius_max_pix_c = int(np.floor(np.sqrt(0.025)*np.minimum(N1, N2)))
 # Set the min area of all non-normal tissue equal to four pixel to avoid simulating normal samples repeatidly
 radius_min_pix = 4
 
+
 def generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a):
     from skimage import io
     import matplotlib.cm as cm
@@ -244,7 +244,11 @@ os.makedirs(input_folder, exist_ok=True)
 generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a)
 # SOLVE THE SCENES AND SAVE OUTPUTS
 # Get the list of numpy files in the input folder
-numpy_files = [f for f in os.listdir(input_folder) if f.endswith(".npy")]
+files_folder1 = [f for f in os.listdir(input_folder) if f.endswith(".npy")]
+
+files_folder2 = [f for f in os.listdir(output_folder) if f.endswith('.npy') and "_info" not in f]
+# Remove files from files_folder1 if they exist in folder2
+numpy_files = [f for f in files_folder1 if f not in files_folder2]
 
 os.makedirs(output_folder, exist_ok=True)
 # Iterate over each numpy file
