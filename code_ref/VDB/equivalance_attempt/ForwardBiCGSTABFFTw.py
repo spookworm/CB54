@@ -47,7 +47,8 @@ def init():
     # wave speed in embedding
     c_0 = 3e8
     # wave speed in scatterer
-    c_sct = 1.75
+    contrast_sct = 1.75
+    c_sct = c_0 * np.sqrt(1/contrast_sct)
 
 
 
@@ -76,7 +77,8 @@ def init():
         R = np.sqrt(X1**2 + X2**2)
 
 
-        CHI = (1-c_sct) * (R < a)
+        # CHI = (1-c_sct) * (R < a)
+        CHI = (1 - (3e8)**2 / c_sct**2) * (R < a)
 
 
 

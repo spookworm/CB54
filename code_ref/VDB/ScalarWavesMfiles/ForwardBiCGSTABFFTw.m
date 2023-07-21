@@ -15,6 +15,7 @@ w = ITERBiCGSTABw(u_inc, input);
 toc;
 
 plotContrastSource(w, input);
+plotContrastSource(w+u_inc, input);
 
 %  (4) Compute synthetic data and plot fields and data --------------------
 data = Dop(w, input);

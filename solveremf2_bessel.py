@@ -22,9 +22,11 @@ This file is the script for the adapted Scalar 2D VDB code with the Bessel-Appro
 """
 
 # USER INPUTS
-c_0 = custom_functions.c_0(1500.0)
-contrast_sct = custom_functions.contrast_sct(2.0)
-f = custom_functions.f(50.0)
+epsilon0 = custom_functions.epsilon0()
+mu0 = custom_functions.mu0()
+c_0 = custom_functions.c_0(epsilon0, mu0)
+contrast_sct = custom_functions.contrast_sct(1.75)
+f = custom_functions.f(10e6)
 NR = custom_functions.NR(180)
 radius_source = custom_functions.radius_source(170.0)
 radius_receiver = custom_functions.radius_receiver(150.0)
@@ -34,10 +36,11 @@ dx = custom_functions.dx(2)
 a = custom_functions.a(40.0)
 Errcri = custom_functions.Errcri(1e-18)
 
-
 c_sct = custom_functions.c_sct(c_0, contrast_sct)
+
 wavelength = custom_functions.wavelength(c_0, f)
-s = custom_functions.s(f)
+angular_frequency = custom_functions.angular_frequency(f)
+s = custom_functions.s(f, angular_frequency)
 gamma_0 = custom_functions.gamma_0(s, c_0)
 xS = custom_functions.xS(radius_source)
 rcvr_phi = custom_functions.rcvr_phi(NR)
@@ -75,6 +78,8 @@ information = custom_functions.information(ITERBiCGSTABw)
 
 
 custom_functions.plotContrastSource(w, CHI, X1, X2)
+custom_functions.plotContrastSource(w + u_inc, CHI, X1, X2)
+
 data = custom_functions.Dop(w, NR, N1, N2, xR, gamma_0, dx, X1, X2)
 angle = custom_functions.angle(rcvr_phi)
 custom_functions.displayDataCSIEApproach(data, angle)

@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['lib\\custom_functions.py', 'solveremf2.py', 'cupy_example.py']
+recent_files = ['code_ref\\VDB\\EM_solver_start\\solveremf2.py', 'lib\\custom_functions.py', 'solveremf2.py']
 
 [main]
 version = 0.2.0

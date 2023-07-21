@@ -25,6 +25,13 @@ def angle(rcvr_phi):
     return rcvr_phi * 180 / np.pi
 
 
+def angular_frequency(f):
+    """
+    # angular frequency (rad/s)
+    """
+    return 2.0 * np.pi * f
+
+
 def Aw(w, N1, N2, FFTG, CHI):
     """
     CHECK
@@ -65,9 +72,9 @@ def b(CHI, u_inc):
     return b
 
 
-def c_0(wave_speed_embedding):
+def c_0(epsilon0, mu0):
     """
-    This takes the input for wave speed in embedding in meters per second and returns it.
+    This takes the permittivity and permiability in vacuum and returns the wave speed in embedding in meters per second.
     Args:
         input_ (float): wave speed in embedding.
 
@@ -75,7 +82,7 @@ def c_0(wave_speed_embedding):
         float: wave speed in embedding.
     """
     # help(solver_func.c_0)
-    return wave_speed_embedding
+    return np.power(epsilon0*mu0, -0.5)
 
 
 def c_sct(c_0, contrast_sct):
@@ -88,7 +95,7 @@ def c_sct(c_0, contrast_sct):
         float: wave speed in scatterer.
     """
     # help(solver_func.c_sct)
-    return c_0 * contrast_sct
+    return c_0 * np.sqrt(1/contrast_sct)
 
 
 def CHI(CHI_array=None):
@@ -171,8 +178,8 @@ def displayDataCompareApproachs(bessel_approach, CIS_approach, angle):
     # fig = plt.figure(figsize=(0.39, 0.39), dpi=100)
     plt.tight_layout()
     plt.plot(angle.T, np.abs(CIS_approach).T, '--r', angle.T, np.abs(bessel_approach).T, 'b')
-    plt.legend(['Integral-equation method', 'Bessel-function method'], loc='upper center')
-    plt.text(0.5*np.max(angle), 0.8*np.max(np.abs(CIS_approach)), 'Error$^{sct}$ = ' + error, color='red', ha='center', va='center')
+    plt.legend(['Integral-equation method', 'Bessel-function method'], loc='center')
+    plt.text(0.5*np.max(angle), np.max(np.abs(CIS_approach)), 'Error$^{sct}$ = ' + error, color='red', ha='center', va='center')
     plt.title('scattered wave data in 2D', fontsize=12)
     plt.axis('tight')
     plt.xlabel('observation angle in degrees')
@@ -223,6 +230,10 @@ def dx(mesh_sample_length):
         Meshsize
     """
     return mesh_sample_length
+
+
+def epsilon0():
+    return 8.854187817e-12
 
 
 def Errcri(krylov_error_tolerance):
@@ -378,6 +389,14 @@ def initGrid(N1, N2, dx):
     return X1, X2
 
 
+def input_disc_per_lambda(sample_count):
+    """
+    CHECK
+    """
+    # help(solver_func.NR)
+    return sample_count
+
+
 def ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None):
     """
     Solve integral equation for contrast source with FFT
@@ -469,6 +488,14 @@ def Kop(v, FFTG):
     Kv = np.zeros((N1, N2), dtype=np.complex128, order='F')
     Kv[0:N1, 0:N2] = Cv[0:N1, 0:N2]
     return Kv
+
+
+def lambda_smallest(materials_master, f):
+    return np.min(materials_master['cr']) / f
+
+
+def mu0():
+    return 4.0 * np.pi * 1.0e-7
 
 
 def N1(sample_count_x1):
@@ -577,7 +604,7 @@ def rcvr_phi(NR):
     return rcvr_phi
 
 
-def s(f):
+def s(f, angular_frequency):
     """
     This takes the input for the carrier temporal frequency in Hz and returns the wavelength the complex Laplace Parameter.
     Args:
@@ -587,7 +614,32 @@ def s(f):
         complex: the Laplace Parameter.
     """
     # help(solver_func.s)
-    return 1e-16 - 1j * 2 * np.pi * f
+    return 1e-16 - 1j * angular_frequency
+
+
+def tissuePermittivity(mtls, f, epsilon0):
+    # This is based on https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5879051/ @0.5e9 Hz only.
+    # Only the absolute values were available so these were used as the real parts.
+    mtlLib = {
+        # Name                  a          b   c        d
+        'vacuum':               [1.0,      0,  0.0,     0.0],
+        'normal tissue':        [9.070,    0,  0.245,   0.0],
+        'benign tumor':         [24.842,   0,  0.279,   0.0],
+        'cancer':               [66.696,   0,  1.697,   0.0],
+    }
+    # fcGHz = f/1e9
+    value = mtlLib.get(mtls)
+    if value:
+        # epsilon = [mtlParams{libIdx, 1}] .* (fcGHz.^[mtlParams{libIdx, 2}]);
+        # epsilon = value[0] * fcGHz**value[1]
+        epsilon = value[0]
+        # sigma = [mtlParams{libIdx, 3}] .* (fcGHz.^[mtlParams{libIdx, 4}]);
+        # sigma = value[2] * fcGHz**value[3]
+        sigma = value[2]
+        # complexEpsilon = epsilon - 1i*sigma/(2*pi*fc*epsilon0);
+        complexEpsilon = epsilon - 1j*sigma/(2*np.pi*f*epsilon0)
+        return epsilon, sigma, complexEpsilon
+    return None
 
 
 def u_inc(gamma_0, xS, dx, X1, X2):
@@ -699,7 +751,7 @@ def WavefieldSctCircle(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1
     arg0 = gamma_0 * a
     args = gam_sct*a
     # increase M for more accuracy
-    M = 20
+    M = 100
 
     A = np.zeros((1, M+1), dtype=np.complex128)
     for m in range(0, M+1):
@@ -726,7 +778,7 @@ def WavefieldSctCircle(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1
 
     data2D = 1/(2*np.pi) * data2D
     angle = rcvr_phi * 180 / np.pi
-    displayDataBesselApproach(data2D, angle)
+    # displayDataBesselApproach(data2D, angle)
     np.savez('data2D.npz', data=data2D)
     return data2D
 
