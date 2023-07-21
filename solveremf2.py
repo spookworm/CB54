@@ -31,7 +31,7 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 3
+seed_count = 1000
 # seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
@@ -175,6 +175,21 @@ R = custom_functions.R(X1, X2)
 u_inc = custom_functions.u_inc(gamma_0, xS, dx, X1, X2)
 
 
+def complex_separation(complex_array):
+    # Separate real and imaginary components
+    real_array = np.real(complex_array)
+    imaginary_array = np.imag(complex_array)
+
+    # Compute absolute array
+    absolute_array = np.abs(complex_array)
+
+    # Stack the arrays together
+    result_array = np.stack([real_array, imaginary_array, absolute_array])
+    return result_array
+
+
+u_inc_stacked = complex_separation(u_inc)
+
 # DEFAULT SETTING
 # The default primary scatter is 'normal tissue'. It will take up a circle which is the same as the Bessel-Aprroach geometry.
 contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr'])
@@ -241,7 +256,7 @@ for file_name in numpy_files:
     # Solve the instances
     b = custom_functions.b(CHI, u_inc)
     tic0 = time.time()
-    print("tic0", tic0)
+    # print("tic0", tic0)
     ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None)
     toc0 = time.time() - tic0
     print("toc", toc0)
@@ -253,8 +268,9 @@ for file_name in numpy_files:
 
         output_file_path = os.path.join(output_folder, file_name)
         # final_array = np.concatenate((u_inc, CHI, w_o), axis=0)
-        final_array = np.concatenate([u_inc[np.newaxis, :, :], CHI[np.newaxis, :, :], w_o[np.newaxis, :, :]], axis=0)
 
+        # final_array = np.concatenate([u_inc[np.newaxis, :, :], CHI[np.newaxis, :, :], w_o[np.newaxis, :, :]], axis=0)
+        final_array = np.concatenate([u_inc_stacked[np.newaxis, :, :], complex_separation(CHI)[np.newaxis, :, :], complex_separation(w_o)[np.newaxis, :, :]], axis=0)
         np.save(output_file_path, final_array)
 
         output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info")
@@ -263,20 +279,20 @@ for file_name in numpy_files:
         print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
 
 
-numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
-# Iterate over each numpy file
-for file_name in numpy_files:
-    # Load the numpy array
-    geometry_file = os.path.join(output_folder, file_name)
-    array = np.load(geometry_file)
-    # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
-    custom_functions.plotContrastSource(np.abs(array[0, :, :]), np.abs(array[1, :, :]), X1, X2)
-    # custom_functions.plotContrastSource(w, CHI, X1, X2)
-    custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
-    # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
-    custom_functions.plotContrastSource(np.abs(array[0, :, :]+array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
+# numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
+# # Iterate over each numpy file
+# for file_name in numpy_files:
+#     # Load the numpy array
+#     geometry_file = os.path.join(output_folder, file_name)
+#     array = np.load(geometry_file)
+#     # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
+#     custom_functions.plotContrastSource(np.abs(array[0, :, :]), np.abs(array[1, :, :]), X1, X2)
+#     # custom_functions.plotContrastSource(w, CHI, X1, X2)
+#     custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
+#     # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
+#     custom_functions.plotContrastSource(np.abs(array[0, :, :]+array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
 
-    test = array[0, :, :]+array[2, :, :]
+#     test = array[0, :, :]+array[2, :, :]
 
 
 

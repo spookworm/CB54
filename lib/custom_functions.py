@@ -562,6 +562,77 @@ def plotContrastSource(w, CHI, X1, X2):
     plt.show()
 
 
+def prescient2DL_data(data_folder, field, train_list, val_list, test_list, N1, N2):
+    # u_inc layer, CHI layer, w_o layer
+    x_train = []
+    y_train = []
+    for file in train_list:
+        data = np.load(os.path.join(data_folder, file))
+        input_data = np.abs(data[0, :, :])
+        if field == "real":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.real(data[2, :, :])
+        elif field == "imag":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.imag(data[2, :, :])
+        elif field == "abs":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.abs(data[2, :, :])
+        x_train.append(input_data)
+        y_train.append(output_data)
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    # Step 2: Reshape the data
+    x_train = np.reshape(x_train, (x_train.shape[0], 1, N1, N2))
+    y_train = np.reshape(y_train, (y_train.shape[0], 1, N1, N2))
+
+    x_test = []
+    y_test = []
+    for file in test_list:
+        data = np.load(os.path.join(data_folder, file))
+        input_data = np.abs(data[0, :, :])
+        if field == "real":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.real(data[2, :, :])
+        elif field == "imag":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.imag(data[2, :, :])
+        elif field == "abs":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.abs(data[2, :, :])
+        x_test.append(input_data)
+        y_test.append(output_data)
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+    # Step 2: Reshape the data
+    x_test = np.reshape(x_test, (x_test.shape[0], 1, N1, N2))
+    y_test = np.reshape(y_test, (y_test.shape[0], 1, N1, N2))
+
+    x_val = []
+    y_val = []
+    for file in val_list:
+        data = np.load(os.path.join(data_folder, file))
+        input_data = np.abs(data[0, :, :])
+        if field == "real":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.real(data[2, :, :])
+        elif field == "imag":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.imag(data[2, :, :])
+        elif field == "abs":
+            # output_data = np.stack((np.real(data[2, :, :]), np.imag(data[2, :, :])), axis=0)
+            output_data = np.abs(data[2, :, :])
+        x_val.append(input_data)
+        y_val.append(output_data)
+    x_val = np.array(x_val)
+    y_val = np.array(y_val)
+    # Step 2: Reshape the data
+    x_val = np.reshape(x_val, (x_val.shape[0], 1, N1, N2))
+    y_val = np.reshape(y_val, (y_val.shape[0], 1, N1, N2))
+
+    return x_train, y_train, x_test, y_test, x_val, y_val
+
+
 def R(X1, X2):
     """
     CHECK
@@ -674,6 +745,68 @@ def u_inc(gamma_0, xS, dx, X1, X2):
     # factor for weak form if DIS > delta
     u_inc = factor * G
     return u_inc
+
+
+def unet(input_shape):
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Concatenate
+
+    # Input layer
+    inputs = Input(input_shape)
+
+    # Contracting path
+    conv0 = Conv2D(128, 3, activation='relu', padding='same')(inputs)
+    conv0 = Conv2D(128, 3, activation='relu', padding='same')(conv0)
+    pool0 = MaxPooling2D(pool_size=(1, 1))(conv0)
+
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(pool0)
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
+    pool1 = MaxPooling2D(pool_size=(1, 1))(conv1)
+
+    conv2 = Conv2D(32, 3, activation='relu', padding='same')(pool1)
+    conv2 = Conv2D(32, 3, activation='relu', padding='same')(conv2)
+    pool2 = MaxPooling2D(pool_size=(1, 1))(conv2)
+
+    conv3 = Conv2D(16, 3, activation='relu', padding='same')(pool2)
+    conv3 = Conv2D(16, 3, activation='relu', padding='same')(conv3)
+    pool3 = MaxPooling2D(pool_size=(1, 1))(conv3)
+
+    # Bottom layer
+    conv4 = Conv2D(8, 3, activation='relu', padding='same')(pool3)
+    conv4 = Conv2D(8, 3, activation='relu', padding='same')(conv4)
+
+    # Expanding path
+    up5 = UpSampling2D(size=(1, 1))(conv4)
+    up5 = Conv2D(16, 2, activation='relu', padding='same')(up5)
+    merge5 = Concatenate(axis=-1)([conv3, up5])
+    conv5 = Conv2D(16, 3, activation='relu', padding='same')(merge5)
+    conv5 = Conv2D(16, 3, activation='relu', padding='same')(conv5)
+
+    up6 = UpSampling2D(size=(1, 1))(conv5)
+    up6 = Conv2D(32, 2, activation='relu', padding='same')(up6)
+    merge6 = Concatenate(axis=-1)([conv2, up6])
+    conv6 = Conv2D(32, 3, activation='relu', padding='same')(merge6)
+    conv6 = Conv2D(32, 3, activation='relu', padding='same')(conv6)
+
+    up7 = UpSampling2D(size=(1, 1))(conv6)
+    up7 = Conv2D(64, 2, activation='relu', padding='same')(up7)
+    merge7 = Concatenate(axis=-1)([conv1, up7])
+    conv7 = Conv2D(64, 3, activation='relu', padding='same')(merge7)
+    conv7 = Conv2D(64, 3, activation='relu', padding='same')(conv7)
+
+    up8 = UpSampling2D(size=(1, 1))(conv7)
+    up8 = Conv2D(128, 2, activation='relu', padding='same')(up8)
+    merge8 = Concatenate(axis=-1)([conv1, up8])
+    conv8 = Conv2D(128, 3, activation='relu', padding='same')(merge8)
+    conv8 = Conv2D(128, 3, activation='relu', padding='same')(conv8)
+
+    # Output layer
+    # outputs = Conv2D(60, 1)(conv7)
+    outputs = Conv2D(128, 1)(conv8)
+
+    # Create the model
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
 
 
 def w(ITERBiCGSTABw):
