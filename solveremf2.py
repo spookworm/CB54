@@ -31,7 +31,7 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 500
+seed_count = 5000
 # seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"

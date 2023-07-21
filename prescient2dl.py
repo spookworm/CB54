@@ -2,11 +2,15 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from tensorflow import keras
 from keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from lib import custom_functions
-
+from keras.metrics import MeanAbsolutePercentageError
+from keras.metrics import MeanAbsoluteError
+from keras.metrics import MeanSquaredError
+import keras.backend as K
+from keras.callbacks import Callback, ModelCheckpoint
+import pickle
 
 # u_inc layer, CHI layer, w_o layer
 # """
@@ -18,7 +22,7 @@ from lib import custom_functions
 # holding everything else as constant.
 # """
 
-data_folder = "instances_output_9000"
+data_folder = "instances_output"
 # X1 = np.load(os.path.join(data_folder, 'X1.npy'))
 # X2 = np.load(os.path.join(data_folder, 'X2.npy'))
 # E_inc = np.load(os.path.join(data_folder, 'E_inc.npy'))
@@ -32,9 +36,7 @@ file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and not f.
 train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
 train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
 
-batch_size = 256
-# epochs = int((x_train.size/batch_size)*0.5)
-epochs = 36
+
 # np.shape(x_val)
 sample = np.load(os.path.join(data_folder, 'instance_0000000000.npy'))
 N1 = sample.shape[1]
@@ -42,77 +44,114 @@ N2 = sample.shape[2]
 input_shape = (1, N1, N2)
 
 # Create the U-Net model
-model_re = custom_functions.unet(input_shape)
-model_re.compile(optimizer='adam', loss='mean_squared_error')
-model_re.summary()
-x_train_re, y_train_re, x_test_re, y_test_re, x_val_re, y_val_re = custom_functions.prescient2DL_data(data_folder, "real", train_list, val_list, test_list, N1, N2)
-np.save('x_train_re', x_train_re)
-np.save('y_train_re', y_train_re)
-np.save('x_test_re', x_test_re)
-np.save('y_test_re', y_test_re)
-np.save('x_val_re', x_val_re)
-np.save('y_val_re', y_val_re)
-# x_train_re = np.load('x_train_re.npy')
-# y_train_re = np.load('y_train_re.npy')
-# x_test_re = np.load('x_test_re.npy')
-# y_test_re = np.load('y_test_re.npy')
-# x_val_re = np.load('x_val_re.npy')
-# y_val_re = np.load('y_val_re.npy')
-# optimizer = keras.optimizers.Adam(0.001)
-# optimizer.learning_rate.assign(0.01)
-history_re = model_re.fit(x_train_re, y_train_re, batch_size=batch_size, epochs=epochs, validation_data=(x_val_re, y_val_re))
+model = custom_functions.unet(input_shape)
+plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
 
-# Create the U-Net model
-model_im = custom_functions.unet(input_shape)
-model_im.compile(optimizer='adam', loss='mean_squared_error')
-model_im.summary()
-x_train_im, y_train_im, x_test_im, y_test_im, x_val_im, y_val_im = custom_functions.prescient2DL_data(data_folder, "imag", train_list, val_list, test_list, N1, N2)
-np.save('x_train_im', x_train_im)
-np.save('y_train_im', y_train_im)
-np.save('x_test_im', x_test_im)
-np.save('y_test_im', y_test_im)
-np.save('x_val_im', x_val_im)
-np.save('y_val_im', y_val_im)
-# x_train_im = np.load('x_train_im.npy')
-# y_train_im = np.load('y_train_im.npy')
-# x_test_im = np.load('x_test_im.npy')
-# y_test_im = np.load('y_test_im.npy')
-# x_val_im = np.load('x_val_im.npy')
-# y_val_im = np.load('y_val_im.npy')
-history_im = model_im.fit(x_train_im, y_train_im, batch_size=batch_size, epochs=epochs, validation_data=(x_val_im, y_val_im))
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+model.summary()
+# x_train, y_train, x_test, y_test, x_val, y_val = custom_functions.prescient2DL_data(data_folder, "real", train_list, val_list, test_list, N1, N2)
+x_train, y_train, x_test, y_test, x_val, y_val = custom_functions.prescient2DL_data(data_folder, "real", train_list, val_list, test_list, N1, N2)
+np.save('x_train', x_train)
+np.save('y_train', y_train)
+np.save('x_test', x_test)
+np.save('y_test', y_test)
+np.save('x_val', x_val)
+np.save('y_val', y_val)
+x_train = np.load('x_train.npy')
+y_train = np.load('y_train.npy')
+x_test = np.load('x_test.npy')
+y_test = np.load('y_test.npy')
+x_val = np.load('x_val.npy')
+y_val = np.load('y_val.npy')
 
-# # Initialize empty lists to store the training and validation losses
-# train_losses = []
-# val_losses = []
+# Determine the total number of samples in the training dataset
+total_samples = len(x_train)
 
-# # Train the model
-# num_epochs = epochs
-# for epoch in range(num_epochs):
-#     # Perform one epoch of training
-#     history = model.fit(x_train, y_train, batch_size=batch_size, epochs=1, validation_data=(x_val, y_val))
+# Set the batch size
+# # Determine the maximum batch size
+# import tensorflow as tf
+# batch_size = 1
+# max_batch_size = None
+# while True:
+#     try:
+#         model.fit(x_train, y_train, batch_size=batch_size, epochs=1, verbose=0)
+#         max_batch_size = batch_size
+#         batch_size *= 2
+#     except tf.errors.ResourceExhaustedError:
+#         break
 
-#     # Update the training and validation loss lists
-#     train_losses.append(history.history['loss'][0])
-#     val_losses.append(history.history['val_loss'][0])
+# print('Maximum batch size:', max_batch_size)
+batch_size = 32
+max_batch_size = 1024
+batch_size = int(max_batch_size/2)
+# Calculate the number of steps per epoch
+steps_per_epoch = total_samples // batch_size
+# Set the number of epochs
+num_epochs = 10
 
-#     # Update and display the learning curve plot
-#     plt.plot(train_losses, label='Training Loss')
-#     plt.plot(val_losses, label='Validation Loss')
-#     plt.xlabel('Epoch')
-#     plt.ylabel('Loss')
-#     plt.legend()
-#     plt.show()
+# Train the model
 
-# np.shape(x_train)
-# np.shape(y_train)
-# np.shape(x_test)
-# np.shape(y_test)
-# np.shape(x_val)
-# np.shape(y_val)
 
-# # Step 5: Evaluate the model
-# # Evaluate the model using your test dataset
-# loss = model.evaluate(x_test, y_test)
+class PlotTrainingHistory(Callback):
+    def on_train_begin(self, logs={}):
+        self.losses = []
+        self.val_losses = []
+        self.history = {'loss': [], 'val_loss': []}
+
+    def on_epoch_end(self, epoch, logs={}):
+        self.losses.append(logs.get('loss'))
+        self.val_losses.append(logs.get('val_loss'))
+        self.history['loss'].append(logs.get('loss'))
+        self.history['val_loss'].append(logs.get('val_loss'))
+        self.plot()
+        self.save_model_and_history()
+
+    def plot(self):
+        plt.figure()
+        plt.plot(self.losses, label='train_loss')
+        plt.plot(self.val_losses, label='val_loss')
+        plt.title('Training History')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.show()
+
+    def save_model_and_history(self):
+        self.model.save('model_checkpoint.h5')
+        with open('training_history.pkl', 'wb') as file:
+            pickle.dump(self.history, file)
+
+
+# Define the checkpoint callback
+checkpoint = ModelCheckpoint('model_checkpoint.h5', monitor='val_loss', save_best_only=True)
+plot_history = PlotTrainingHistory()
+# Load the saved model
+if os.path.exists(os.getcwd() + '\\' + 'model_checkpoint.h5'):
+    print("File exists!")
+    model = load_model('model_checkpoint.h5')
+    # Need to recompile the model
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+
+
+# Load the training history
+if os.path.exists(os.getcwd() + '\\' + 'training_history.pkl'):
+    print("File exists!")
+    with open('training_history.pkl', 'rb') as file:
+        history = pickle.load(file)
+    initial_epoch = len(history['loss'])
+
+
+if os.path.exists('model_checkpoint.h5') and os.path.exists('training_history.pkl'):
+    if num_epochs < len(history['loss']):
+        history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, initial_epoch=len(history['loss']), callbacks=[checkpoint, plot_history])
+        print("Running with history!")
+    print("Already complete epochs!")
+else:
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
+
+# Step 5: Evaluate the model
+# Evaluate the model using your test dataset
+loss = model.evaluate(x_test, y_test)
 
 
 def plot_loss(history):
@@ -160,14 +199,18 @@ def plot_prediction(model, input_data, output_data):
     plt.show()
 
 
+print(history.history.keys())
+
 # Select an input from the test set
-plot_loss(history_re)
-plot_loss(history_im)
-plot_prediction(model_re, x_test_re[0], y_test_re[0])
-plot_prediction(model_im, x_test_im[0], y_test_im[0])
+plot_prediction(model, x_test[0], y_test[0])
+plot_prediction(model, x_test[2], y_test[2])
 
-model_re.save('model_re.keras')
-model_im.save('model_im.keras')
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+# Evaluate the model on the separate dataset
+score = model.evaluate(x_test, y_test, verbose=0)
 
-print(np.linalg.norm(x_test_re[0]-x_test_im[0]))
-print(np.linalg.norm(y_test_re[0]-y_test_im[0]))
+# Print the evaluation results
+print('Test loss:', score[0])
+print('Test mean absolute error:', score[1])
+
+plot_loss(history)
