@@ -31,7 +31,7 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 1000
+seed_count = 500
 # seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "instances"
@@ -270,7 +270,8 @@ for file_name in numpy_files:
         # final_array = np.concatenate((u_inc, CHI, w_o), axis=0)
 
         # final_array = np.concatenate([u_inc[np.newaxis, :, :], CHI[np.newaxis, :, :], w_o[np.newaxis, :, :]], axis=0)
-        final_array = np.concatenate([u_inc_stacked[np.newaxis, :, :], complex_separation(CHI)[np.newaxis, :, :], complex_separation(w_o)[np.newaxis, :, :]], axis=0)
+        final_array = np.concatenate([u_inc_stacked, complex_separation(CHI), complex_separation(w_o)], axis=0)
+        # final_array = np.concatenate([u_inc_stacked[np.newaxis, :, :], complex_separation(CHI)[np.newaxis, :, :], complex_separation(w_o)[np.newaxis, :, :]], axis=0)
         np.save(output_file_path, final_array)
 
         output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info")
