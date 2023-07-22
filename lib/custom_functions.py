@@ -562,11 +562,11 @@ def plotContrastSource(w, CHI, X1, X2):
     plt.show()
 
 
-def prescient2DL_data(data_folder, field, train_list, val_list, test_list, N1, N2):
+def prescient2DL_data(data_folder, sample_list, N1, N2):
     # u_inc layer, CHI layer, w_o layer
-    x_train = []
-    y_train = []
-    for file in train_list:
+    x_list = []
+    y_list = []
+    for file in sample_list:
         data = np.load(os.path.join(data_folder, file))
         # input_data = data[0:6, :, :]
         input_data = data[5, :, :]
@@ -574,69 +574,23 @@ def prescient2DL_data(data_folder, field, train_list, val_list, test_list, N1, N
         # output_data = data[6:9, :, :]
         output_data = data[8, :, :]
         # print("output_data.shape", output_data.shape)
-        x_train.append(input_data)
-        y_train.append(output_data)
+        x_list.append(input_data)
+        y_list.append(output_data)
         for k in range(1, 4):
-            x_train.append(np.rot90(input_data, k))
-            y_train.append(np.rot90(output_data, k))
-        x_train.append(np.fliplr(input_data))
-        y_train.append(np.fliplr(output_data))
-        x_train.append(np.flipud(input_data))
-        y_train.append(np.flipud(output_data))
+            x_list.append(np.rot90(input_data, k))
+            y_list.append(np.rot90(output_data, k))
+        x_list.append(np.fliplr(input_data))
+        y_list.append(np.fliplr(output_data))
+        x_list.append(np.flipud(input_data))
+        y_list.append(np.flipud(output_data))
 
-    x_train = np.array(x_train)
-    y_train = np.array(y_train)
+    x_list = np.array(x_list)
+    y_list = np.array(y_list)
     # Step 2: Reshape the data
-    x_train = np.reshape(x_train, (x_train.shape[0], 1, N1, N2))
-    y_train = np.reshape(y_train, (y_train.shape[0], 1, N1, N2))
+    x_list = np.reshape(x_list, (x_list.shape[0], 1, N1, N2))
+    y_list = np.reshape(y_list, (y_list.shape[0], 1, N1, N2))
 
-    x_test = []
-    y_test = []
-    for file in test_list:
-        data = np.load(os.path.join(data_folder, file))
-        # input_data = data[0:6, :, :]
-        input_data = data[5, :, :]
-        # print("input_data.shape", input_data.shape)
-        # output_data = data[6:9, :, :]
-        output_data = data[8, :, :]
-        for k in range(1, 4):
-            x_test.append(np.rot90(input_data, k))
-            y_test.append(np.rot90(output_data, k))
-        x_test.append(np.fliplr(input_data))
-        y_test.append(np.fliplr(output_data))
-        x_test.append(np.flipud(input_data))
-        y_test.append(np.flipud(output_data))
-    x_test = np.array(x_test)
-    y_test = np.array(y_test)
-    # Step 2: Reshape the data
-    x_test = np.reshape(x_test, (x_test.shape[0], 1, N1, N2))
-    y_test = np.reshape(y_test, (y_test.shape[0], 1, N1, N2))
-
-    x_val = []
-    y_val = []
-    for file in val_list:
-        data = np.load(os.path.join(data_folder, file))
-        # input_data = data[0:6, :, :]
-        input_data = data[5, :, :]
-        # print("input_data.shape", input_data.shape)
-        # output_data = data[6:9, :, :]
-        output_data = data[8, :, :]
-        # print("output_data.shape", output_data.shape)
-        for k in range(1, 4):
-            x_val.append(np.rot90(input_data, k))
-            y_val.append(np.rot90(output_data, k))
-        x_val.append(np.fliplr(input_data))
-        y_val.append(np.fliplr(output_data))
-        x_val.append(np.flipud(input_data))
-        y_val.append(np.flipud(output_data))
-    x_val = np.array(x_val)
-    y_val = np.array(y_val)
-    # Step 2: Reshape the data
-    x_val = np.reshape(x_val, (x_val.shape[0], 1, N1, N2))
-    y_val = np.reshape(y_val, (y_val.shape[0], 1, N1, N2))
-
-    return x_train, y_train, x_test, y_test, x_val, y_val
-
+    return x_list, y_list
 
 
 def R(X1, X2):

@@ -8,6 +8,7 @@ import pandas as pd
 import json
 import matplotlib.colors as mcolors
 import random
+import pickle
 from lib import custom_functions
 
 # Clear workspace
@@ -26,12 +27,21 @@ This file is the script for the adapted Scalar 2D VDB code.
     Source wavelet  Q = 1
 help(custom_functions.f)
 """
+
 random.seed(42)
+if os.path.exists(os.getcwd() + '\\' + 'seed_state.pkl'):
+    print("File exists!")
+    # Load the saved state of the random seed from the file
+    with open('seed_state.pkl', 'rb') as file:
+        seed_state = pickle.load(file)
+    # Set the random seed to the loaded state
+    random.setstate(seed_state)
+
 
 # USER INPUTS
 # Number of samples to generate
-seedling = 5000
-seed_count = 80000-seedling
+seedling = 0
+seed_count = 10
 # Folder to save contrast scene array and visualisation
 input_folder = "E:\\instances"
 # Folder to save solved scene arrays and solution metric information
@@ -246,11 +256,11 @@ generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, 
 # Get the list of numpy files in the input folder
 files_folder1 = [f for f in os.listdir(input_folder) if f.endswith(".npy")]
 
+os.makedirs(output_folder, exist_ok=True)
 files_folder2 = [f for f in os.listdir(output_folder) if f.endswith('.npy') and "_info" not in f]
 # Remove files from files_folder1 if they exist in folder2
 numpy_files = [f for f in files_folder1 if f not in files_folder2]
 
-os.makedirs(output_folder, exist_ok=True)
 # Iterate over each numpy file
 for file_name in numpy_files:
     # Load the numpy array
@@ -335,6 +345,12 @@ for file_name in numpy_files:
 # custom_functions.displayDataCompareApproachs(data2D, data, angle)
 # error = np.linalg.norm(data.flatten('F') - data2D.flatten('F'), ord=1)/np.linalg.norm(data2D.flatten('F'), ord=1)
 # print("error", error)
+
+# Save the current state of the random seed to a file
+with open('seed_state.pkl', 'wb') as file:
+    pickle.dump(random.getstate(), file)
+
+# print(random.getstate())
 
 """
 Documentation
