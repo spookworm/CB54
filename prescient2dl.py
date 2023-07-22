@@ -5,9 +5,7 @@ from sklearn.model_selection import train_test_split
 from keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from lib import custom_functions
-from keras.metrics import MeanAbsolutePercentageError
-from keras.metrics import MeanAbsoluteError
-from keras.metrics import MeanSquaredError
+from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
 import keras.backend as K
 from keras.callbacks import Callback, ModelCheckpoint
 import pickle
@@ -50,15 +48,15 @@ plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=T
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 model.summary()
 
-# x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
-# np.save('x_train', x_train)
-# np.save('y_train', y_train)
+x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
+np.save('x_train', x_train)
+np.save('y_train', y_train)
 if os.path.exists(os.getcwd() + '\\' + 'x_train.npy'):
     x_train = np.load('x_train.npy')
     y_train = np.load('y_train.npy')
-# x_val, y_val = custom_functions.prescient2DL_data(data_folder, test_list, N1, N2)
-# np.save('x_val', x_val)
-# np.save('y_val', y_val)
+x_val, y_val = custom_functions.prescient2DL_data(data_folder, test_list, N1, N2)
+np.save('x_val', x_val)
+np.save('y_val', y_val)
 if os.path.exists(os.getcwd() + '\\' + 'x_val.npy'):
     x_val = np.load('x_val.npy')
     y_val = np.load('y_val.npy')

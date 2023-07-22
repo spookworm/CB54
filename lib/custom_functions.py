@@ -403,19 +403,21 @@ def ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None):
     BiCGSTAB_FFT scheme for contrast source integral equation Aw = b
     """
     from scipy.sparse.linalg import bicgstab, LinearOperator
+    from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
+
     N = CHI.flatten('F').shape[0]
 
     if x0 is None:
         # Create an array of zeros
         x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
-    else:
-        from keras.models import load_model
-        model_re = load_model('model_re.keras')
-        model_im = load_model('model_im.keras')
-        # x0 = np.concatenate([w_E_o[0, :, :].flatten('F'), w_E_o[1, :, :].flatten('F')], axis=0)
-        x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
-        x0_2D = np.squeeze(model_re.predict(np.real(CHI.reshape(-1, 1, N1, N2))) + 1j*model_im.predict(np.imag(CHI.reshape(-1, 1, N1, N2))))
-        x0[0:N, 0] = x0_2D.copy().flatten('F')
+    # else:
+    #     from keras.models import load_model
+    #     model = load_model(x0)
+    #     model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+
+    #     x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
+    #     x0_2D = np.squeeze(model.predict(np.abs(CHI.reshape(-1, 1, N1, N2))))
+    #     x0[0:N, 0] = x0_2D.copy().flatten('F')
 
     # Aw_operator = LinearOperator((b.shape[0], b.shape[0]), matvec=lambda w: Aw(w, N1, N2, FFTG, CHI))
     def custom_matvec(w):
@@ -576,13 +578,15 @@ def prescient2DL_data(data_folder, sample_list, N1, N2):
         # print("output_data.shape", output_data.shape)
         x_list.append(input_data)
         y_list.append(output_data)
-        for k in range(1, 4):
-            x_list.append(np.rot90(input_data, k))
-            y_list.append(np.rot90(output_data, k))
-        x_list.append(np.fliplr(input_data))
-        y_list.append(np.fliplr(output_data))
-        x_list.append(np.flipud(input_data))
-        y_list.append(np.flipud(output_data))
+
+        # CANNOT AUGMENT WITHOUT SUPPLYING THE INCIDENT WAVE
+        # for k in range(1, 4):
+        #     x_list.append(np.rot90(input_data, k))
+        #     y_list.append(np.rot90(output_data, k))
+        # x_list.append(np.fliplr(input_data))
+        # y_list.append(np.fliplr(output_data))
+        # x_list.append(np.flipud(input_data))
+        # y_list.append(np.flipud(output_data))
 
     x_list = np.array(x_list)
     y_list = np.array(y_list)

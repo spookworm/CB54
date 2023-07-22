@@ -29,13 +29,13 @@ help(custom_functions.f)
 """
 
 random.seed(42)
-if os.path.exists(os.getcwd() + '\\' + 'seed_state.pkl'):
-    print("File exists!")
-    # Load the saved state of the random seed from the file
-    with open('seed_state.pkl', 'rb') as file:
-        seed_state = pickle.load(file)
-    # Set the random seed to the loaded state
-    random.setstate(seed_state)
+# if os.path.exists(os.getcwd() + '\\' + 'seed_state.pkl'):
+#     print("File exists!")
+#     # Load the saved state of the random seed from the file
+#     with open('seed_state.pkl', 'rb') as file:
+#         seed_state = pickle.load(file)
+#     # Set the random seed to the loaded state
+#     random.setstate(seed_state)
 
 
 # USER INPUTS
@@ -43,9 +43,9 @@ if os.path.exists(os.getcwd() + '\\' + 'seed_state.pkl'):
 seedling = 0
 seed_count = 10
 # Folder to save contrast scene array and visualisation
-input_folder = "E:\\instances"
+input_folder = "F:\\instances"
 # Folder to save solved scene arrays and solution metric information
-output_folder = "E:\\instances_output"
+output_folder = "F:\\instances_output"
 # Look-up table for material properties
 path_lut = './lut/tissues.json'
 # The scene will have up to four different materials: 'vacuum'; 'normal tissue'; 'benign tumor'; 'cancer'.
@@ -261,6 +261,13 @@ files_folder2 = [f for f in os.listdir(output_folder) if f.endswith('.npy') and 
 # Remove files from files_folder1 if they exist in folder2
 numpy_files = [f for f in files_folder1 if f not in files_folder2]
 
+
+from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
+from keras.models import load_model
+x0 = np.zeros((u_inc.flatten('F').shape[0], 1), dtype=np.complex128, order='F')
+# model = load_model("model_checkpoint.h5")
+# model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+
 # Iterate over each numpy file
 for file_name in numpy_files:
     # Load the numpy array
@@ -271,6 +278,10 @@ for file_name in numpy_files:
     b = custom_functions.b(CHI, u_inc)
     tic0 = time.time()
     # print("tic0", tic0)
+
+
+    # x0_2D = np.squeeze(model.predict(np.abs(CHI.reshape(-1, 1, N1, N2))))
+    # x0[0:N, 0] = x0_2D.copy().flatten('F')
     ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None)
     toc0 = time.time() - tic0
     print("toc", toc0)
