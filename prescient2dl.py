@@ -22,7 +22,7 @@ import pickle
 # holding everything else as constant.
 # """
 
-data_folder = "E:\\instances_output_75000"
+data_folder = "F:\\instances_output_0000000000-0000004999"
 # X1 = np.load(os.path.join(data_folder, 'X1.npy'))
 # X2 = np.load(os.path.join(data_folder, 'X2.npy'))
 # E_inc = np.load(os.path.join(data_folder, 'E_inc.npy'))
@@ -36,9 +36,8 @@ file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and not f.
 train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
 train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
 
-
 # np.shape(x_val)
-sample = np.load(os.path.join(data_folder, 'instance_0000000000.npy'))
+sample = np.load(data_folder + '\\' + train_list[0])
 N1 = sample.shape[1]
 N2 = sample.shape[2]
 input_shape = (1, N1, N2)
@@ -51,15 +50,15 @@ plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=T
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 model.summary()
 
-x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
-np.save('x_train', x_train)
-np.save('y_train', y_train)
+# x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
+# np.save('x_train', x_train)
+# np.save('y_train', y_train)
 if os.path.exists(os.getcwd() + '\\' + 'x_train.npy'):
     x_train = np.load('x_train.npy')
     y_train = np.load('y_train.npy')
-x_val, y_val = custom_functions.prescient2DL_data(data_folder, test_list, N1, N2)
-np.save('x_val', x_val)
-np.save('y_val', y_val)
+# x_val, y_val = custom_functions.prescient2DL_data(data_folder, test_list, N1, N2)
+# np.save('x_val', x_val)
+# np.save('y_val', y_val)
 if os.path.exists(os.getcwd() + '\\' + 'x_val.npy'):
     x_val = np.load('x_val.npy')
     y_val = np.load('y_val.npy')
