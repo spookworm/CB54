@@ -9,6 +9,8 @@ import json
 import matplotlib.colors as mcolors
 import random
 import pickle
+from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
+from keras.models import load_model
 from lib import custom_functions
 
 # Clear workspace
@@ -41,7 +43,7 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 10
+seed_count = 100
 # Folder to save contrast scene array and visualisation
 input_folder = "F:\\instances"
 # Folder to save solved scene arrays and solution metric information
@@ -114,14 +116,16 @@ lambda_smallest = custom_functions.lambda_smallest(materials_master, f)
 if length_x_side > length_y_side:
     # force N = multp 4
     N = np.floor(length_x_side/(np.abs(lambda_smallest) / input_disc_per_lambda))
-    fourth_of_N = np.ceil(N/4)
+    # fourth_of_N = np.ceil(N/4)
+    fourth_of_N = 32
     while (np.mod(N, fourth_of_N) != 0):
         N = N + 1
     N = int(N)
     delta_x = length_x_side / N
     # force M = multp 4, size dy near dx
     M = np.floor(length_y_side/(delta_x))
-    fourth_of_M = np.ceil(M/4)
+    # fourth_of_M = np.ceil(M/4)
+    fourth_of_M = 32
     while (np.mod(M, fourth_of_M) != 0):
         M = M + 1
     M = int(M)
@@ -129,7 +133,8 @@ if length_x_side > length_y_side:
 else:
     # force N = multp 4
     M = np.floor(length_y_side/(np.abs(lambda_smallest) / input_disc_per_lambda))
-    fourth_of_M = np.ceil(M/4)
+    # fourth_of_M = np.ceil(M/4)
+    fourth_of_M = 32
     while (np.mod(M, fourth_of_M) != 0):
         M = M + 1
     M = int(M)
@@ -137,6 +142,7 @@ else:
     # force N = multp 4, size dx near dy
     N = np.floor(length_x_side/(delta_y))
     fourth_of_N = np.ceil(N/4)
+    fourth_of_N = 32
     while (np.mod(N, fourth_of_N) != 0):
         N = N + 1
     delta_x = length_x_side / N
@@ -262,12 +268,15 @@ files_folder2 = [f for f in os.listdir(output_folder) if f.endswith('.npy') and 
 numpy_files = [f for f in files_folder1 if f not in files_folder2]
 
 
-from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
-from keras.models import load_model
 x0 = np.zeros((u_inc.flatten('F').shape[0], 1), dtype=np.complex128, order='F')
-# model = load_model("model_checkpoint.h5")
-# model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+model = load_model("model_checkpoint.h5")
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+# model_re = load_model("model_checkpoint_re.h5")
+# model_re.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+# model_im = load_model("model_checkpoint_im.h5")
+# model_im.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 
+# x_list = np.reshape(x_list, (x_list.shape[0], 2, N1, N2))
 # Iterate over each numpy file
 for file_name in numpy_files:
     # Load the numpy array
@@ -276,13 +285,15 @@ for file_name in numpy_files:
 
     # Solve the instances
     b = custom_functions.b(CHI, u_inc)
+
+    original_array = complex_separation(CHI)[0:2]
+    reshaped_array = np.expand_dims(original_array, axis=0)
+    x0_2D = np.squeeze(model.predict(reshaped_array, verbose=0))
+    x0_2D_complex = x0_2D[0] + 1j*x0_2D[1]
+    # x0 = x0_2D_complex.copy().flatten('F')
     tic0 = time.time()
     # print("tic0", tic0)
-
-
-    # x0_2D = np.squeeze(model.predict(np.abs(CHI.reshape(-1, 1, N1, N2))))
-    # x0[0:N, 0] = x0_2D.copy().flatten('F')
-    ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None)
+    ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=x0)
     toc0 = time.time() - tic0
     print("toc", toc0)
     # Save the result in the output folder with the same file name
@@ -304,6 +315,11 @@ for file_name in numpy_files:
     else:
         print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
 
+## POOR
+sol_info_o = np.load("F:\instances_output_o\instance_0000000000_info.npy")
+sol_info_m = np.load("F:\instances_output_m\instance_0000000000_info.npy")
+print("Initial Error", sol_info_o[0, 1])
+print("Initial Error", sol_info_m[0, 1])
 
 # numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
 # # Iterate over each numpy file

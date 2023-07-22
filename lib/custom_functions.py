@@ -3,6 +3,8 @@ import sys
 import os
 import numpy as np
 import time
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Concatenate
 
 
 def a(radius: float) -> float:
@@ -565,16 +567,16 @@ def plotContrastSource(w, CHI, X1, X2):
 
 
 def prescient2DL_data(data_folder, sample_list, N1, N2):
-    # u_inc layer, CHI layer, w_o layer
+    # u_inc layer, CHI layer, w_o layer WHICH EACH LAYER HAVING REAL, IMAGINARY AND COMPLEX COMPONENTS
     x_list = []
     y_list = []
     for file in sample_list:
         data = np.load(os.path.join(data_folder, file))
         # input_data = data[0:6, :, :]
-        input_data = data[5, :, :]
+        input_data = data[3:5, :, :]
         # print("input_data.shape", input_data.shape)
         # output_data = data[6:9, :, :]
-        output_data = data[8, :, :]
+        output_data = data[6:8, :, :]
         # print("output_data.shape", output_data.shape)
         x_list.append(input_data)
         y_list.append(output_data)
@@ -591,8 +593,8 @@ def prescient2DL_data(data_folder, sample_list, N1, N2):
     x_list = np.array(x_list)
     y_list = np.array(y_list)
     # Step 2: Reshape the data
-    x_list = np.reshape(x_list, (x_list.shape[0], 1, N1, N2))
-    y_list = np.reshape(y_list, (y_list.shape[0], 1, N1, N2))
+    x_list = np.reshape(x_list, (x_list.shape[0], 2, N1, N2))
+    y_list = np.reshape(y_list, (y_list.shape[0], 2, N1, N2))
 
     return x_list, y_list
 
@@ -774,11 +776,9 @@ def unet(input_shape):
 
 
 def unet_elu(input_shape):
-    from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Concatenate
-
     # Input layer
     inputs = Input(input_shape)
+    print("input_shape", input_shape)
 
     # Contracting path
     conv0 = Conv2D(128, 3, activation='elu', padding='same')(inputs)
@@ -832,6 +832,43 @@ def unet_elu(input_shape):
 
     # Create the model
     model = Model(inputs=inputs, outputs=outputs)
+    return model
+
+
+def unet_2d(input_shape):
+    inputs = Input(input_shape)
+
+    # Encoder
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(inputs)
+    conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
+    pool1 = MaxPooling2D(pool_size=(1, 2))(conv1)
+
+    conv2 = Conv2D(128, 3, activation='relu', padding='same')(pool1)
+    conv2 = Conv2D(128, 3, activation='relu', padding='same')(conv2)
+    pool2 = MaxPooling2D(pool_size=(1, 2))(conv2)
+
+    # Middle
+    conv3 = Conv2D(256, 3, activation='relu', padding='same')(pool2)
+    conv3 = Conv2D(256, 3, activation='relu', padding='same')(conv3)
+
+    # Decoder
+    up4 = UpSampling2D(size=(1, 2))(conv3)
+    up4 = Conv2D(128, 2, activation='relu', padding='same')(up4)
+    merge4 = Concatenate(axis=3)([conv2, up4])
+    conv4 = Conv2D(128, 3, activation='relu', padding='same')(merge4)
+    conv4 = Conv2D(128, 3, activation='relu', padding='same')(conv4)
+
+    up5 = UpSampling2D(size=(1, 2))(conv4)
+    up5 = Conv2D(64, 2, activation='relu', padding='same')(up5)
+    merge5 = Concatenate(axis=3)([conv1, up5])
+    conv5 = Conv2D(64, 3, activation='relu', padding='same')(merge5)
+    conv5 = Conv2D(64, 3, activation='relu', padding='same')(conv5)
+
+    # Output
+    outputs = Conv2D(1, 1, activation='sigmoid')(conv5)
+
+    model = Model(inputs=inputs, outputs=outputs)
+
     return model
 
 
