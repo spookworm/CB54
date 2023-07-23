@@ -9,6 +9,11 @@ from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSq
 import keras.backend as K
 from keras.callbacks import Callback, ModelCheckpoint
 import pickle
+import random
+from IPython import get_ipython
+
+# Clear workspace
+get_ipython().run_line_magic('clear', '-sf')
 
 # u_inc layer, CHI layer, w_o layer
 # """
@@ -22,9 +27,12 @@ import pickle
 
 directory = "F:\\"
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances_output_0" in f]
+selected_folders = random.sample(folders, 3)
+
 # data_folder = "F:\\instances_output"
-for folder in folders:
+for folder in selected_folders:
     data_folder = "F:\\" + folder
+    print("data_folder", data_folder)
     # X1 = np.load(os.path.join(data_folder, 'X1.npy'))
     # X2 = np.load(os.path.join(data_folder, 'X2.npy'))
     # E_inc = np.load(os.path.join(data_folder, 'E_inc.npy'))
@@ -34,28 +42,32 @@ for folder in folders:
     # Load and preprocess your dataset
     # Split the dataset into training and validation sets
     # data_folder = "instances_output_36000"
-    file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
-    train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
-    train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
 
-    # np.shape(x_val)
-    sample = np.load(data_folder + '\\' + train_list[0])
+    file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
+    sample = np.load(data_folder + '\\' + file_list[0])
     N1 = sample.shape[1]
     N2 = sample.shape[2]
     input_shape = (2, N1, N2)
 
-    x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
-    # np.save('x_train', x_train)
-    # np.save('y_train', y_train)
-    # if os.path.exists(os.getcwd() + '\\' + 'x_train.npy'):
-    #     x_train = np.load('x_train.npy')
-    #     y_train = np.load('y_train.npy')
-    x_val, y_val = custom_functions.prescient2DL_data(data_folder, test_list, N1, N2)
-    # np.save('x_val', x_val)
-    # np.save('y_val', y_val)
-    # if os.path.exists(os.getcwd() + '\\' + 'x_val.npy'):
-    #     x_val = np.load('x_val.npy')
-    #     y_val = np.load('y_val.npy')
+    if not os.path.exists(data_folder + "_x_train.npy"):
+        train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
+        train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
+        x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
+        np.save(data_folder + '_x_train', x_train)
+        np.save(data_folder + '_y_train', y_train)
+        x_val, y_val = custom_functions.prescient2DL_data(data_folder, test_list, N1, N2)
+        np.save(data_folder + '_x_val', x_val)
+        np.save(data_folder + '_y_val', y_val)
+        x_test, y_test = custom_functions.prescient2DL_data(data_folder, val_list, N1, N2)
+        np.save(data_folder + '_x_test', x_test)
+        np.save(data_folder + '_y_test', y_test)
+    else:
+        x_train = np.load(data_folder + '_x_train.npy')
+        y_train = np.load(data_folder + '_y_train.npy')
+        x_val = np.load(data_folder + '_x_val.npy')
+        y_val = np.load(data_folder + '_y_val.npy')
+        x_test = np.load(data_folder + '_x_test.npy')
+        y_test = np.load(data_folder + '_y_test.npy')
 
     # Determine the total number of samples in the training dataset
     total_samples = len(x_train)
@@ -82,7 +94,6 @@ for folder in folders:
     num_epochs = 100
 
     # Train the model
-
 
     class PlotTrainingHistory(Callback):
         def on_train_begin(self, logs={}):
@@ -113,7 +124,6 @@ for folder in folders:
             with open('training_history.pkl', 'wb') as file:
                 pickle.dump(self.history, file)
 
-
     # Create the U-Net model
     # model = custom_functions.unet(input_shape)
     model = custom_functions.unet_elu(input_shape)
@@ -122,7 +132,6 @@ for folder in folders:
 
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
     # model.summary()
-
 
     # Define the checkpoint callback
     checkpoint = ModelCheckpoint('model_checkpoint.h5', monitor='val_loss', save_best_only=True)
@@ -134,14 +143,12 @@ for folder in folders:
         # Need to recompile the model
         model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 
-
     # Load the training history
     if os.path.exists(os.getcwd() + '\\' + 'training_history.pkl'):
         print("File exists!")
         with open('training_history.pkl', 'rb') as file:
             history = pickle.load(file)
         initial_epoch = len(history['loss'])
-
 
     # if os.path.exists('model_checkpoint.h5') and os.path.exists('training_history.pkl'):
     #     if num_epochs < len(history['loss']):
@@ -211,12 +218,6 @@ def plot_prediction(model, input_data, output_data):
 
 
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
-# x_test, y_test = custom_functions.prescient2DL_data(data_folder, val_list, N1, N2)
-# np.save('x_test', x_test)
-# np.save('y_test', y_test)
-if os.path.exists(os.getcwd() + '\\' + 'x_test.npy'):
-    x_test = np.load('x_test.npy')
-    y_test = np.load('y_test.npy')
 # Step 5: Evaluate the model
 # Evaluate the model using your test dataset
 score = model.evaluate(x_test, y_test, verbose=0)

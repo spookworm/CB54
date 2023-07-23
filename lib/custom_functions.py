@@ -836,44 +836,44 @@ def unet_elu(input_shape):
     # Contracting path
     conv0 = Conv2D(128, 3, activation='elu', padding='same')(inputs)
     conv0 = Conv2D(128, 3, activation='elu', padding='same')(conv0)
-    pool0 = MaxPooling2D(pool_size=(1, 1))(conv0)
+    pool0 = MaxPooling2D(pool_size=(2, 2))(conv0)
 
     conv1 = Conv2D(64, 3, activation='elu', padding='same')(pool0)
     conv1 = Conv2D(64, 3, activation='elu', padding='same')(conv1)
-    pool1 = MaxPooling2D(pool_size=(1, 1))(conv1)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
     conv2 = Conv2D(32, 3, activation='elu', padding='same')(pool1)
     conv2 = Conv2D(32, 3, activation='elu', padding='same')(conv2)
-    pool2 = MaxPooling2D(pool_size=(1, 1))(conv2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
 
     conv3 = Conv2D(16, 3, activation='elu', padding='same')(pool2)
     conv3 = Conv2D(16, 3, activation='elu', padding='same')(conv3)
-    pool3 = MaxPooling2D(pool_size=(1, 1))(conv3)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
 
     # Bottom layer
     conv4 = Conv2D(8, 3, activation='elu', padding='same')(pool3)
     conv4 = Conv2D(8, 3, activation='elu', padding='same')(conv4)
 
     # Expanding path
-    up5 = UpSampling2D(size=(1, 1))(conv4)
+    up5 = UpSampling2D(size=(2, 2))(conv4)
     up5 = Conv2D(16, 2, activation='elu', padding='same')(up5)
     merge5 = Concatenate(axis=-1)([conv3, up5])
     conv5 = Conv2D(16, 3, activation='elu', padding='same')(merge5)
     conv5 = Conv2D(16, 3, activation='elu', padding='same')(conv5)
 
-    up6 = UpSampling2D(size=(1, 1))(conv5)
+    up6 = UpSampling2D(size=(2, 2))(conv5)
     up6 = Conv2D(32, 2, activation='elu', padding='same')(up6)
     merge6 = Concatenate(axis=-1)([conv2, up6])
     conv6 = Conv2D(32, 3, activation='elu', padding='same')(merge6)
     conv6 = Conv2D(32, 3, activation='elu', padding='same')(conv6)
 
-    up7 = UpSampling2D(size=(1, 1))(conv6)
+    up7 = UpSampling2D(size=(2, 2))(conv6)
     up7 = Conv2D(64, 2, activation='elu', padding='same')(up7)
     merge7 = Concatenate(axis=-1)([conv1, up7])
     conv7 = Conv2D(64, 3, activation='elu', padding='same')(merge7)
     conv7 = Conv2D(64, 3, activation='elu', padding='same')(conv7)
 
-    up8 = UpSampling2D(size=(1, 1))(conv7)
+    up8 = UpSampling2D(size=(2, 2))(conv7)
     up8 = Conv2D(128, 2, activation='elu', padding='same')(up8)
     merge8 = Concatenate(axis=-1)([conv1, up8])
     conv8 = Conv2D(128, 3, activation='elu', padding='same')(merge8)
