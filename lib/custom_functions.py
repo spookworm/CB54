@@ -3,8 +3,14 @@ import sys
 import os
 import numpy as np
 import time
+import pandas as pd
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Concatenate
+from skimage import io
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import random
+import csv
 
 
 def a(radius: float) -> float:
@@ -119,6 +125,19 @@ def CHI_Bessel(c_0, c_sct, R, a):
     """
     CHI = (1 - c_0**2 / c_sct**2) * (R < a)
     return CHI
+
+
+def complex_separation(complex_array):
+    # Separate real and imaginary components
+    real_array = np.real(complex_array)
+    imaginary_array = np.imag(complex_array)
+
+    # Compute absolute array
+    absolute_array = np.abs(complex_array)
+
+    # Stack the arrays together
+    result_array = np.stack([real_array, imaginary_array, absolute_array])
+    return result_array
 
 
 def composer_render(composer_call, path_doc, filename):
@@ -288,6 +307,33 @@ def gamma_0(s, c_0):
     return s / c_0
 
 
+def generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2):
+    c_b = contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'benign tumor'].index[0], 'epsilonr'])
+    print("c_b", c_b)
+    # contrast_c = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'cancer'].index[0], 'epsilonr'])
+    for seed in range(seedling, seedling+seed_count):
+
+        shape_array = CHI.copy()
+        # Generate some benign tissue
+        radius = random.uniform(radius_min_pix, radius_max_pix_b)
+        center_x = random.uniform(radius, N1 - radius)
+        center_y = random.uniform(radius, N2 - radius)
+
+        for i in range(N2):
+            for j in range(N1):
+                if np.sqrt((j - center_x) ** 2 + (i - center_y) ** 2) <= radius:
+                    shape_array[i, j] = 1 - c_b
+
+        # if not in the original "normal tissue" region then set to zero.
+        # A certain amount of the tumour tissues will land beyond the normal tissue region contributing to missed captures at the photo stage.
+        shape_array[R > a] = 0.0
+
+        # Only use as visualisation, not input data. Use the npy array as input data to avoid clipping etc.
+        plt.imsave(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.png"), shape_array, cmap='gray')
+        np.save(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.npy"), shape_array)
+    # return shape_array
+
+
 def Green(dx, gamma_0, X1fft, X2fft):
     # compute gam_0^2 * subdomain integrals  of Green function
     from scipy.special import kv, iv
@@ -306,6 +352,74 @@ def Green(dx, gamma_0, X1fft, X2fft):
 
 def information(ITERBiCGSTABw):
     return ITERBiCGSTABw[2]
+
+
+def info_data_harvest(input_folder):
+    # Initialize an empty list to store the loaded arrays
+    final_rows = []
+    # Add headers to the new array
+    headers = ["Name", "Iteration_Count", "Error_Final", "Duration", "Error_Initial", "Model Flag", "Duration_Log"]
+    final_rows.append(headers)
+
+    # Iterate through each file in the folder
+    info_files = [f for f in os.listdir(input_folder) if "_info_" in f]
+    for filename in info_files:
+        # Construct the full file path
+        file_path = os.path.join(input_folder, filename)
+
+        # Load the array from the file
+        array = np.load(file_path)
+        # Extract the final row
+        final_row = array[-1]
+
+        # Extract the second column of the first row
+        second_column = array[0][1]
+
+        # Add another column with the name of the original array
+        final_row_with_name = [f'{filename}'] + list(map(str, final_row))
+
+        # Add the second column to the final row
+        final_row_with_second_column = final_row_with_name + [str(second_column)]
+
+        # Indicator model flag
+        final_row_with_flag = final_row_with_second_column + [str(filename[-5])]
+
+        # Calculate the Duration_Log
+        final_row_complete = final_row_with_flag + [str(np.log(final_row[2]))]
+
+        # Append the final row to the new array
+        final_rows.append(final_row_complete)
+
+    # Specify the output file path
+    last_part = os.path.basename(os.path.normpath(input_folder))
+    output_file = input_folder + '\\dataset_' + str(last_part) + '.csv'
+
+    # Open the file in write mode
+    with open(output_file, 'w', newline='') as file:
+        # Create a CSV writer object
+        writer = csv.writer(file)
+
+        # Write each row of the final_rows array to the CSV file
+        for row in final_rows:
+            writer.writerow(row)
+    return final_rows
+
+
+def info_data_paired(input_folder, column):
+    df = pd.read_csv(input_folder, header=0)
+    df['Short_Name'] = df['Name'].str[:19]
+    # Selecting the desired columns from base1
+    base1 = df[df['Model Flag'] == 'o'][['Short_Name', column]].rename(columns={column: column + '_o'})
+    # Selecting the desired columns from base2
+    base2 = df[df['Model Flag'] == 'm'][['Short_Name', column]].rename(columns={column: column + '_m'})
+    # Merging base1 and base2 on the 'Name' column
+    result = base1.merge(base2, on='Short_Name', how='left')
+
+    # Open the file in write mode
+    last_part = os.path.basename(os.path.normpath(input_folder))
+    output_file = os.path.dirname(input_folder) + '\\paired_' + column + '_' + str(last_part)
+    result.to_csv(output_file, index=False)
+    # return result
 
 
 # def init(c_0, c_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI, Errcri):
@@ -412,6 +526,7 @@ def ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None):
     if x0 is None:
         # Create an array of zeros
         x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
+
     # else:
     #     from keras.models import load_model
     #     model = load_model(x0)
@@ -713,68 +828,6 @@ def u_inc(gamma_0, xS, dx, X1, X2):
     return u_inc
 
 
-def unet(input_shape):
-    from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Concatenate
-
-    # Input layer
-    inputs = Input(input_shape)
-
-    # Contracting path
-    conv0 = Conv2D(128, 3, activation='relu', padding='same')(inputs)
-    conv0 = Conv2D(128, 3, activation='relu', padding='same')(conv0)
-    pool0 = MaxPooling2D(pool_size=(1, 1))(conv0)
-
-    conv1 = Conv2D(64, 3, activation='relu', padding='same')(pool0)
-    conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
-    pool1 = MaxPooling2D(pool_size=(1, 1))(conv1)
-
-    conv2 = Conv2D(32, 3, activation='relu', padding='same')(pool1)
-    conv2 = Conv2D(32, 3, activation='relu', padding='same')(conv2)
-    pool2 = MaxPooling2D(pool_size=(1, 1))(conv2)
-
-    conv3 = Conv2D(16, 3, activation='relu', padding='same')(pool2)
-    conv3 = Conv2D(16, 3, activation='relu', padding='same')(conv3)
-    pool3 = MaxPooling2D(pool_size=(1, 1))(conv3)
-
-    # Bottom layer
-    conv4 = Conv2D(8, 3, activation='relu', padding='same')(pool3)
-    conv4 = Conv2D(8, 3, activation='relu', padding='same')(conv4)
-
-    # Expanding path
-    up5 = UpSampling2D(size=(1, 1))(conv4)
-    up5 = Conv2D(16, 2, activation='relu', padding='same')(up5)
-    merge5 = Concatenate(axis=-1)([conv3, up5])
-    conv5 = Conv2D(16, 3, activation='relu', padding='same')(merge5)
-    conv5 = Conv2D(16, 3, activation='relu', padding='same')(conv5)
-
-    up6 = UpSampling2D(size=(1, 1))(conv5)
-    up6 = Conv2D(32, 2, activation='relu', padding='same')(up6)
-    merge6 = Concatenate(axis=-1)([conv2, up6])
-    conv6 = Conv2D(32, 3, activation='relu', padding='same')(merge6)
-    conv6 = Conv2D(32, 3, activation='relu', padding='same')(conv6)
-
-    up7 = UpSampling2D(size=(1, 1))(conv6)
-    up7 = Conv2D(64, 2, activation='relu', padding='same')(up7)
-    merge7 = Concatenate(axis=-1)([conv1, up7])
-    conv7 = Conv2D(64, 3, activation='relu', padding='same')(merge7)
-    conv7 = Conv2D(64, 3, activation='relu', padding='same')(conv7)
-
-    up8 = UpSampling2D(size=(1, 1))(conv7)
-    up8 = Conv2D(128, 2, activation='relu', padding='same')(up8)
-    merge8 = Concatenate(axis=-1)([conv1, up8])
-    conv8 = Conv2D(128, 3, activation='relu', padding='same')(merge8)
-    conv8 = Conv2D(128, 3, activation='relu', padding='same')(conv8)
-
-    # Output layer
-    # outputs = Conv2D(60, 1)(conv7)
-    outputs = Conv2D(128, 1)(conv8)
-
-    # Create the model
-    model = Model(inputs=inputs, outputs=outputs)
-    return model
-
-
 def unet_elu(input_shape):
     # Input layer
     inputs = Input(input_shape)
@@ -832,43 +885,6 @@ def unet_elu(input_shape):
 
     # Create the model
     model = Model(inputs=inputs, outputs=outputs)
-    return model
-
-
-def unet_2d(input_shape):
-    inputs = Input(input_shape)
-
-    # Encoder
-    conv1 = Conv2D(64, 3, activation='relu', padding='same')(inputs)
-    conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
-    pool1 = MaxPooling2D(pool_size=(1, 2))(conv1)
-
-    conv2 = Conv2D(128, 3, activation='relu', padding='same')(pool1)
-    conv2 = Conv2D(128, 3, activation='relu', padding='same')(conv2)
-    pool2 = MaxPooling2D(pool_size=(1, 2))(conv2)
-
-    # Middle
-    conv3 = Conv2D(256, 3, activation='relu', padding='same')(pool2)
-    conv3 = Conv2D(256, 3, activation='relu', padding='same')(conv3)
-
-    # Decoder
-    up4 = UpSampling2D(size=(1, 2))(conv3)
-    up4 = Conv2D(128, 2, activation='relu', padding='same')(up4)
-    merge4 = Concatenate(axis=3)([conv2, up4])
-    conv4 = Conv2D(128, 3, activation='relu', padding='same')(merge4)
-    conv4 = Conv2D(128, 3, activation='relu', padding='same')(conv4)
-
-    up5 = UpSampling2D(size=(1, 2))(conv4)
-    up5 = Conv2D(64, 2, activation='relu', padding='same')(up5)
-    merge5 = Concatenate(axis=3)([conv1, up5])
-    conv5 = Conv2D(64, 3, activation='relu', padding='same')(merge5)
-    conv5 = Conv2D(64, 3, activation='relu', padding='same')(conv5)
-
-    # Output
-    outputs = Conv2D(1, 1, activation='sigmoid')(conv5)
-
-    model = Model(inputs=inputs, outputs=outputs)
-
     return model
 
 

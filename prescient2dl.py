@@ -118,7 +118,7 @@ for folder in folders:
     # model = custom_functions.unet(input_shape)
     model = custom_functions.unet_elu(input_shape)
     # model = custom_functions.unet_2d(input_shape)
-    plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
+    plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_layer_names=True)
 
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
     # model.summary()

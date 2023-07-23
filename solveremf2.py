@@ -189,21 +189,7 @@ FFTG = custom_functions.FFTG(Green)
 R = custom_functions.R(X1, X2)
 u_inc = custom_functions.u_inc(gamma_0, xS, dx, X1, X2)
 
-
-def complex_separation(complex_array):
-    # Separate real and imaginary components
-    real_array = np.real(complex_array)
-    imaginary_array = np.imag(complex_array)
-
-    # Compute absolute array
-    absolute_array = np.abs(complex_array)
-
-    # Stack the arrays together
-    result_array = np.stack([real_array, imaginary_array, absolute_array])
-    return result_array
-
-
-u_inc_stacked = complex_separation(u_inc)
+u_inc_stacked = custom_functions.complex_separation(u_inc)
 
 # DEFAULT SETTING
 # The default primary scatter is 'normal tissue'. It will take up a circle which is the same as the Bessel-Aprroach geometry.
@@ -224,40 +210,9 @@ radius_max_pix_c = int(np.floor(np.sqrt(0.025)*np.minimum(N1, N2)))
 # Set the min area of all non-normal tissue equal to four pixel to avoid simulating normal samples repeatidly
 radius_min_pix = 4
 
-
-def generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a):
-    from skimage import io
-    import matplotlib.cm as cm
-    import matplotlib.pyplot as plt
-    c_b = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'benign tumor'].index[0], 'epsilonr'])
-    print("c_b", c_b)
-    # contrast_c = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'cancer'].index[0], 'epsilonr'])
-    for seed in range(seedling, seedling+seed_count):
-
-        shape_array = CHI.copy()
-        # Generate some benign tissue
-        radius = random.uniform(radius_min_pix, radius_max_pix_b)
-        center_x = random.uniform(radius, N1 - radius)
-        center_y = random.uniform(radius, N2 - radius)
-
-        for i in range(N2):
-            for j in range(N1):
-                if np.sqrt((j - center_x) ** 2 + (i - center_y) ** 2) <= radius:
-                    shape_array[i, j] = 1 - c_b
-
-        # if not in the original "normal tissue" region then set to zero.
-        # A certain amount of the tumour tissues will land beyond the normal tissue region contributing to missed captures at the photo stage.
-        shape_array[R > a] = 0.0
-
-        # Only use as visualisation, not input data. Use the npy array as input data to avoid clipping etc.
-        plt.imsave(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.png"), shape_array, cmap='gray')
-        np.save(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.npy"), shape_array)
-    return shape_array
-
-
 # GENERATE GEOMETRY SAMPLES
 os.makedirs(input_folder, exist_ok=True)
-generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a)
+custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
 # SOLVE THE SCENES AND SAVE OUTPUTS
 # Get the list of numpy files in the input folder
 files_folder1 = [f for f in os.listdir(input_folder) if f.endswith(".npy")]
@@ -268,15 +223,10 @@ files_folder2 = [f for f in os.listdir(output_folder) if f.endswith('.npy') and 
 numpy_files = [f for f in files_folder1 if f not in files_folder2]
 
 
-x0 = np.zeros((u_inc.flatten('F').shape[0], 1), dtype=np.complex128, order='F')
 model = load_model("model_checkpoint.h5")
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
-# model_re = load_model("model_checkpoint_re.h5")
-# model_re.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
-# model_im = load_model("model_checkpoint_im.h5")
-# model_im.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 
-# x_list = np.reshape(x_list, (x_list.shape[0], 2, N1, N2))
+x0 = None
 # Iterate over each numpy file
 for file_name in numpy_files:
     # Load the numpy array
@@ -286,14 +236,18 @@ for file_name in numpy_files:
     # Solve the instances
     b = custom_functions.b(CHI, u_inc)
 
-    original_array = complex_separation(CHI)[0:2]
+    original_array = custom_functions.complex_separation(CHI)[0:2]
     reshaped_array = np.expand_dims(original_array, axis=0)
     x0_2D = np.squeeze(model.predict(reshaped_array, verbose=0))
     x0_2D_complex = x0_2D[0] + 1j*x0_2D[1]
     # x0 = x0_2D_complex.copy().flatten('F')
     tic0 = time.time()
     # print("tic0", tic0)
-    ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=x0)
+    if x0 is None:
+        ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=None)
+    else:
+        ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=x0)
+
     toc0 = time.time() - tic0
     print("toc", toc0)
     # Save the result in the output folder with the same file name
@@ -301,25 +255,22 @@ for file_name in numpy_files:
     if exit_code_o == 0:
         w_o = custom_functions.w(ITERBiCGSTABw)
         information_o = custom_functions.information(ITERBiCGSTABw)
+        final_array = np.concatenate([u_inc_stacked, custom_functions.complex_separation(CHI), custom_functions.complex_separation(w_o)], axis=0)
 
-        output_file_path = os.path.join(output_folder, file_name)
-        # final_array = np.concatenate((u_inc, CHI, w_o), axis=0)
-
-        # final_array = np.concatenate([u_inc[np.newaxis, :, :], CHI[np.newaxis, :, :], w_o[np.newaxis, :, :]], axis=0)
-        final_array = np.concatenate([u_inc_stacked, complex_separation(CHI), complex_separation(w_o)], axis=0)
-        # final_array = np.concatenate([u_inc_stacked[np.newaxis, :, :], complex_separation(CHI)[np.newaxis, :, :], complex_separation(w_o)[np.newaxis, :, :]], axis=0)
-        np.save(output_file_path, final_array)
-
-        output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info")
-        np.save(output_file_path_info, information_o)
+        # output_file_path = os.path.join(output_folder, file_name)
+        if x0 is None:
+            output_file_path = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_o")
+            np.save(output_file_path, final_array)
+            output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info_o")
+            np.save(output_file_path_info, information_o)
+        else:
+            output_file_path = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_m")
+            np.save(output_file_path, final_array)
+            output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info_m")
+            np.save(output_file_path_info, information_o)
     else:
         print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
 
-## POOR
-sol_info_o = np.load("F:\instances_output_o\instance_0000000000_info.npy")
-sol_info_m = np.load("F:\instances_output_m\instance_0000000000_info.npy")
-print("Initial Error", sol_info_o[0, 1])
-print("Initial Error", sol_info_m[0, 1])
 
 # numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
 # # Iterate over each numpy file
@@ -328,15 +279,20 @@ print("Initial Error", sol_info_m[0, 1])
 #     geometry_file = os.path.join(output_folder, file_name)
 #     array = np.load(geometry_file)
 #     # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
-#     custom_functions.plotContrastSource(np.abs(array[0, :, :]), np.abs(array[1, :, :]), X1, X2)
+#     custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[5, :, :]), X1, X2)
 #     # custom_functions.plotContrastSource(w, CHI, X1, X2)
-#     custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
+#     custom_functions.plotContrastSource(np.abs(array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
 #     # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
-#     custom_functions.plotContrastSource(np.abs(array[0, :, :]+array[2, :, :]), np.abs(array[1, :, :]), X1, X2)
+#     custom_functions.plotContrastSource(np.abs(array[2, :, :]+array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
 
-#     test = array[0, :, :]+array[2, :, :]
+info_dataset = custom_functions.info_data_harvest('F:\instances_output')
 
+custom_functions.info_data_paired('F:\instances_output\dataset_instances_output.csv', 'Iteration_Count')
+custom_functions.info_data_paired('F:\instances_output\dataset_instances_output.csv', 'Duration')
+custom_functions.info_data_paired('F:\instances_output\dataset_instances_output.csv', 'Error_Initial')
 
+# # sol_info_o = np.load("F:\instances_output_o\instance_0000000000_info.npy")
+# # sol_info_m = np.load("F:\instances_output_m\instance_0000000000_info.npy")
 
 # import matplotlib.pyplot as plt
 
