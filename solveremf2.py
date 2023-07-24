@@ -212,7 +212,9 @@ radius_min_pix = 4
 
 # GENERATE GEOMETRY SAMPLES
 os.makedirs(input_folder, exist_ok=True)
+
 custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
+
 # SOLVE THE SCENES AND SAVE OUTPUTS
 # Get the list of numpy files in the input folder
 files_folder1 = [f for f in os.listdir(input_folder) if f.endswith(".npy")]
@@ -222,9 +224,9 @@ files_folder2 = [f for f in os.listdir(output_folder) if f.endswith('.npy') and 
 # Remove files from files_folder1 if they exist in folder2
 numpy_files = [f for f in files_folder1 if f not in files_folder2]
 
-
-model = load_model("model_checkpoint.h5")
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+if os.path.exists("model_checkpoint.h5"):
+    model = load_model("model_checkpoint.h5")
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 
 x0 = None
 # Iterate over each numpy file
@@ -236,11 +238,12 @@ for file_name in numpy_files:
     # Solve the instances
     b = custom_functions.b(CHI, u_inc)
 
-    original_array = custom_functions.complex_separation(CHI)[0:2]
-    reshaped_array = np.expand_dims(original_array, axis=0)
-    x0_2D = np.squeeze(model.predict(reshaped_array, verbose=0))
-    x0_2D_complex = x0_2D[0] + 1j*x0_2D[1]
-    # x0 = x0_2D_complex.copy().flatten('F')
+    if "model" in locals():
+        original_array = custom_functions.complex_separation(CHI)[0:2]
+        reshaped_array = np.expand_dims(original_array, axis=0)
+        x0_2D = np.squeeze(model.predict(reshaped_array, verbose=0))
+        x0_2D_complex = x0_2D[0] + 1j*x0_2D[1]
+        x0 = x0_2D_complex.copy().flatten('F')
     tic0 = time.time()
     # print("tic0", tic0)
     if x0 is None:
@@ -285,11 +288,11 @@ for file_name in numpy_files:
 #     # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
 #     custom_functions.plotContrastSource(np.abs(array[2, :, :]+array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
 
-info_dataset = custom_functions.info_data_harvest('F:\instances_output')
+info_dataset = custom_functions.info_data_harvest(output_folder)
 
-custom_functions.info_data_paired('F:\instances_output\dataset_instances_output.csv', 'Iteration_Count')
-custom_functions.info_data_paired('F:\instances_output\dataset_instances_output.csv', 'Duration')
-custom_functions.info_data_paired('F:\instances_output\dataset_instances_output.csv', 'Error_Initial')
+custom_functions.info_data_paired(output_folder + '\\dataset_instances_output.csv', 'Iteration_Count')
+custom_functions.info_data_paired(output_folder + '\\dataset_instances_output.csv', 'Duration')
+custom_functions.info_data_paired(output_folder + '\\dataset_instances_output.csv', 'Error_Initial')
 
 # # sol_info_o = np.load("F:\instances_output_o\instance_0000000000_info.npy")
 # # sol_info_m = np.load("F:\instances_output_m\instance_0000000000_info.npy")

@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+import keras
 from keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from lib import custom_functions
@@ -10,11 +11,18 @@ import keras.backend as K
 from keras.callbacks import Callback, ModelCheckpoint
 import pickle
 import random
+import visualkeras
+from PIL import ImageFont
 from IPython import get_ipython
 
-# Clear workspace
-get_ipython().run_line_magic('clear', '-sf')
 
+# # Clear workspace
+# from numba import cuda
+# cuda.select_device(0)
+# cuda.close()
+
+get_ipython().run_line_magic('clear', '-sf')
+keras.backend.clear_session()
 # u_inc layer, CHI layer, w_o layer
 # """
 # So input into the model is:
@@ -25,13 +33,19 @@ get_ipython().run_line_magic('clear', '-sf')
 # holding everything else as constant.
 # """
 
+print(K.image_data_format()) # print current format
+K.set_image_data_format('channels_first') # set format
+print(K.image_data_format()) # print current format
+
+
 directory = "F:\\"
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances_output_0" in f]
-selected_folders = random.sample(folders, 3)
+selected_folders = random.sample(folders, 1)
+selected_folders = ["instances_output"]
 
 # data_folder = "F:\\instances_output"
 for folder in selected_folders:
-    data_folder = "F:\\" + folder
+    data_folder = directory + folder
     print("data_folder", data_folder)
     # X1 = np.load(os.path.join(data_folder, 'X1.npy'))
     # X2 = np.load(os.path.join(data_folder, 'X2.npy'))
@@ -43,11 +57,12 @@ for folder in selected_folders:
     # Split the dataset into training and validation sets
     # data_folder = "instances_output_36000"
 
-    file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
+    file_list = [f for f in os.listdir(data_folder) if f.endswith('.npy') and "_info" not in f and f.startswith("instance_")]
     sample = np.load(data_folder + '\\' + file_list[0])
     N1 = sample.shape[1]
     N2 = sample.shape[2]
     input_shape = (2, N1, N2)
+    # input_shape = (N1, N2, 2)
 
     if not os.path.exists(data_folder + "_x_train.npy"):
         train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
@@ -150,6 +165,7 @@ for folder in selected_folders:
             history = pickle.load(file)
         initial_epoch = len(history['loss'])
 
+
     # if os.path.exists('model_checkpoint.h5') and os.path.exists('training_history.pkl'):
     #     if num_epochs < len(history['loss']):
     #         history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, initial_epoch=len(history['loss']), callbacks=[checkpoint, plot_history])
@@ -159,6 +175,13 @@ for folder in selected_folders:
     #     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
 
+# visualkeras.layered_view(model, to_file='output.png').show() # write and show
+# # visualkeras.layered_view(model).show() # display using your system viewer
+model = custom_functions.unet_elu(input_shape)
+visualkeras.layered_view(model, to_file='output.png') # write to disk
+# font = ImageFont.truetype("arial.ttf", 32)  # using comic sans is strictly prohibited!
+# visualkeras.layered_view(model, legend=True, font=font).show()  # font is optional!
+# visualkeras.layered_view(model, draw_volume=False, legend=True).show()
 
 def plot_loss(history):
     # Plot the loss
