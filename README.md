@@ -68,3 +68,7 @@ conda env create -f solveremf2.yml
 
 ## lib
 Custom libraries used in the main code developed by the student.
+
+
+# Results
+![](./doc/_stats/paired_Error_Initial_dataset_instances_output.html)
