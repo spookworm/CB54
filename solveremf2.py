@@ -43,7 +43,7 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 100
+seed_count = 5000
 # Folder to save contrast scene array and visualisation
 input_folder = "F:\\instances"
 # Folder to save solved scene arrays and solution metric information
@@ -213,20 +213,29 @@ radius_min_pix = 4
 # GENERATE GEOMETRY SAMPLES
 os.makedirs(input_folder, exist_ok=True)
 
-custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
+# custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
+
+if os.path.exists("model_checkpoint.h5"):
+    model = load_model("model_checkpoint.h5")
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 
 # SOLVE THE SCENES AND SAVE OUTPUTS
 # Get the list of numpy files in the input folder
 files_folder1 = [f for f in os.listdir(input_folder) if f.endswith(".npy")]
 
 os.makedirs(output_folder, exist_ok=True)
-files_folder2 = [f for f in os.listdir(output_folder) if f.endswith('.npy') and "_info" not in f]
+if "model" in locals():
+    find_ = "_m"
+    replace_ = ""
+    files_folder2_full = [f for f in os.listdir(output_folder) if f.endswith('_m.npy') and "_info" not in f]
+    files_folder2 = [string.replace(find_, replace_) for string in files_folder2_full]
+else:
+    find_ = "_o"
+    replace_ = ""
+    files_folder2_full = [f for f in os.listdir(output_folder) if f.endswith('_o.npy') and "_info" not in f]
+    files_folder2 = [string.replace(find_, replace_) for string in files_folder2_full]
 # Remove files from files_folder1 if they exist in folder2
 numpy_files = [f for f in files_folder1 if f not in files_folder2]
-
-if os.path.exists("model_checkpoint.h5"):
-    model = load_model("model_checkpoint.h5")
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 
 x0 = None
 # Iterate over each numpy file
@@ -240,9 +249,10 @@ for file_name in numpy_files:
 
     if "model" in locals():
         original_array = custom_functions.complex_separation(CHI)[0:2]
+        original_array = np.transpose(original_array, (1, 2, 0))
         reshaped_array = np.expand_dims(original_array, axis=0)
         x0_2D = np.squeeze(model.predict(reshaped_array, verbose=0))
-        x0_2D_complex = x0_2D[0] + 1j*x0_2D[1]
+        x0_2D_complex = x0_2D[:, :, 0] + 1j*x0_2D[:, :, 1]
         x0 = x0_2D_complex.copy().flatten('F')
     tic0 = time.time()
     # print("tic0", tic0)
@@ -252,7 +262,7 @@ for file_name in numpy_files:
         ITERBiCGSTABw = custom_functions.ITERBiCGSTABw(u_inc, CHI, Errcri, N1, N2, b, FFTG, itmax, x0=x0)
 
     toc0 = time.time() - tic0
-    print("toc", toc0)
+    # print("toc", toc0)
     # Save the result in the output folder with the same file name
     exit_code_o = custom_functions.exit_code(ITERBiCGSTABw)
     if exit_code_o == 0:
@@ -275,7 +285,7 @@ for file_name in numpy_files:
         print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
 
 
-# numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info.npy") and f.startswith("instance_")]
+# numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info_o.npy") and f.startswith("instance_")]
 # # Iterate over each numpy file
 # for file_name in numpy_files:
 #     # Load the numpy array
@@ -285,14 +295,16 @@ for file_name in numpy_files:
 #     custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[5, :, :]), X1, X2)
 #     # custom_functions.plotContrastSource(w, CHI, X1, X2)
 #     custom_functions.plotContrastSource(np.abs(array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
-#     # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
+#     # # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
 #     custom_functions.plotContrastSource(np.abs(array[2, :, :]+array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
 
+print("start stats")
 info_dataset = custom_functions.info_data_harvest(output_folder)
+custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
+# custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv', 'Iteration_Count')
+# custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv', 'Duration')
+# custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv', 'Error_Initial')
 
-custom_functions.info_data_paired(output_folder + '\\dataset_instances_output.csv', 'Iteration_Count')
-custom_functions.info_data_paired(output_folder + '\\dataset_instances_output.csv', 'Duration')
-custom_functions.info_data_paired(output_folder + '\\dataset_instances_output.csv', 'Error_Initial')
 
 # # sol_info_o = np.load("F:\instances_output_o\instance_0000000000_info.npy")
 # # sol_info_m = np.load("F:\instances_output_m\instance_0000000000_info.npy")
@@ -361,47 +373,64 @@ def composer_call():
             custom_functions.a,
             custom_functions.angle,
             custom_functions.angular_frequency,
+            custom_functions.Aw,
             custom_functions.b,
+            # custom_functions.callback,
             custom_functions.CHI,
             custom_functions.CHI_Bessel,
+            custom_functions.complex_separation,
+            custom_functions.composer_render,
             custom_functions.contrast_sct,
+            # custom_functions.custom_matvec,
             custom_functions.c_0,
             custom_functions.c_sct,
+            custom_functions.displayDataBesselApproach,
+            custom_functions.displayDataCompareApproachs,
             custom_functions.displayDataCSIEApproach,
             custom_functions.Dop,
             custom_functions.dx,
+            custom_functions.epsilon0,
             custom_functions.Errcri,
             custom_functions.exit_code,
             custom_functions.f,
             custom_functions.FFTG,
             custom_functions.gamma_0,
+            custom_functions.generate_ROI,
             custom_functions.Green,
             custom_functions.information,
+            custom_functions.info_data_harvest,
+            custom_functions.info_data_paired,
+            # custom_functions.init,
             custom_functions.initFFTGreenGrid,
             custom_functions.initGrid,
             custom_functions.input_disc_per_lambda,
             custom_functions.ITERBiCGSTABw,
             custom_functions.itmax,
+            custom_functions.Kop,
             custom_functions.lambda_smallest,
+            custom_functions.mu0,
             custom_functions.N1,
             custom_functions.N2,
             custom_functions.NR,
             custom_functions.plotContrastSource,
+            custom_functions.prescient2DL_data,
             custom_functions.R,
             custom_functions.radius_receiver,
             custom_functions.radius_source,
             custom_functions.rcvr_phi,
             custom_functions.s,
             custom_functions.tissuePermittivity,
+            custom_functions.unet_elu,
             custom_functions.u_inc,
             custom_functions.w,
+            custom_functions.WavefieldSctCircle,
             custom_functions.wavelength,
             custom_functions.X1,
             custom_functions.X1fft,
             custom_functions.X2,
             custom_functions.X2fft,
             custom_functions.xR,
-            custom_functions.xS,
+            custom_functions.xS
         )
         # .update_parameters(input_length_side=input_length_x_side)
         # .cache()

@@ -34,13 +34,12 @@ keras.backend.clear_session()
 # """
 
 print(K.image_data_format()) # print current format
-K.set_image_data_format('channels_first') # set format
+K.set_image_data_format('channels_last') # set format
 print(K.image_data_format()) # print current format
 
 
 directory = "F:\\"
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances_output_0" in f]
-selected_folders = random.sample(folders, 1)
 selected_folders = ["instances_output"]
 
 # data_folder = "F:\\instances_output"
@@ -57,12 +56,13 @@ for folder in selected_folders:
     # Split the dataset into training and validation sets
     # data_folder = "instances_output_36000"
 
-    file_list = [f for f in os.listdir(data_folder) if f.endswith('.npy') and "_info" not in f and f.startswith("instance_")]
+    files_list = [f for f in os.listdir(data_folder) if f.endswith('.npy') and "_info" not in f and f.startswith("instance_")]
+    file_list = random.sample(files_list, 5000)
     sample = np.load(data_folder + '\\' + file_list[0])
     N1 = sample.shape[1]
     N2 = sample.shape[2]
-    input_shape = (2, N1, N2)
-    # input_shape = (N1, N2, 2)
+    # input_shape = (2, N1, N2)
+    input_shape = (N1, N2, 2)
 
     if not os.path.exists(data_folder + "_x_train.npy"):
         train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
@@ -101,12 +101,12 @@ for folder in selected_folders:
     #         break
 
     # print('Maximum batch size:', max_batch_size)
-    max_batch_size = 1024
+    max_batch_size = 4*32
     batch_size = int(max_batch_size/32)
     # Calculate the number of steps per epoch
     steps_per_epoch = total_samples // batch_size
     # Set the number of epochs
-    num_epochs = 100
+    num_epochs = 1000
 
     # Train the model
 
@@ -140,13 +140,18 @@ for folder in selected_folders:
                 pickle.dump(self.history, file)
 
     # Create the U-Net model
-    # model = custom_functions.unet(input_shape)
-    model = custom_functions.unet_elu(input_shape)
-    # model = custom_functions.unet_2d(input_shape)
+    model = custom_functions.get_model(input_shape)
+    # model = custom_functions.unet_elu(input_shape)
+    visualkeras.layered_view(model, to_file='output.png', legend=True) # write to disk
+
+    model.summary()
+
     plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_layer_names=True)
 
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+    # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
     # model.summary()
+    len(model.layers)
 
     # Define the checkpoint callback
     checkpoint = ModelCheckpoint('model_checkpoint.h5', monitor='val_loss', save_best_only=True)
@@ -156,7 +161,8 @@ for folder in selected_folders:
         print("File exists!")
         model = load_model('model_checkpoint.h5')
         # Need to recompile the model
-        model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+        # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+        model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
 
     # Load the training history
     if os.path.exists(os.getcwd() + '\\' + 'training_history.pkl'):
@@ -177,11 +183,14 @@ for folder in selected_folders:
 
 # visualkeras.layered_view(model, to_file='output.png').show() # write and show
 # # visualkeras.layered_view(model).show() # display using your system viewer
-model = custom_functions.unet_elu(input_shape)
-visualkeras.layered_view(model, to_file='output.png') # write to disk
+model = custom_functions.get_model(input_shape)
+# model = custom_functions.unet_elu(input_shape)
+# visualkeras.layered_view(model, to_file='output.png', legend=True) # write to disk
 # font = ImageFont.truetype("arial.ttf", 32)  # using comic sans is strictly prohibited!
 # visualkeras.layered_view(model, legend=True, font=font).show()  # font is optional!
 # visualkeras.layered_view(model, draw_volume=False, legend=True).show()
+# plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_layer_names=True)
+
 
 def plot_loss(history):
     # Plot the loss
@@ -196,13 +205,19 @@ def plot_loss(history):
 
 def plot_prediction(model, input_data, output_data):
     # Predict the output
-    # predicted_output = model.predict(np.expand_dims(input_data, axis=0))
     predicted_output = model.predict(np.expand_dims(input_data, axis=0))
-
+    # predicted_output = model.predict(input_data)
+    print("predicted_output.shape", predicted_output.shape)
     # Reshape the predicted output to match the original shape
     predicted_output = np.squeeze(predicted_output)
     input_data_squeeze = np.squeeze(input_data)
     output_data_squeeze = np.squeeze(output_data)
+
+    output_data_squeeze = np.transpose(output_data_squeeze, (2, 0, 1))
+    predicted_output = np.transpose(predicted_output, (2, 0, 1))
+    input_data_squeeze = np.transpose(input_data_squeeze, (2, 0, 1))
+
+    print("predicted_output.shape", predicted_output.shape)
 
     # print("predicted_output.shape", predicted_output.shape)
     # print("predicted_output[0].shape", predicted_output[0].shape)
@@ -240,12 +255,17 @@ def plot_prediction(model, input_data, output_data):
     plot_examples(np.abs(input_field), np.abs(output_field), np.abs(predicted_field))
 
 
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+# model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
 # Step 5: Evaluate the model
 # Evaluate the model using your test dataset
 score = model.evaluate(x_test, y_test, verbose=0)
 # Select an input from the test set
 plot_prediction(model, x_test[0], y_test[0])
+x_test[0].shape
+y_test[0].shape
+tester = model.predict(np.expand_dims(x_test[0], axis=0))
+tester.shape
 # x_test[0, 0].shape
 plot_prediction(model, x_test[2], y_test[2])
 
