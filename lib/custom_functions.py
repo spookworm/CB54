@@ -690,8 +690,8 @@ def plotContrastSource(w, CHI, X1, X2):
 
 def plot_loss(history):
     # Plot the loss
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.plot(history['loss'], label='Training Loss')
+    plt.plot(history['val_loss'], label='Validation Loss')
     plt.title('Loss over Epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')

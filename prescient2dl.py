@@ -43,7 +43,7 @@ print(K.image_data_format())
 
 directory = "F:\\"
 # Set the number of epochs
-num_epochs = 1000
+num_epochs = 10
 max_batch_size = 4*32
 batch_size = int(max_batch_size/32)
 
@@ -71,7 +71,7 @@ for folder in selected_folders:
     if not os.path.exists(data_folder + "_x_train.npy"):
         print("Creating Data Splits")
         files_list = [f for f in os.listdir(data_folder) if f.endswith('.npy') and "_info" not in f and f.startswith("instance_")]
-        file_list = random.sample(files_list, 5000)
+        file_list = random.sample(files_list, 500)
         train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
         train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
         x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
@@ -116,9 +116,15 @@ for folder in selected_folders:
 
     class PlotTrainingHistory(Callback):
         def on_train_begin(self, logs={}):
-            self.losses = []
-            self.val_losses = []
-            self.history = {'loss': [], 'val_loss': []}
+            if os.path.exists('training_history.pkl'):
+                with open('training_history.pkl', 'rb') as file:
+                    self.history = pickle.load(file)
+                    self.losses = history['loss']
+                    self.val_losses = history['val_loss']
+            else:
+                self.losses = []
+                self.val_losses = []
+                self.history = {'loss': [], 'val_loss': []}
 
         def on_epoch_end(self, epoch, logs={}):
             self.losses.append(logs.get('loss'))
@@ -214,10 +220,4 @@ y_test[0].shape
 tester = model.predict(np.expand_dims(x_test[0], axis=0))
 tester.shape
 
-print(history.history.keys())
-custom_functions.plot_loss(history)
 
-print("start stats")
-output_folder = "F:\\instances_output"
-info_dataset = custom_functions.info_data_harvest(output_folder)
-custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
