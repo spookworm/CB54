@@ -59,8 +59,6 @@ for folder in selected_folders:
     # E_inc = np.load(os.path.join(data_folder, 'E_inc.npy'))
     # ZH_inc = np.load(os.path.join(data_folder, 'ZH_inc.npy'))
 
-    # Step 1: Load the numpy arrays
-    # Load and preprocess your dataset
     # Split the dataset into training and validation sets
     sample = np.load(data_folder + '\\instance_0000000000_o.npy')
     N1 = sample.shape[1]
@@ -205,7 +203,6 @@ model = custom_architectures.get_model(input_shape)
 # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
 
-# Step 5: Evaluate the model
 # Evaluate the model using your test dataset
 score = model.evaluate(x_test, y_test, verbose=0)
 # Print the evaluation results
@@ -215,9 +212,4 @@ print('Test mean absolute error:', score[1])
 # Select an input from the test set
 custom_functions.plot_prediction(model, x_test[0], y_test[0])
 custom_functions.plot_prediction(model, x_test[2], y_test[2])
-x_test[0].shape
-y_test[0].shape
-tester = model.predict(np.expand_dims(x_test[0], axis=0))
-tester.shape
-
 
