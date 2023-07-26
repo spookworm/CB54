@@ -6,6 +6,7 @@ import keras
 from keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from lib import custom_functions
+from lib import custom_architectures
 from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
 import keras.backend as K
 from keras.callbacks import Callback, ModelCheckpoint
@@ -33,12 +34,19 @@ keras.backend.clear_session()
 # holding everything else as constant.
 # """
 
-print(K.image_data_format()) # print current format
-K.set_image_data_format('channels_last') # set format
-print(K.image_data_format()) # print current format
+# print current format
+print(K.image_data_format())
+# set format
+K.set_image_data_format('channels_last')
+print(K.image_data_format())
 
 
 directory = "F:\\"
+# Set the number of epochs
+num_epochs = 1000
+max_batch_size = 4*32
+batch_size = int(max_batch_size/32)
+
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances_output_0" in f]
 selected_folders = ["instances_output"]
 
@@ -54,17 +62,16 @@ for folder in selected_folders:
     # Step 1: Load the numpy arrays
     # Load and preprocess your dataset
     # Split the dataset into training and validation sets
-    # data_folder = "instances_output_36000"
-
-    files_list = [f for f in os.listdir(data_folder) if f.endswith('.npy') and "_info" not in f and f.startswith("instance_")]
-    file_list = random.sample(files_list, 5000)
-    sample = np.load(data_folder + '\\' + file_list[0])
+    sample = np.load(data_folder + '\\instance_0000000000_o.npy')
     N1 = sample.shape[1]
     N2 = sample.shape[2]
     # input_shape = (2, N1, N2)
     input_shape = (N1, N2, 2)
 
     if not os.path.exists(data_folder + "_x_train.npy"):
+        print("Creating Data Splits")
+        files_list = [f for f in os.listdir(data_folder) if f.endswith('.npy') and "_info" not in f and f.startswith("instance_")]
+        file_list = random.sample(files_list, 5000)
         train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
         train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
         x_train, y_train = custom_functions.prescient2DL_data(data_folder, train_list, N1, N2)
@@ -77,6 +84,7 @@ for folder in selected_folders:
         np.save(data_folder + '_x_test', x_test)
         np.save(data_folder + '_y_test', y_test)
     else:
+        print("Loading Data Splits")
         x_train = np.load(data_folder + '_x_train.npy')
         y_train = np.load(data_folder + '_y_train.npy')
         x_val = np.load(data_folder + '_x_val.npy')
@@ -100,13 +108,9 @@ for folder in selected_folders:
     #     except tf.errors.ResourceExhaustedError:
     #         break
 
-    # print('Maximum batch size:', max_batch_size)
-    max_batch_size = 4*32
-    batch_size = int(max_batch_size/32)
     # Calculate the number of steps per epoch
     steps_per_epoch = total_samples // batch_size
-    # Set the number of epochs
-    num_epochs = 1000
+    print('steps_per_epoch:', steps_per_epoch)
 
     # Train the model
 
@@ -140,9 +144,10 @@ for folder in selected_folders:
                 pickle.dump(self.history, file)
 
     # Create the U-Net model
-    model = custom_functions.get_model(input_shape)
+    model = custom_architectures.get_model(input_shape)
     # model = custom_functions.unet_elu(input_shape)
-    visualkeras.layered_view(model, to_file='output.png', legend=True) # write to disk
+    # write to disk
+    visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras.png', legend=True)
 
     model.summary()
 
@@ -171,7 +176,6 @@ for folder in selected_folders:
             history = pickle.load(file)
         initial_epoch = len(history['loss'])
 
-
     # if os.path.exists('model_checkpoint.h5') and os.path.exists('training_history.pkl'):
     #     if num_epochs < len(history['loss']):
     #         history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, initial_epoch=len(history['loss']), callbacks=[checkpoint, plot_history])
@@ -183,8 +187,8 @@ for folder in selected_folders:
 
 # visualkeras.layered_view(model, to_file='output.png').show() # write and show
 # # visualkeras.layered_view(model).show() # display using your system viewer
-model = custom_functions.get_model(input_shape)
-# model = custom_functions.unet_elu(input_shape)
+model = custom_architectures.get_model(input_shape)
+# model = custom_architectures.unet_elu(input_shape)
 # visualkeras.layered_view(model, to_file='output.png', legend=True) # write to disk
 # font = ImageFont.truetype("arial.ttf", 32)  # using comic sans is strictly prohibited!
 # visualkeras.layered_view(model, legend=True, font=font).show()  # font is optional!
@@ -192,86 +196,28 @@ model = custom_functions.get_model(input_shape)
 # plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_layer_names=True)
 
 
-def plot_loss(history):
-    # Plot the loss
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title('Loss over Epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.show()
-
-
-def plot_prediction(model, input_data, output_data):
-    # Predict the output
-    predicted_output = model.predict(np.expand_dims(input_data, axis=0))
-    # predicted_output = model.predict(input_data)
-    print("predicted_output.shape", predicted_output.shape)
-    # Reshape the predicted output to match the original shape
-    predicted_output = np.squeeze(predicted_output)
-    input_data_squeeze = np.squeeze(input_data)
-    output_data_squeeze = np.squeeze(output_data)
-
-    output_data_squeeze = np.transpose(output_data_squeeze, (2, 0, 1))
-    predicted_output = np.transpose(predicted_output, (2, 0, 1))
-    input_data_squeeze = np.transpose(input_data_squeeze, (2, 0, 1))
-
-    print("predicted_output.shape", predicted_output.shape)
-
-    # print("predicted_output.shape", predicted_output.shape)
-    # print("predicted_output[0].shape", predicted_output[0].shape)
-    predicted_field = predicted_output[0] + 1j*predicted_output[1]
-    input_field = input_data_squeeze[0] + 1j*input_data_squeeze[1]
-    output_field = output_data_squeeze[0] + 1j*output_data_squeeze[1]
-
-    def plot_examples(input_data, output_data, predicted_output):
-        # Plot the input and predicted output
-        plt.subplot(2, 2, 1)
-        plt.imshow(input_data, cmap='gray')
-        plt.title('Input')
-        plt.axis('off')
-
-        plt.subplot(2, 2, 2)
-        plt.imshow(output_data, cmap='jet')
-        plt.title('True Output')
-        plt.axis('off')
-
-        plt.subplot(2, 2, 3)
-        plt.imshow(np.abs(output_data-predicted_output), cmap='jet')
-        plt.title('Difference Output')
-        plt.axis('off')
-
-        plt.subplot(2, 2, 4)
-        plt.imshow(predicted_output, cmap='jet')
-        plt.title('Predicted Output')
-        plt.axis('off')
-
-        plt.tight_layout()
-        plt.show()
-
-    # plot_examples(np.real(input_field), np.real(output_field), np.real(predicted_field))
-    # plot_examples(np.imag(input_field), np.imag(output_field), np.imag(predicted_field))
-    plot_examples(np.abs(input_field), np.abs(output_field), np.abs(predicted_field))
-
-
 # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+
 # Step 5: Evaluate the model
 # Evaluate the model using your test dataset
 score = model.evaluate(x_test, y_test, verbose=0)
-# Select an input from the test set
-plot_prediction(model, x_test[0], y_test[0])
-x_test[0].shape
-y_test[0].shape
-tester = model.predict(np.expand_dims(x_test[0], axis=0))
-tester.shape
-# x_test[0, 0].shape
-plot_prediction(model, x_test[2], y_test[2])
-
 # Print the evaluation results
 print('Test loss:', score[0])
 print('Test mean absolute error:', score[1])
 
+# Select an input from the test set
+custom_functions.plot_prediction(model, x_test[0], y_test[0])
+custom_functions.plot_prediction(model, x_test[2], y_test[2])
+x_test[0].shape
+y_test[0].shape
+tester = model.predict(np.expand_dims(x_test[0], axis=0))
+tester.shape
+
 print(history.history.keys())
-plot_loss(history)
+custom_functions.plot_loss(history)
+
+print("start stats")
+output_folder = "F:\\instances_output"
+info_dataset = custom_functions.info_data_harvest(output_folder)
+custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')

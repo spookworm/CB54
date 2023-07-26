@@ -43,7 +43,7 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 5000
+seed_count = 100000
 # Folder to save contrast scene array and visualisation
 input_folder = "F:\\instances"
 # Folder to save solved scene arrays and solution metric information
@@ -213,7 +213,7 @@ radius_min_pix = 4
 # GENERATE GEOMETRY SAMPLES
 os.makedirs(input_folder, exist_ok=True)
 
-# custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
+custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
 
 if os.path.exists("model_checkpoint.h5"):
     model = load_model("model_checkpoint.h5")
@@ -298,16 +298,6 @@ for file_name in numpy_files:
 #     # # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
 #     custom_functions.plotContrastSource(np.abs(array[2, :, :]+array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
 
-print("start stats")
-info_dataset = custom_functions.info_data_harvest(output_folder)
-custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
-# custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv', 'Iteration_Count')
-# custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv', 'Duration')
-# custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv', 'Error_Initial')
-
-
-# # sol_info_o = np.load("F:\instances_output_o\instance_0000000000_info.npy")
-# # sol_info_m = np.load("F:\instances_output_m\instance_0000000000_info.npy")
 
 # import matplotlib.pyplot as plt
 

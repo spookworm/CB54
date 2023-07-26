@@ -15,6 +15,10 @@ mkdir "E:\instances_output_0000060000-0000064999\"
 mkdir "E:\instances_output_0000065000-0000069999\"
 mkdir "E:\instances_output_0000070000-0000074999\"
 mkdir "E:\instances_output_0000075000-0000079999\"
+mkdir "E:\instances_output_0000080000-0000084999\"
+mkdir "E:\instances_output_0000085000-0000089999\"
+mkdir "E:\instances_output_0000090000-0000094999\"
+mkdir "E:\instances_output_0000095000-0000099999\"
 PAUSE
 mkdir "E:\instances_0000000000-0000004999\"
 mkdir "E:\instances_0000005000-0000009999\"
@@ -32,6 +36,10 @@ mkdir "E:\instances_0000060000-0000064999\"
 mkdir "E:\instances_0000065000-0000069999\"
 mkdir "E:\instances_0000070000-0000074999\"
 mkdir "E:\instances_0000075000-0000079999\"
+mkdir "E:\instances_0000080000-0000084999\"
+mkdir "E:\instances_0000085000-0000089999\"
+mkdir "E:\instances_0000090000-0000094999\"
+mkdir "E:\instances_0000095000-0000099999\"
 PAUSE
 
 
