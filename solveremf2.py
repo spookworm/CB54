@@ -43,7 +43,7 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 100000
+seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "F:\\instances"
 # Folder to save solved scene arrays and solution metric information
@@ -76,7 +76,7 @@ input_disc_per_lambda = custom_functions.input_disc_per_lambda(10)
 epsilon0 = custom_functions.epsilon0()
 mu0 = custom_functions.mu0()
 c_0 = custom_functions.c_0(epsilon0, mu0)
-Z0 = (np.sqrt(mu0/epsilon0))
+print("Z0", (np.sqrt(mu0/epsilon0)))
 angular_frequency = custom_functions.angular_frequency(f)
 
 with open(path_lut, 'rb') as fid:
@@ -192,6 +192,9 @@ u_inc = custom_functions.u_inc(gamma_0, xS, dx, X1, X2)
 
 u_inc_stacked = custom_functions.complex_separation(u_inc)
 
+
+
+
 # DEFAULT SETTING
 # The default primary scatter is 'normal tissue'. It will take up a circle which is the same as the Bessel-Aprroach geometry.
 contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr'])
@@ -200,6 +203,9 @@ CHI_array = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
 CHI = custom_functions.CHI(CHI_array)
 custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
 itmax = custom_functions.itmax(CHI)
+
+
+
 
 
 # Generate the regions of interest
@@ -286,18 +292,19 @@ for file_name in numpy_files:
         print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
 
 
-# numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info_o.npy") and f.startswith("instance_")]
-# # Iterate over each numpy file
-# for file_name in numpy_files:
-#     # Load the numpy array
-#     geometry_file = os.path.join(output_folder, file_name)
-#     array = np.load(geometry_file)
-#     # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
-#     custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[5, :, :]), X1, X2)
-#     # custom_functions.plotContrastSource(w, CHI, X1, X2)
-#     custom_functions.plotContrastSource(np.abs(array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
-#     # # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
-#     custom_functions.plotContrastSource(np.abs(array[2, :, :]+array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
+numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info_o.npy") and f.startswith("instance_")]
+numpy_files = ["instance_0000000000_o.npy"]
+# Iterate over each numpy file
+for file_name in numpy_files:
+    # Load the numpy array
+    geometry_file = os.path.join(output_folder, file_name)
+    array = np.load(geometry_file)
+    # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
+    custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[5, :, :]), X1, X2)
+    # custom_functions.plotContrastSource(w, CHI, X1, X2)
+    custom_functions.plotContrastSource(np.abs(array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
+    # # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
+    custom_functions.plotContrastSource(np.abs(array[2, :, :]+array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
 
 
 # import matplotlib.pyplot as plt

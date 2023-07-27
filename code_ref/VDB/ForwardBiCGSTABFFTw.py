@@ -45,8 +45,10 @@ def init():
     # Source wavelet  Q = 1
 
     # wave speed in embedding
+    c_0 = 3000
     c_0 = 1500
     # wave speed in scatterer
+    c_sct = 1500
     c_sct = 3000
     # temporal frequency
     f = 50
@@ -437,3 +439,7 @@ displayDataCSIEApproach(data, angle)
 displayDataCompareApproachs(data2D, data, angle)
 error = str(np.linalg.norm(data.flatten('F') - data2D.flatten('F'), ord=1)/np.linalg.norm(data2D.flatten('F'), ord=1))
 error
+
+plotContrastSource(u_inc, CHI, X1, X2)
+plotContrastSource(w, CHI, X1, X2)
+plotContrastSource(u_inc + w, CHI, X1, X2)

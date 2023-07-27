@@ -68,7 +68,7 @@ for folder in selected_folders:
 
     if not os.path.exists(data_folder + "_x_train.npy"):
         print("Creating Data Splits")
-        files_list = [f for f in os.listdir(data_folder) if f.endswith('.npy') and "_info" not in f and f.startswith("instance_")]
+        files_list = [f for f in os.listdir(data_folder) if f.endswith('o.npy') and "_info" not in f and f.startswith("instance_")]
         file_list = random.sample(files_list, 500)
         train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
         train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
