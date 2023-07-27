@@ -59,6 +59,8 @@ def build_unet(input_shape):
 
 def get_model(img_size):
     from keras import layers
+    from tensorflow.keras.regularizers import l2
+
     inputs = Input(shape=img_size)
 
     # [First half of the network: downsampling inputs] ###
@@ -108,7 +110,7 @@ def get_model(img_size):
         previous_block_activation = x  # Set aside next residual
 
     # Add a per-pixel classification layer
-    outputs = Conv2D(2, (3, 3), padding="same")(x)
+    outputs = Conv2D(2, (3, 3), padding="same", kernel_regularizer=l2(1e-5))(x)
     # Define the model
     model = Model(inputs, outputs)
     return model

@@ -688,6 +688,14 @@ def plotContrastSource(w, CHI, X1, X2):
     plt.show()
 
 
+def plot_history_ignore(history, ignore_entries):
+    # Ignore the first ignore_entries entries
+    result_dict = {}
+    for key, value in history.items():
+        result_dict[key] = value[ignore_entries:]
+    return result_dict
+
+
 def plot_loss(history):
     # Plot the loss
     plt.plot(history['loss'], label='Training Loss')
@@ -724,22 +732,22 @@ def plot_prediction(model, input_data, output_data):
     def plot_examples(input_data, output_data, predicted_output):
         # Plot the input and predicted output
         plt.subplot(2, 2, 1)
-        plt.imshow(input_data, cmap='gray')
+        plt.imshow(input_data, cmap='gray', interpolation='none')
         plt.title('Input')
         plt.axis('off')
 
         plt.subplot(2, 2, 2)
-        plt.imshow(output_data, cmap='jet')
+        plt.imshow(output_data, cmap='jet', interpolation='none')
         plt.title('True Output')
         plt.axis('off')
 
         plt.subplot(2, 2, 3)
-        plt.imshow(np.abs(output_data-predicted_output), cmap='jet')
+        plt.imshow(np.abs(output_data-predicted_output), cmap='jet', interpolation='none')
         plt.title('Difference Output')
         plt.axis('off')
 
         plt.subplot(2, 2, 4)
-        plt.imshow(predicted_output, cmap='jet')
+        plt.imshow(predicted_output, cmap='jet', interpolation='none')
         plt.title('Predicted Output')
         plt.axis('off')
 
@@ -752,7 +760,7 @@ def plot_prediction(model, input_data, output_data):
 
 
 def prescient2DL_data(data_folder, sample_list, N1, N2):
-    # u_inc layer, CHI layer, w_o layer WHICH EACH LAYER HAVING REAL, IMAGINARY AND COMPLEX COMPONENTS
+    # u_inc layer, CHI layer, w_o layer WHICH EACH LAYER HAVING REAL, IMAGINARY AND ABSOLUTE COMPONENTS
     x_list = []
     y_list = []
     for file in sample_list:

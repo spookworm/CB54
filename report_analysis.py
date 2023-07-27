@@ -16,13 +16,48 @@ with open('training_history.pkl', 'rb') as file:
     history = pickle.load(file)
 print(history.keys())
 # print(history.history.keys())
-custom_functions.plot_loss(history)
+
+ignore_entries = 0
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 110
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 210
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 310
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 410
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 510
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 610
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 710
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 810
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
 
 
-# print("start stats")
-# output_folder = "F:\\instances_output"
-# info_dataset = custom_functions.info_data_harvest(output_folder)
-# custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
+print("start stats")
+output_folder = "F:\\instances_output_0000000000-0000004999"
+info_dataset = custom_functions.info_data_harvest(output_folder)
+custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
 
 """
 Documentation

@@ -46,8 +46,10 @@ seedling = 0
 seed_count = 1
 # Folder to save contrast scene array and visualisation
 input_folder = "F:\\instances"
+input_folder = "F:\\instances_0000000000-0000004999"
 # Folder to save solved scene arrays and solution metric information
 output_folder = "F:\\instances_output"
+output_folder = "F:\\instances_output_0000000000-0000004999"
 # Look-up table for material properties
 path_lut = './lut/tissues.json'
 # The scene will have up to four different materials: 'vacuum'; 'normal tissue'; 'benign tumor'; 'cancer'.
@@ -220,7 +222,7 @@ radius_min_pix = 4
 # GENERATE GEOMETRY SAMPLES
 os.makedirs(input_folder, exist_ok=True)
 
-custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
+# custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
 
 if os.path.exists("model_checkpoint.h5"):
     model = load_model("model_checkpoint.h5")
