@@ -672,7 +672,7 @@ def plotContrastSource(w, CHI, X1, X2):
     fig = plt.figure(figsize=(7.09, 4.72))
     fig.subplots_adjust(wspace=0.3)
     ax1 = fig.add_subplot(1, 2, 1)
-    im1 = ax1.imshow(CHI, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    im1 = ax1.imshow(np.abs(CHI), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
     ax1.set_xlabel('x_2 \u2192')
     ax1.set_ylabel('\u2190 x_1')
     ax1.set_aspect('equal', adjustable='box')
