@@ -15,6 +15,7 @@ import random
 import visualkeras
 from PIL import ImageFont
 from IPython import get_ipython
+import tensorflow as tf
 
 
 # # Clear workspace
@@ -49,7 +50,9 @@ batch_size = int(max_batch_size/32)
 
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances_output_0" in f]
 # selected_folders = ["instances_output_0000000000-0000000999"]
+# selected_folders = [folders[0]]
 selected_folders = folders
+# selected_folders = ["instances_output_0000000000-0000000999"]
 # selected_folders.remove('instances_output_0000030000-0000034999')
 # selected_folders.remove('instances_output_0000025000-0000029999')
 # selected_folders.remove('instances_output_0000020000-0000024999')
@@ -60,13 +63,20 @@ selected_folders = folders
 
 # Split the dataset into training and validation sets
 sample = np.load('F:\\instances_output_0000000000-0000004999\\instance_0000000000_o.npy')
+# sample = np.load('F:\\instances_output_0000000000-0000004999\\instance_0000000076_o.npy')
 N1 = sample.shape[1]
 N2 = sample.shape[2]
 # input_shape = (2, N1, N2)
 input_shape = (N1, N2, 2)
-
+# Create the U-Net model
+model = custom_architectures.get_model(input_shape)
+model = custom_architectures.build_unet(input_shape)
+# write to disk
+model.summary()
+visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras.png', legend=True)
+plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_dtype=True, show_layer_names=True, rankdir="TB", expand_nested=True, dpi=96, layer_range=None, show_layer_activations=True)
 # data_folder = "F:\\instances_output"
-folder = selected_folders[0]
+# folder = selected_folders
 for folder in selected_folders:
     keras.backend.clear_session()
     data_folder = directory + folder
@@ -108,6 +118,11 @@ for folder in selected_folders:
         x_test = np.load(data_folder + '_x_test.npy')
         y_test = np.load(data_folder + '_y_test.npy')
         print("sets loaded: test")
+
+    # from sklearn.preprocessing import StandardScaler
+    # scaler = StandardScaler()
+    # X_train_normalized = scaler.fit_transform(X_train)
+
 
     # Determine the total number of samples in the training dataset
     total_samples = len(x_train)
@@ -171,16 +186,33 @@ for folder in selected_folders:
                 pickle.dump(self.history, file)
 
 
-    # Create the U-Net model
-    model = custom_architectures.get_model(input_shape)
-    # model = custom_functions.unet_elu(input_shape)
-    # write to disk
-    model.summary()
-    visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras.png', legend=True)
-    plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_layer_names=True)
+
+    def edge_loss(y_true, y_pred):
+        from keras.losses import mean_squared_error
+        # ssim_loss = 1 - tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0))
+        # ssim_loss = tf.abs(tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0)))
+
+        # # Compute Sobel edges of y_true
+        # y_true_edges = tf.image.sobel_edges(y_true)
+        # y_pred_edges = tf.image.sobel_edges(y_pred)
+        # # Compute squared difference between y_true_edges and y_pred
+        # squared_diff = tf.square(y_true_edges - y_pred_edges)
+
+        mse_loss = mean_squared_error(y_true, y_pred)
+        # # Apply emphasis to Sobel edges (e.g., multiply by a factor)
+        # edge_weight = 2.0  # Adjust this weight as needed
+        # mean_loss = tf.reduce_mean(squared_diff)
+        # weighted_loss = mse_loss + edge_weight*mean_loss
+        weighted_loss = mse_loss
+        # weighted_loss = mse_loss
+        # weighted_loss = (edge_weight * mean_loss) + 10 * ssim_loss
+
+        # Compute mean of the emphasized loss
+        return weighted_loss
 
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+    # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+    model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
     len(model.layers)
 
     # Define the checkpoint callback
@@ -190,10 +222,12 @@ for folder in selected_folders:
     # Load the saved model
     if os.path.exists(os.getcwd() + '\\' + 'model_checkpoint.h5'):
         print("File exists!")
-        model = load_model('model_checkpoint.h5')
+        # model = load_model('model_checkpoint.h5')
+        model = load_model('model_checkpoint.h5', custom_objects={'edge_loss': edge_loss})
         # Need to recompile the model
         # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
-        model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+        # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+        model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
 
     # Load the training history
     if os.path.exists(os.getcwd() + '\\' + 'training_history.pkl'):
@@ -209,27 +243,46 @@ for folder in selected_folders:
     #     print("Already complete epochs!")
     # else:
     #     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
-    # Get prediction for the specified training sample
-    # plot_prediction_dev = PlotGuess(np.dstack((x_train[0], y_train[0])))
-    # custom_functions.plot_prediction(model, sample_iterative[:, :, 0:2], sample_iterative[:, :, 2:4])
+    from keras.callbacks import ReduceLROnPlateau
+    reduce_lr = ReduceLROnPlateau(factor=0.1, patience=5)
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history, reduce_lr])
+
     custom_functions.plot_prediction(model, x_train[0], y_train[0])
+    custom_functions.plot_prediction(model, x_train[1], y_train[1])
+
+    custom_functions.plot_prediction(model, x_test[0], y_test[0])
+    custom_functions.plot_prediction(model, x_test[1], y_test[1])
+
+    score = model.evaluate(x_test, y_test, verbose=0)
+    print("score", score)
+
+    # Load the training history from the pickle file
+    history_file = "training_history.pkl"
+    with open(history_file, 'rb') as file:
+        history = pickle.load(file)
+    ignore_entries = 10
+    result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+    custom_functions.plot_loss(result_dict)
     del x_train, y_train, x_val, y_val
-    # x_test, y_test
+    # , x_test, y_test
 
 # visualkeras.layered_view(model, to_file='output.png').show() # write and show
 # # visualkeras.layered_view(model).show() # display using your system viewer
 model = custom_architectures.get_model(input_shape)
-# model = custom_architectures.unet_elu(input_shape)
+model = custom_architectures.build_unet(input_shape)
+num_layers = len(model.layers)
+print("Number of layers:", num_layers)
 # visualkeras.layered_view(model, to_file='output.png', legend=True) # write to disk
 # font = ImageFont.truetype("arial.ttf", 32)  # using comic sans is strictly prohibited!
 # visualkeras.layered_view(model, legend=True, font=font).show()  # font is optional!
 # visualkeras.layered_view(model, draw_volume=False, legend=True).show()
 # plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_layer_names=True)
 
-model = load_model('model_checkpoint.h5')
+# model = load_model('model_checkpoint.h5')
+model = load_model('model_checkpoint.h5', custom_objects={'edge_loss': edge_loss})
 # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+# model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
 
 # Evaluate the model using your test dataset
 score = model.evaluate(x_test, y_test, verbose=0)
@@ -240,4 +293,3 @@ print('Test mean absolute error:', score[1])
 # Select an input from the test set
 custom_functions.plot_prediction(model, x_test[0], y_test[0])
 custom_functions.plot_prediction(model, x_test[2], y_test[2])
-

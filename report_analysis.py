@@ -12,12 +12,17 @@ get_ipython().run_line_magic('clear', '-sf')
 
 
 # Load the training history from the pickle file
-with open('training_history.pkl', 'rb') as file:
+history_file = "training_history.pkl"
+with open(history_file, 'rb') as file:
     history = pickle.load(file)
 print(history.keys())
 # print(history.history.keys())
 
 ignore_entries = 0
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
+ignore_entries = 10
 result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
 custom_functions.plot_loss(result_dict)
 
@@ -53,11 +58,62 @@ ignore_entries = 810
 result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
 custom_functions.plot_loss(result_dict)
 
+ignore_entries = 910
+result_dict = custom_functions.plot_history_ignore(history, ignore_entries)
+custom_functions.plot_loss(result_dict)
+
 
 print("start stats")
 output_folder = "F:\\instances_output_0000000000-0000004999"
 info_dataset = custom_functions.info_data_harvest(output_folder)
-custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
+custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output_0000000000-0000004999.csv')
+
+
+ignore_entries = 410
+# Load the first training history
+with open('training_history_sobel_L+.pkl', 'rb') as file:
+    training_history1 = pickle.load(file)
+    training_history1 = custom_functions.plot_history_ignore(training_history1, ignore_entries)
+
+# Load the second training history
+with open('training_history_sobel.pkl', 'rb') as file:
+    training_history2 = pickle.load(file)
+    training_history2 = custom_functions.plot_history_ignore(training_history2, ignore_entries)
+
+
+for epoch in range(len(training_history1['loss'])):
+    loss1 = training_history1['loss'][epoch]
+    loss2 = training_history2['loss'][epoch]
+    val_loss1 = training_history1['val_loss'][epoch]
+    val_loss2 = training_history2['val_loss'][epoch]
+
+    # Compare the loss and accuracy values
+    if loss1 != loss2:
+        print(f"Loss is different in epoch {epoch+1}: {loss1} vs {loss2}")
+
+    if val_loss1 != val_loss2:
+        print(f"val_loss is different in epoch {epoch+1}: {val_loss1} vs {val_loss2}")
+
+
+import matplotlib.pyplot as plt
+
+# Plot the loss
+plt.plot(training_history1['loss'], label='Training History 1')
+plt.plot(training_history2['loss'], label='Training History 2')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+
+# Plot the accuracy
+plt.plot(training_history1['val_loss'], label='Training History 1')
+plt.plot(training_history2['val_loss'], label='Training History 2')
+plt.xlabel('Epoch')
+plt.ylabel('val_loss')
+plt.legend()
+plt.show()
+
+
 
 """
 Documentation

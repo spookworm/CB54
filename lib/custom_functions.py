@@ -729,30 +729,99 @@ def plot_prediction(model, input_data, output_data):
     input_field = input_data_squeeze[0] + 1j*input_data_squeeze[1]
     output_field = output_data_squeeze[0] + 1j*output_data_squeeze[1]
 
+    # def plot_examples(input_data, output_data, predicted_output):
+    #     # Plot the input and predicted output
+    #     plt.subplot(2, 2, 1)
+    #     plt.imshow(input_data, cmap='gray', interpolation='none')
+    #     plt.title('Input')
+    #     plt.axis('off')
+    #     plt.colorbar()
+
+    #     plt.subplot(2, 2, 2)
+    #     plt.imshow(output_data, cmap='jet', interpolation='none')
+    #     plt.title('True Output')
+    #     plt.axis('off')
+    #     plt.colorbar()
+
+    #     plt.subplot(2, 2, 3)
+    #     plt.imshow(np.abs(output_data-predicted_output), cmap='jet', interpolation='none')
+    #     plt.title('Difference Output')
+    #     plt.axis('off')
+    #     plt.colorbar()
+
+    #     plt.subplot(2, 2, 4)
+    #     plt.imshow(predicted_output, cmap='jet', interpolation='none')
+    #     plt.title('Predicted Output')
+    #     plt.axis('off')
+    #     plt.colorbar()
+
+    #     plt.tight_layout()
+    #     plt.show()
+
     def plot_examples(input_data, output_data, predicted_output):
-        # Plot the input and predicted output
-        plt.subplot(2, 2, 1)
-        plt.imshow(input_data, cmap='gray', interpolation='none')
-        plt.title('Input')
-        plt.axis('off')
+        from matplotlib.ticker import StrMethodFormatter
+        # vmin = np.min(output_data)
+        # vmax = np.max(output_data)
+        # # Create the figure and subplots
+        # fig, axs = plt.subplots(2, 2)
 
-        plt.subplot(2, 2, 2)
-        plt.imshow(output_data, cmap='jet', interpolation='none')
-        plt.title('True Output')
-        plt.axis('off')
+        # # Plot the input and predicted output
+        # im1 = axs[0, 0].imshow(input_data, cmap='gray', interpolation='none')
+        # axs[0, 0].set_title('Input')
+        # axs[0, 0].axis('off')
+        # fig.colorbar(im1, ax=axs[0, 0], format=StrMethodFormatter('{x:05.2f}'))
 
-        plt.subplot(2, 2, 3)
-        plt.imshow(np.abs(output_data-predicted_output), cmap='jet', interpolation='none')
-        plt.title('Difference Output')
-        plt.axis('off')
+        # im2 = axs[0, 1].imshow(output_data, cmap='jet', interpolation='none')
+        # axs[0, 1].set_title('True Output')
+        # axs[0, 1].axis('off')
+        # fig.colorbar(im2, ax=axs[0, 1], format=StrMethodFormatter('{x:05.2f}'))
 
-        plt.subplot(2, 2, 4)
-        plt.imshow(predicted_output, cmap='jet', interpolation='none')
-        plt.title('Predicted Output')
-        plt.axis('off')
+        # im3 = axs[1, 0].imshow(np.abs(output_data-predicted_output), cmap='jet', interpolation='none')
+        # axs[1, 0].set_title('Difference Output')
+        # axs[1, 0].axis('off')
+        # fig.colorbar(im3, ax=axs[1, 0], format=StrMethodFormatter('{x:05.2f}'))
 
-        plt.tight_layout()
+        # im4 = axs[1, 1].imshow(predicted_output, cmap='jet', interpolation='none')
+        # axs[1, 1].axis('off')
+        # fig.colorbar(im4, ax=axs[1, 1], format=StrMethodFormatter('{x:05.2f}'))
+
+        # # Adjust the positions of the subplots and colorbars
+        # plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.3, hspace=0.3)
+
+        # Find the minimum and maximum values among the data
+        vmin = np.min([output_data, np.abs(output_data-predicted_output), predicted_output])
+        vmax = np.max([output_data, np.abs(output_data-predicted_output), predicted_output])
+
+        fig, axes = plt.subplots(nrows=2, ncols=2)
+
+        im1 = axes[0, 0].imshow(input_data, cmap='gray')
+        im1.set_clim(0, 255)
+        fig.colorbar(im1, ax=axes[0, 0], format=StrMethodFormatter('{x:05.2f}'))
+        axes[0, 0].set_title('Geometry')
+        axes[0, 0].axis('off')
+
+        im2 = axes[0, 1].imshow(output_data, cmap='jet', interpolation='none')
+        im2.set_clim(vmin, vmax)
+        fig.colorbar(im2, ax=axes[0, 1], format=StrMethodFormatter('{x:05.2f}'))
+        axes[0, 1].set_title('Truth')
+        axes[0, 1].axis('off')
+
+        im3 = axes[1, 0].imshow(np.abs(output_data-predicted_output), cmap='jet', interpolation='none')
+        # im3.set_clim(vmin, vmax)
+        fig.colorbar(im3, ax=axes[1, 0], format=StrMethodFormatter('{x:05.2f}'))
+        axes[1, 0].set_title('Difference')
+        axes[1, 0].axis('off')
+
+        im4 = axes[1, 1].imshow(predicted_output, cmap='jet', interpolation='none')
+        im4.set_clim(vmin, vmax)
+        fig.colorbar(im4, ax=axes[1, 1], format=StrMethodFormatter('{x:05.2f}'))
+        axes[1, 1].set_title('Predicted Output')
+        axes[1, 1].axis('off')
+
+        plt.subplots_adjust(wspace=0.05, hspace=0.2)
+
         plt.show()
+
 
     # plot_examples(np.real(input_field), np.real(output_field), np.real(predicted_field))
     # plot_examples(np.imag(input_field), np.imag(output_field), np.imag(predicted_field))

@@ -200,6 +200,7 @@ u_inc_stacked = custom_functions.complex_separation(u_inc)
 # DEFAULT SETTING
 # The default primary scatter is 'normal tissue'. It will take up a circle which is the same as the Bessel-Aprroach geometry.
 contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr'])
+contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr_complex'])
 c_sct = custom_functions.c_sct(c_0, contrast_sct)
 CHI_array = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
 CHI = custom_functions.CHI(CHI_array)
@@ -223,9 +224,31 @@ radius_min_pix = 4
 os.makedirs(input_folder, exist_ok=True)
 
 # custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
+model_file = "model_checkpoint.h5"
+def edge_loss(y_true, y_pred):
+    from keras.losses import mean_squared_error
+    # ssim_loss = 1 - tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0))
+    # ssim_loss = tf.abs(tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0)))
 
-if os.path.exists("model_checkpoint.h5"):
-    model = load_model("model_checkpoint.h5")
+    # Compute Sobel edges of y_true
+    y_true_edges = tf.image.sobel_edges(y_true)
+    y_pred_edges = tf.image.sobel_edges(y_pred)
+    # Compute squared difference between y_true_edges and y_pred
+    squared_diff = tf.square(y_true_edges - y_pred_edges)
+
+    mse_loss = mean_squared_error(y_true, y_pred)
+    # # Apply emphasis to Sobel edges (e.g., multiply by a factor)
+    edge_weight = 2.0  # Adjust this weight as needed
+    mean_loss = tf.reduce_mean(squared_diff)
+    weighted_loss = mse_loss + edge_weight*mean_loss
+    # weighted_loss = mse_loss
+    # weighted_loss = (edge_weight * mean_loss) + 10 * ssim_loss
+
+    # Compute mean of the emphasized loss
+    return weighted_loss
+if os.path.exists(model_file):
+    # model = load_model(model_file)
+    model = load_model(model_file, custom_objects={'edge_loss': edge_loss})
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 
 # SOLVE THE SCENES AND SAVE OUTPUTS
@@ -290,6 +313,7 @@ for file_name in numpy_files:
             np.save(output_file_path, final_array)
             output_file_path_info = os.path.join(output_folder, os.path.splitext(file_name)[0] + "_info_m")
             np.save(output_file_path_info, information_o)
+        print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
     else:
         print("file_name : ", file_name, " has exit_code_o ", exit_code_o)
 
