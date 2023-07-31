@@ -440,6 +440,13 @@ displayDataCompareApproachs(data2D, data, angle)
 error = str(np.linalg.norm(data.flatten('F') - data2D.flatten('F'), ord=1)/np.linalg.norm(data2D.flatten('F'), ord=1))
 error
 
+u_sct = Kop(w, FFTG)
+u = u_inc + u_sct
+w_new = CHI * u
+np.linalg.norm(w_new-w)
+
 plotContrastSource(u_inc, CHI, X1, X2)
 plotContrastSource(w, CHI, X1, X2)
-plotContrastSource(u_inc + w, CHI, X1, X2)
+plotContrastSource(u_sct, CHI, X1, X2)
+plotContrastSource(u, CHI, X1, X2)
+plotContrastSource(w_new, CHI, X1, X2)
