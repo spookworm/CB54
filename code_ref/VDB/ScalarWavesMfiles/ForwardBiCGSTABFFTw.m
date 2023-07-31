@@ -14,6 +14,15 @@ tic;
 w = ITERBiCGSTABw(u_inc, input);
 toc;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% AJ: RECOVER U
+u_sct = Kop(w,input.FFTG);
+u = u_inc + u_sct;
+plotWavefield(u_inc, u, input);
+w_new = input.CHI .* u;
+norm(w_new-w)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 plotContrastSource(w, input);
 plotContrastSource(w+u_inc, input);
 
