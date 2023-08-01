@@ -121,6 +121,7 @@ def CHI_Bessel(c_0, c_sct, R, a):
     CHECK
     # add contrast distribution
     """
+    # CHI = (1 - c_0**2 / c_sct**2) * (R < a)
     CHI = (1 - c_0**2 / c_sct**2) * (R < a)
     return CHI
 
@@ -305,30 +306,35 @@ def gamma_0(s, c_0):
     return s / c_0
 
 
-def generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2):
-    c_b = contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'benign tumor'].index[0], 'epsilonr'])
-    print("c_b", c_b)
+def generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2, dx):
+    # e_b = contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'benign tumor'].index[0], 'epsilonr'])
+    e_b = contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'benign tumor'].index[0], 'epsilonr_complex'])
+    print("e_b", e_b)
     # contrast_c = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'cancer'].index[0], 'epsilonr'])
     for seed in range(seedling, seedling+seed_count):
 
         if not os.path.exists(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.npy")):
             shape_array = CHI.copy()
             # Generate some benign tissue
-            radius = random.uniform(radius_min_pix, radius_max_pix_b)
-            center_x = random.uniform(radius, N1 - radius)
-            center_y = random.uniform(radius, N2 - radius)
+            radius = int(np.floor(random.uniform(radius_min_pix, radius_max_pix_b)))
+            center_x = int(random.uniform(int(N1/2 - a/dx + (radius-1)), int(N1/2 + a/dx - (radius+1))))
+            length_y_mid = int(np.sqrt((center_x - N1/2)**2))
+            center_y = int(random.uniform(int(N2/2 - a/dx + (radius-1) + length_y_mid), int(N2/2 + a/dx - (radius+1) - length_y_mid)))
+            # center_y = int(N2/2)
 
             for i in range(N2):
                 for j in range(N1):
                     if np.sqrt((j - center_x) ** 2 + (i - center_y) ** 2) <= radius:
-                        shape_array[i, j] = 1 - c_b
+                        shape_array[i, j] = -1 + e_b
 
             # if not in the original "normal tissue" region then set to zero.
             # A certain amount of the tumour tissues will land beyond the normal tissue region contributing to missed captures at the photo stage.
-            shape_array[R > a] = 0.0
+            shape_array[R > a] = -1 + contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'vacuum'].index[0], 'epsilonr_complex'])
 
             # Only use as visualisation, not input data. Use the npy array as input data to avoid clipping etc.
-            plt.imsave(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.png"), shape_array, cmap='gray')
+            # plt.imsave(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}_real.png"), np.real(shape_array), cmap='gray')
+            # plt.imsave(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}_imag.png"), np.imag(shape_array), cmap='gray')
+            plt.imsave(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}_abs.png"), np.abs(shape_array), cmap='gray')
             np.save(os.path.join(input_folder, f"instance_{str(seed).zfill(10)}.npy"), shape_array)
     # return shape_array
 
@@ -662,7 +668,7 @@ def NR(recievers_count):
     return recievers_count
 
 
-def plotContrastSource(w, CHI, X1, X2):
+def plotContrastSource(array_1, array_2, X1, X2):
     import matplotlib.pyplot as plt
     # Plot 2D contrast/source distribution
     # x1 = ForwardBiCGSTABFFT.input.X1(:, 1);
@@ -672,14 +678,14 @@ def plotContrastSource(w, CHI, X1, X2):
     fig = plt.figure(figsize=(7.09, 4.72))
     fig.subplots_adjust(wspace=0.3)
     ax1 = fig.add_subplot(1, 2, 1)
-    im1 = ax1.imshow(np.abs(CHI), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    im1 = ax1.imshow(array_1, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
     ax1.set_xlabel('x_2 \u2192')
     ax1.set_ylabel('\u2190 x_1')
     ax1.set_aspect('equal', adjustable='box')
     fig.colorbar(im1, ax=ax1, orientation='horizontal')
     ax1.set_title(r'$\chi =$1 - $c_0^2 / c_{sct}^2$', fontsize=13)
     ax2 = fig.add_subplot(1, 2, 2)
-    im2 = ax2.imshow(abs(w), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    im2 = ax2.imshow(array_2, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
     ax2.set_xlabel('x_2 \u2192')
     ax2.set_ylabel('\u2190 x_1')
     ax2.set_aspect('equal', adjustable='box')
@@ -923,12 +929,19 @@ def s(f, angular_frequency):
 def tissuePermittivity(mtls, f, epsilon0):
     # This is based on https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5879051/ @0.5e9 Hz only.
     # Only the absolute values were available so these were used as the real parts.
+    # mtlLib_500e6 = {
+    #     # Name                  a          b   c        d
+    #     'vacuum':               [1.0,      0,  0.0,     0.0],
+    #     'normal tissue':        [9.070,    0,  0.245,   0.0],
+    #     'benign tumor':         [24.842,   0,  0.279,   0.0],
+    #     'cancer':               [66.696,   0,  1.697,   0.0],
+    # }
     mtlLib = {
         # Name                  a          b   c        d
         'vacuum':               [1.0,      0,  0.0,     0.0],
-        'normal tissue':        [9.070,    0,  0.245,   0.0],
-        'benign tumor':         [24.842,   0,  0.279,   0.0],
-        'cancer':               [66.696,   0,  1.697,   0.0],
+        'normal tissue':        [8.163,    0,  0.497,   0.0],
+        'benign tumor':         [21.664,   0,  0.955,   0.0],
+        'cancer':               [63.008,   0,  4.164,   0.0],
     }
     # fcGHz = f/1e9
     value = mtlLib.get(mtls)
@@ -1175,6 +1188,7 @@ def xS(radius_source):
     Add location of source
     """
     xS = np.zeros((1, 2), dtype=np.float64, order='F')
+    # xS[0, 0] = -radius_source * 10e-1
     xS[0, 0] = -radius_source
     xS[0, 1] = 0.0
     return xS

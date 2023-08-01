@@ -9,6 +9,7 @@ import json
 import matplotlib.colors as mcolors
 import random
 import pickle
+import shutil
 from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
 from keras.models import load_model
 from lib import custom_functions
@@ -43,24 +44,29 @@ random.seed(42)
 # USER INPUTS
 # Number of samples to generate
 seedling = 0
-seed_count = 1
+seed_count = 100
 # Folder to save contrast scene array and visualisation
+
+if os.path.exists("F:\\instances"):
+    shutil.rmtree("F:\\instances")
+if os.path.exists("F:\\instances_output"):
+    shutil.rmtree("F:\\instances_output")
+
 input_folder = "F:\\instances"
-input_folder = "F:\\instances_0000000000-0000004999"
+# input_folder = "F:\\instances_0000000000-0000004999"
 # Folder to save solved scene arrays and solution metric information
 output_folder = "F:\\instances_output"
-output_folder = "F:\\instances_output_0000000000-0000004999"
+# output_folder = "F:\\instances_output_0000000000-0000004999"
 # Look-up table for material properties
 path_lut = './lut/tissues.json'
 # The scene will have up to four different materials: 'vacuum'; 'normal tissue'; 'benign tumor'; 'cancer'.
 scene_tissues = ["vacuum", "normal tissue", "benign tumor", "cancer"]
 
-f = custom_functions.f(0.5e9)
+f = custom_functions.f(2000e6)
 
 # assume a square photo for data augmentation reasons.
 ml_discretisation_N1 = 128
 ml_discretisation_N2 = 128
-
 # min geometry delta is 1000e-6 meters in order to designate a pixel as a cancer tumour in a photo
 resolution_photo = 1000e-6
 
@@ -69,6 +75,8 @@ resolution_photo = 1000e-6
 # to keep A4 proportions use *(0.297/0.210) at the ml stage
 length_x_side = resolution_photo*ml_discretisation_N1
 length_y_side = resolution_photo*ml_discretisation_N2
+# length_x_side = 0.8
+# length_y_side = 0.8
 
 NR = custom_functions.NR(180)
 Errcri = custom_functions.Errcri(1e-18)
@@ -144,7 +152,7 @@ else:
     delta_y = length_y_side / M
     # force N = multp 4, size dx near dy
     N = np.floor(length_x_side/(delta_y))
-    fourth_of_N = np.ceil(N/4)
+    # fourth_of_N = np.ceil(N/4)
     fourth_of_N = 32
     while (np.mod(N, fourth_of_N) != 0):
         N = N + 1
@@ -158,7 +166,6 @@ if delta_x < resolution_photo or delta_y < resolution_photo:
     print("Problem")
     sys.exit()
 
-
 N1 = custom_functions.N1(ml_discretisation_N1)
 N2 = custom_functions.N2(ml_discretisation_N2)
 dx = custom_functions.dx(resolution_photo)
@@ -167,8 +174,8 @@ radius_source = custom_functions.radius_source(N1*dx)
 radius_receiver = custom_functions.radius_receiver((15/17)*radius_source)
 # a = custom_functions.a((4/17)*radius_source)
 # a = custom_functions.a((4/17)*np.minimum(N1*dx, N2*dx))
-a = custom_functions.a(np.minimum(N1*dx, N2*dx)/2.0)
-
+# a = custom_functions.a(np.minimum(N1*dx, N2*dx)/2.0)
+a = custom_functions.a(0.07)
 
 wavelength = custom_functions.wavelength(c_0, f)
 s = custom_functions.s(f, angular_frequency)
@@ -194,37 +201,36 @@ u_inc = custom_functions.u_inc(gamma_0, xS, dx, X1, X2)
 
 u_inc_stacked = custom_functions.complex_separation(u_inc)
 
-
-
-
 # DEFAULT SETTING
 # The default primary scatter is 'normal tissue'. It will take up a circle which is the same as the Bessel-Aprroach geometry.
-contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr'])
 contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr_complex'])
+# contrast_sct = custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'normal tissue'].index[0], 'epsilonr_complex'])
 c_sct = custom_functions.c_sct(c_0, contrast_sct)
 CHI_array = custom_functions.CHI_Bessel(c_0, c_sct, R, a)
 CHI = custom_functions.CHI(CHI_array)
-custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
+# CHI = CHI * 0 + custom_functions.contrast_sct(materials_master.loc[materials_master.loc[materials_master['name'] == 'vacuum'].index[0], 'epsilonr'])-1
+# custom_functions.plotContrastSource(np.real(u_inc), np.real(CHI), X1, X2)
+# custom_functions.plotContrastSource(np.imag(u_inc), np.imag(CHI), X1, X2)
+# custom_functions.plotContrastSource(np.abs(u_inc), np.abs(CHI), X1, X2)
 itmax = custom_functions.itmax(CHI)
-
-
-
 
 
 # Generate the regions of interest
 # The geometric dimensions of benign and cancerous tissue are comparable with the aim of classifying cancerous tissue before reaching fatal sizes.
 # Set the max radius of benign tissue at 5% of the normal tissue area:
-radius_max_pix_b = int(np.floor(np.sqrt(0.05)*np.minimum(N1, N2)))
+radius_max_pix_b = int((np.sqrt(0.2) * a)/dx)
 # Set the max radius of cancerous tissue at 2.5% of the normal tissue area:
-radius_max_pix_c = int(np.floor(np.sqrt(0.025)*np.minimum(N1, N2)))
+radius_max_pix_c = int((np.sqrt(0.05) * a)/dx)
 # Set the min area of all non-normal tissue equal to four pixel to avoid simulating normal samples repeatidly
-radius_min_pix = 4
+radius_min_pix = 1
 
 # GENERATE GEOMETRY SAMPLES
 os.makedirs(input_folder, exist_ok=True)
 
-# custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2)
+custom_functions.generate_ROI(CHI, radius_min_pix, radius_max_pix_b, radius_max_pix_c, seedling, seed_count, input_folder, R, a, materials_master, N1, N2, dx)
 model_file = "model_checkpoint.h5"
+
+
 def edge_loss(y_true, y_pred):
     from keras.losses import mean_squared_error
     # ssim_loss = 1 - tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0))
@@ -246,6 +252,8 @@ def edge_loss(y_true, y_pred):
 
     # Compute mean of the emphasized loss
     return weighted_loss
+
+
 if os.path.exists(model_file):
     # model = load_model(model_file)
     model = load_model(model_file, custom_objects={'edge_loss': edge_loss})
@@ -285,6 +293,7 @@ for file_name in numpy_files:
         reshaped_array = np.expand_dims(original_array, axis=0)
         x0_2D = np.squeeze(model.predict(reshaped_array, verbose=0))
         x0_2D_complex = x0_2D[:, :, 0] + 1j*x0_2D[:, :, 1]
+        x0 = custom_functions.Kop(x0_2D_complex, FFTG)
         x0 = x0_2D_complex.copy().flatten('F')
     tic0 = time.time()
     # print("tic0", tic0)
@@ -300,7 +309,38 @@ for file_name in numpy_files:
     if exit_code_o == 0:
         w_o = custom_functions.w(ITERBiCGSTABw)
         information_o = custom_functions.information(ITERBiCGSTABw)
-        final_array = np.concatenate([u_inc_stacked, custom_functions.complex_separation(CHI), custom_functions.complex_separation(w_o)], axis=0)
+
+        u_sct = custom_functions.Kop(w_o, FFTG)
+        # u = u_inc + u_sct
+        # w_new = CHI * u
+        # print("np.linalg.norm(w_new-w_o)", np.linalg.norm(w_new-w_o))
+        # final_array = np.concatenate([u_inc_stacked, custom_functions.complex_separation(CHI), custom_functions.complex_separation(w_o)], axis=0)
+        final_array = np.concatenate([u_inc_stacked, custom_functions.complex_separation(CHI), custom_functions.complex_separation(u_sct)], axis=0)
+        # custom_functions.plotContrastSource(np.real(CHI), np.real(u_inc), X1, X2)
+        # custom_functions.plotContrastSource(np.imag(CHI), np.imag(u_inc), X1, X2)
+        # custom_functions.plotContrastSource(np.abs(CHI), np.abs(u_inc), X1, X2)
+        # custom_functions.plotContrastSource(np.real(CHI), np.real(u_sct), X1, X2)
+        # custom_functions.plotContrastSource(np.imag(CHI), np.imag(u_sct), X1, X2)
+        # custom_functions.plotContrastSource(np.abs(CHI), np.abs(u_sct), X1, X2)
+        # custom_functions.plotContrastSource(np.real(CHI), np.real(u), X1, X2)
+        # custom_functions.plotContrastSource(np.imag(CHI), np.imag(u), X1, X2)
+        # custom_functions.plotContrastSource(np.abs(CHI), np.abs(u), X1, X2)
+
+        # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
+        # custom_functions.plotContrastSource(w_o, CHI, X1, X2)
+        # custom_functions.plotContrastSource(u_sct, CHI, X1, X2)
+        # custom_functions.plotContrastSource(u, CHI, X1, X2)
+        # custom_functions.plotContrastSource(w_new, CHI, X1, X2)
+
+        def round_complex_array_to_zero(arr):
+            epsilon = sys.float_info.epsilon
+            mask_real = np.abs(arr.real) < epsilon
+            mask_imag = np.abs(arr.imag) < epsilon
+            arr_rounded = np.where(mask_real, arr.real * 0 + 0j, arr)
+            arr_rounded = np.where(mask_imag, arr_rounded.real + 0j, arr_rounded)
+            return arr_rounded
+
+        final_array = round_complex_array_to_zero(final_array)
 
         # output_file_path = os.path.join(output_folder, file_name)
         if x0 is None:
@@ -320,19 +360,26 @@ for file_name in numpy_files:
 
 numpy_files = [f for f in os.listdir(output_folder) if f.endswith(".npy") and not f.endswith("_info_o.npy") and f.startswith("instance_")]
 numpy_files = ["instance_0000000000_o.npy"]
+numpy_files = ["instance_0000000000_m.npy"]
 # Iterate over each numpy file
 for file_name in numpy_files:
     # Load the numpy array
     geometry_file = os.path.join(output_folder, file_name)
     array = np.load(geometry_file)
     # custom_functions.plotContrastSource(u_inc, CHI, X1, X2)
-    custom_functions.plotContrastSource(np.abs(array[2, :, :]), np.abs(array[5, :, :]), X1, X2)
-    # custom_functions.plotContrastSource(w, CHI, X1, X2)
-    custom_functions.plotContrastSource(np.abs(array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
-    # # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
-    custom_functions.plotContrastSource(np.abs(array[2, :, :]+array[8, :, :]), np.abs(array[5, :, :]), X1, X2)
+    # custom_functions.plotContrastSource(array[2, :, :], array[5, :, :], X1, X2)
+    # # custom_functions.plotContrastSource(w, CHI, X1, X2)
+    # custom_functions.plotContrastSource(array[8, :, :], array[5, :, :], X1, X2)
+    # # # custom_functions.plotContrastSource(u_inc + w, CHI, X1, X2)
+    # custom_functions.plotContrastSource(array[2, :, :]+array[8, :, :], array[5, :, :], X1, X2)
 
-
+    u_sct = custom_functions.Kop(array[6, :, :] + 1j*array[7, :, :], FFTG)
+    u = u_inc + u_sct
+    # w_new = CHI * u
+    # print("np.linalg.norm(w_new-w_o)", np.linalg.norm(w_new-w_o))
+    custom_functions.plotContrastSource(np.abs(CHI), np.abs(u_sct), X1, X2)
+    custom_functions.plotContrastSource(np.abs(CHI), np.abs(u), X1, X2)
+    custom_functions.plotContrastSource(np.abs(CHI), np.abs(u_inc), X1, X2)
 # import matplotlib.pyplot as plt
 
 # # Create a complex array

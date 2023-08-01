@@ -65,8 +65,9 @@ custom_functions.plot_loss(result_dict)
 
 print("start stats")
 output_folder = "F:\\instances_output_0000000000-0000004999"
+output_folder = "F:\\instances_output\\"
 info_dataset = custom_functions.info_data_harvest(output_folder)
-custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output_0000000000-0000004999.csv')
+custom_functions.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
 
 
 ignore_entries = 410
