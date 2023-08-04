@@ -206,7 +206,6 @@ def WavefieldSctCircle():
         Kb0 = kv(m, arg0)
         dKb0 = -kv(m+1, arg0) + m/arg0 * Kb0
         A[0, m] = - (gam_sct * dIbs*Ib0 - gamma_0 * dIb0*Ibs) / (gam_sct * dIbs*Kb0 - gamma_0 * dKb0*Ibs)
-        # A[0, m] = - (gam_sct * dIbs*Ib0 - dIb0*Ibs) / (gam_sct * dIbs*Kb0 - dKb0*Ibs)
 
     # (2) Compute reflected field at receivers (data)
     rR = np.zeros((1, xR.shape[1]), dtype=np.complex128, order='F')
