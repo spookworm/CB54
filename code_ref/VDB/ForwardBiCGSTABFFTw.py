@@ -43,15 +43,19 @@ def init():
     # Time factor = exp(-iwt)
     # Spatial units is in m
     # Source wavelet  Q = 1
+    # temporal frequency
+    f = 2e9
+    f = 50
 
     # wave speed in embedding
-    c_0 = 3000
+    c_0 = 3e8
     c_0 = 1500
     # wave speed in scatterer
-    c_sct = 1500
+    # c_sct = c_0*np.sqrt(1/50.0) - 1j/(2*np.pi*f*(1/np.sqrt(c_0)))
+    # c_sct = c_0*np.sqrt(1/50.0)
     c_sct = 3000
-    # temporal frequency
-    f = 50
+    # complexEpsilon = epsilon - 1j*sigma/(2*np.pi*f*epsilon0)
+
     # wavelength
     wavelength = c_0 / f
     # Laplace parameter
@@ -70,8 +74,12 @@ def init():
 
     def initContrast(c_0, c_sct, X1, X2):
         # half width slab / radius circle cylinder / radius sphere
+        a = 0.015
+        a = 0.15
+        a = 0.07
         a = 40
         contrast = 1 - c_0**2/c_sct**2
+        # contrast = c_0**2/c_sct**2 - 1
         R = np.sqrt(X1**2 + X2**2)
         CHI = contrast * (R < a)
         return a, CHI
@@ -86,7 +94,8 @@ def init():
 def initSourceReceiver():
     # Source Position
     xS = np.zeros((1, 2), dtype=np.float64, order='F')
-    xS[0, 0] = -170.0
+    source_distance = 170
+    xS[0, 0] = -source_distance
     xS[0, 1] = 0.0
 
     # Receiver Positions
@@ -96,18 +105,26 @@ def initSourceReceiver():
     rcvr_phi[0, 0:NR] = np.arange(1, NR+1, 1) * 2.0 * np.pi / NR
 
     xR = np.zeros((2, NR), dtype=np.float64, order='F')
-    xR[0, 0:NR] = 150 * np.cos(rcvr_phi)
-    xR[1, 0:NR] = 150 * np.sin(rcvr_phi)
+    xR[0, 0:NR] = source_distance * (15/17) * np.cos(rcvr_phi)
+    xR[1, 0:NR] = source_distance * (15/17) * np.sin(rcvr_phi)
     return xS, NR, rcvr_phi, xR
 
 
 def initGrid():
     # number of samples in x_1
     N1 = 120
+    N1 = 128
+    # N1 = 256
+    # N1 = 512
     # number of samples in x_2
     N2 = 100
+    N2 = 128
+    # N2 = 256
+    # N2 = 512
     # with meshsize dx
+    dx = 0.015
     dx = 2
+    # dx = 1000e-6
 
     x1 = np.zeros((1, N1), dtype=np.float64, order='F')
     x1[0, :] = -(N1+1)*dx/2 + np.linspace(1, N1, num=N1)*dx
@@ -178,7 +195,7 @@ def WavefieldSctCircle():
     arg0 = gamma_0 * a
     args = gam_sct*a
     # increase M for more accuracy
-    M = 20
+    M = 50
 
     A = np.zeros((1, M+1), dtype=np.complex128)
     for m in range(0, M+1):
@@ -189,6 +206,7 @@ def WavefieldSctCircle():
         Kb0 = kv(m, arg0)
         dKb0 = -kv(m+1, arg0) + m/arg0 * Kb0
         A[0, m] = - (gam_sct * dIbs*Ib0 - gamma_0 * dIb0*Ibs) / (gam_sct * dIbs*Kb0 - gamma_0 * dKb0*Ibs)
+        # A[0, m] = - (gam_sct * dIbs*Ib0 - dIb0*Ibs) / (gam_sct * dIbs*Kb0 - dKb0*Ibs)
 
     # (2) Compute reflected field at receivers (data)
     rR = np.zeros((1, xR.shape[1]), dtype=np.complex128, order='F')
@@ -324,7 +342,7 @@ def plotContrastSource(w, CHI, X1, X2):
     fig = plt.figure(figsize=(7.09, 4.72))
     fig.subplots_adjust(wspace=0.3)
     ax1 = fig.add_subplot(1, 2, 1)
-    im1 = ax1.imshow(CHI, extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
+    im1 = ax1.imshow(abs(CHI), extent=[x2[0], x2[-1], x1[-1], x1[0]], cmap='jet', interpolation='none')
     ax1.set_xlabel('x_2 \u2192')
     ax1.set_ylabel('\u2190 x_1')
     ax1.set_aspect('equal', adjustable='box')
@@ -446,7 +464,7 @@ w_new = CHI * u
 np.linalg.norm(w_new-w)
 
 plotContrastSource(u_inc, CHI, X1, X2)
-plotContrastSource(w, CHI, X1, X2)
+# plotContrastSource(w, CHI, X1, X2)
 plotContrastSource(u_sct, CHI, X1, X2)
 plotContrastSource(u, CHI, X1, X2)
-plotContrastSource(w_new, CHI, X1, X2)
+# plotContrastSource(w_new, CHI, X1, X2)
