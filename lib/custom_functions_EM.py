@@ -14,6 +14,19 @@ def Aw(w, N1, N2, dx, FFTG, CHI_eps, gamma_0):
     return y
 
 
+def complex_separation(complex_array):
+    # Separate real and imaginary components
+    real_array = np.real(complex_array)
+    imaginary_array = np.imag(complex_array)
+
+    # Compute absolute array
+    absolute_array = np.abs(complex_array)
+
+    # Stack the arrays together
+    result_array = np.stack([real_array, imaginary_array, absolute_array])
+    return result_array
+
+
 def displayDataBesselApproach(WavefieldSctCircle, angle):
     import matplotlib.pyplot as plt
     import numpy as np
@@ -100,7 +113,7 @@ def EMsctCircle():
     from scipy.special import kv, iv
     import os
 
-    c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = initEM()
+    c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = initEM(bessel=1)
 
     gam0 = gamma_0
     gam_sct = gam0 * np.sqrt(eps_sct*mu_sct)
@@ -209,7 +222,7 @@ def graddiv(v, dx, N1, N2):
     return u
 
 
-def initEM():
+def initEM(bessel=None):
     # Time factor = exp(-iwt)
     # Spatial units is in m
     # Source wavelet M Z_0 / gamma_0  = 1   (Z_0 M = gamma_0)
@@ -223,7 +236,7 @@ def initEM():
     eps_sct = 1.75
     eps_sct = 8
     eps_sct = 50
-    print("eps_sct: ", eps_sct)
+    # print("eps_sct: ", eps_sct)
     eps_d = eps_sct*eps_0
     # relative permeability of scatterer
     mu_sct = 1.0
@@ -236,10 +249,10 @@ def initEM():
     f = 10e6
     f = 10e6*50
     # wavelength
-    wavelength_0 = c_0 / f
-    print("wavelength_0", wavelength_0)
-    wavelength_d = c_d / f
-    print("wavelength_d", wavelength_d)
+    # wavelength_0 = c_0 / f
+    # print("wavelength_0", wavelength_0)
+    # wavelength_d = c_d / f
+    # print("wavelength_d", wavelength_d)
     # Laplace parameter
     s = 1e-16 - 1j*2*np.pi*f
     # propagation coefficient
@@ -256,8 +269,11 @@ def initEM():
     FFTG = initFFTGreen(N1, N2, dx, gamma_0)
 
     # add contrast distribution
-    a, CHI_eps, CHI_mu = initEMContrastOrig(eps_sct, mu_sct, X1, X2)
-    # a, CHI_eps, CHI_mu = initEMContrast(eps_sct, mu_sct, X1, X2, dx)
+    # print("bessel", bessel)
+    if bessel is None:
+        a, CHI_eps, CHI_mu = initEMContrast(eps_sct, mu_sct, X1, X2, dx)
+    else:
+        a, CHI_eps, CHI_mu = initEMContrastOrig(eps_sct, mu_sct, X1, X2)
 
     Errcri = 1e-10
     return c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri
@@ -441,8 +457,8 @@ def ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None):
     if x0 is None:
         # Create an array of zeros
         x0 = np.zeros(b.shape, dtype=np.complex128, order='F')
-        x0[0:N, 0] = E_inc[0, :].flatten('F')
-        x0[N:2*N, 0] = E_inc[1, :].flatten('F')
+        x0[0:N, 0] = np.multiply(CHI_eps, E_inc[0, :, :]).flatten('F')
+        x0[N:2*N, 0] = np.multiply(CHI_eps, E_inc[1, :, :]).flatten('F')
 
     def custom_matvec(w):
         return Aw(w, N1, N2, dx, FFTG, CHI_eps, gamma_0)
@@ -466,11 +482,18 @@ def ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None):
 
     # Call bicgstab with the LinearOperator instance and other inputs
     w, exit_code = bicgstab(Aw_operator, b, x0=x0, tol=Errcri, maxiter=itmax, callback=callback)
+    print("iter max: ", callback.iter)
 
     # Output Matrix UPDATE
     # w = w.reshape((N1, N2), order='F')
     w_E = vector2matrix(w, N1, N2)
     return w_E, exit_code, callback.information
+
+
+def keras_format(original_array):
+    original_array = np.transpose(original_array, (1, 2, 0))
+    keras_array = np.expand_dims(original_array, axis=0)
+    return keras_array
 
 
 def Kop(v, FFTG):
