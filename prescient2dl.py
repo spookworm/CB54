@@ -183,7 +183,7 @@ for folder in selected_folders:
     # x_val = tf.image.per_image_standardization(x_val)
     y_val = tf.image.per_image_standardization(y_val)
     # x_test = tf.image.per_image_standardization(x_test)
-    y_test = tf.image.per_image_standardization(y_test)
+    # y_test = tf.image.per_image_standardization(y_test)
     # x_train = normalize(x_train, axis=-1)
     # y_train = normalize(y_train, axis=-1)
     # x_val = normalize(x_val, axis=-1)
@@ -282,15 +282,15 @@ for folder in selected_folders:
     reduce_lr = ReduceLROnPlateau(factor=0.1, patience=5)
 
     tic_fit_start = time.time()
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history, reduce_lr])
     tic_fit_end = time.time() - tic_fit_start
     print("Fitting Time: ", tic_fit_end)
-
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history, reduce_lr])
 
     custom_architectures_EM.plot_prediction_EM(model, x_train[0], y_train[0])
 
     score = model.evaluate(x_test, y_test, verbose=0)
     print("score", score)
+    custom_architectures_EM.plot_prediction_EM(model, x_test[0], tf.image.per_image_standardization(y_test[0]))
 
     # Load the training history from the pickle file
     history_file = "training_history.pkl"

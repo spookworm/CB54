@@ -2,7 +2,7 @@ import os
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-
+import pandas as pd
 
 def Aw(w, N1, N2, dx, FFTG, CHI_eps, gamma_0):
     N = CHI_eps.flatten('F').shape[0]
@@ -354,6 +354,93 @@ def IncEMwave(gamma_0, xS, dx, X1, X2):
     ZH_inc[1, :] = 0
     ZH_inc[2, :] = gamma_0 * X2 * dG
     return E_inc, ZH_inc
+
+
+def info_data_harvest(input_folder):
+    # Initialize an empty list to store the loaded arrays
+    final_rows = []
+    # Add headers to the new array
+    headers = ["Name", "Iteration_Count", "Error_Final", "Duration", "Error_Initial", "Model Flag", "Duration_Log"]
+    # final_rows.append(headers)
+
+    # Iterate through each file in the folder
+    # info_files = [f for f in os.listdir(input_folder) if "_info_" in f]
+    info_files_o = [f for f in os.listdir(input_folder) if "_info_" in f and "_o.n" in f]
+    info_files_m = [f for f in os.listdir(input_folder) if "_info_" in f and "_m.n" in f]
+    info_files_o_m = []
+    for f in info_files_m:
+        new_f = f.replace("_m.n", "_o.n")
+        info_files_o_m.append(new_f)
+    info_files_O_m = list(set(info_files_o) & set(info_files_o_m))
+    info_files_o_M = []
+    for f in info_files_O_m:
+        new_f = f.replace("_o.n", "_m.n")
+        info_files_o_M.append(new_f)
+    info_files_O_M = info_files_O_m + info_files_o_M
+    for filename in info_files_O_M:
+        # Construct the full file path
+        file_path = os.path.join(input_folder, filename)
+
+        # Load the array from the file
+        array = np.load(file_path)
+        # Extract the final row
+        final_row = array[-1]
+
+        # Extract the second column of the first row
+        second_column = array[0][1]
+
+        # Add another column with the name of the original array
+        final_row_with_name = [f'{filename}'] + list(map(str, final_row))
+
+        # Add the second column to the final row
+        final_row_with_second_column = final_row_with_name + [str(second_column)]
+
+        # Indicator model flag
+        final_row_with_flag = final_row_with_second_column + [str(filename[-5])]
+
+        # Calculate the Duration_Log
+        final_row_complete = final_row_with_flag + [str(np.log(final_row[2]))]
+
+        # Append the final row to the new array
+        final_rows.append(final_row_complete)
+
+    # Specify the output file path
+    # last_part = os.path.basename(os.path.normpath(input_folder))
+    output_file = '.\\doc\\_stats\\dataset_instances_output.csv'
+    final_rows = pd.DataFrame(final_rows, columns=headers)
+    final_rows.to_csv(output_file, index=False)
+    return final_rows
+
+
+def info_data_paired(input_folder):
+    df = pd.read_csv(input_folder, header=0)
+    df['Short_Name'] = df['Name'].str[:19]
+    df = df.drop('Name', axis=1)
+
+    # Create a DataFrame with distinct values of "Short_Name"
+    df_paired = pd.DataFrame(df["Short_Name"].unique(), columns=["Short_Name"])
+
+    for flag in ["o", "m"]:
+        filtered_df = df[df["Model Flag"] == flag]
+        result = df_paired.merge(filtered_df, on="Short_Name", how="left")
+        new_column_names = {column: column + '_' + flag for column in result.columns if column != "Short_Name" and "_o" not in column}
+        result = result.rename(columns=new_column_names)
+        df_paired = result.drop('Model Flag_' + flag, axis=1)
+
+    # for column in df.columns:
+    #     # Selecting the desired columns from base1
+    #     base1 = df[df['Model Flag'] == 'o'][['Short_Name', column]].rename(columns={column: column + '_o'})
+    #     # Selecting the desired columns from base2
+    #     base2 = df[df['Model Flag'] == 'm'][['Short_Name', column]].rename(columns={column: column + '_m'})
+    #     # Merging base1 and base2 on the 'Name' column
+    #     result = base1.merge(base2, on='Short_Name', how='left')
+
+    # Open the file in write mode
+    last_part = os.path.basename(os.path.normpath(input_folder))
+    output_file = os.path.dirname(input_folder) + '\\paired_' + str(last_part)
+    # result.to_csv(output_file, index=False)
+    df_paired.to_csv(output_file, index=False)
+    # return result
 
 
 def initFFTGreen(N1, N2, dx, gamma_0):
