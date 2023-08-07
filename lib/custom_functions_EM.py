@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 
 def Aw(w, N1, N2, dx, FFTG, CHI_eps, gamma_0):
@@ -251,8 +253,8 @@ def initEM(bessel=None):
     # wavelength
     # wavelength_0 = c_0 / f
     # print("wavelength_0", wavelength_0)
-    # wavelength_d = c_d / f
-    # print("wavelength_d", wavelength_d)
+    wavelength_d = c_d / f
+    print("wavelength_d", wavelength_d)
     # Laplace parameter
     s = 1e-16 - 1j*2*np.pi*f
     # propagation coefficient
@@ -609,18 +611,37 @@ def plotEtotalwavefield(E, a, X1, X2, N1, N2):
     import matplotlib.pyplot as plt
     # Plot wave fields in two-dimensional space
     fig, axs = plt.subplots(1, 2, figsize=(18, 12))
-    im1 = axs[0].imshow(abs(E[0]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet')
+    im1 = axs[0].imshow(abs(E[0]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
     axs[0].set_xlabel('x$_2$ $\\rightarrow$')
     axs[0].set_ylabel('$\\leftarrow$ x$_1$')
     axs[0].set_title('2D Electric field E1', fontsize=13)
     fig.colorbar(im1, ax=axs[0], orientation='horizontal')
-    axs[0].plot(a*np.cos(phi), a*np.sin(phi), 'w')
-    im2 = axs[1].imshow(abs(E[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet')
+    # axs[0].plot(a*np.cos(phi), a*np.sin(phi), 'w')
+    im2 = axs[1].imshow(abs(E[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
     axs[1].set_xlabel('x$_2$ $\\rightarrow$')
     axs[1].set_ylabel('$\\leftarrow$ x$_1$')
     axs[1].set_title('2D Electric field E2', fontsize=13)
     fig.colorbar(im2, ax=axs[1], orientation='horizontal')
-    axs[1].plot(a*np.cos(phi), a*np.sin(phi), 'w')
+    # axs[1].plot(a*np.cos(phi), a*np.sin(phi), 'w')
+    plt.show()
+
+
+def plot_history_ignore(history, ignore_entries):
+    # Ignore the first ignore_entries entries
+    result_dict = {}
+    for key, value in history.items():
+        result_dict[key] = value[ignore_entries:]
+    return result_dict
+
+
+def plot_loss(history):
+    # Plot the loss
+    plt.plot(history['loss'], label='Training Loss')
+    plt.plot(history['val_loss'], label='Validation Loss')
+    plt.title('Loss over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
     plt.show()
 
 
@@ -633,4 +654,3 @@ def vector2matrix(w, N1, N2):
     w_E[0, :, :] = np.reshape(w[0:N], DIM, order='F')
     w_E[1, :, :] = np.reshape(w[N:2*N], DIM, order='F')
     return w_E
-

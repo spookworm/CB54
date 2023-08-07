@@ -25,8 +25,8 @@ guess_validation_answer = 'False'
 guess_model = 'True'
 guess_model = 'False'
 # Number of samples to generate and where you stopped last time
-seed_count = 500
-seedling = 0
+seed_count = 10000
+seedling = 14455
 # Where should the outputs be saved?
 folder_outputs = "F:\\instances"
 # INPUTS: END
@@ -45,6 +45,10 @@ for _ in range(random_steps*seedling):
     random_num = random.uniform(0, 9)
 os.makedirs(folder_outputs, exist_ok=True)
 
+_, _, _, _, _, _, _, _, _, _, _, X1, X2, _, _, _, _, _ = custom_functions_EM.initEM()
+file_name = f"X_array.npy"
+output_file_path = os.path.join(folder_outputs + "\\" + file_name)
+np.save(output_file_path, np.stack([X1, X2], axis=2))
 if validation == 'True':
     c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = custom_functions_EM.initEM(bessel=1)
     custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
@@ -60,6 +64,19 @@ if validation == 'True':
     # displayDataBesselApproach(Hdata, angle)
     custom_functions_EM.displayDataCompareApproachs(Edata2D, Edata, angle)
     custom_functions_EM.displayDataCompareApproachs(Hdata2D, Hdata, angle)
+
+    E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
+    # Set the first row, last row, first column, and last column to zeros due to gradient calculation
+    # This may make assisting the solver worse!
+    E_sct[:, [0, -1], :] = E_sct[:, :, [0, -1]] = 0
+
+    # Drop the first and last columns and rows due to finite differences at border
+    custom_functions_EM.plotEtotalwavefield(E_inc[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+    custom_functions_EM.plotEtotalwavefield(ZH_inc[[2, 2], 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+    custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+    E_val = custom_functions_EM.E(E_inc, E_sct)
+    custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+
 else:
     # START OF ForwardBiCGSTABFFTwE
     for seed in range(seedling, seedling+seed_count):
@@ -124,7 +141,7 @@ else:
 
             # Due to channel requirements in Keras, reorder arrays before saving to reduce loading time at deep learning stage.
             keras_stack_composed = custom_functions_EM.keras_format(keras_stack)
-            # 16 dimensional array in format (:, channels, N1, N2)
+            # 16 dimensional array in format (:, N1, N2, channels)
             # np.save(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}.npy"), keras_stack_composed)
 
             file_name = f"instance_{str(seed).zfill(10)}.npy"
@@ -164,10 +181,11 @@ else:
         # custom_functions_EM.plotEtotalwavefield(E_inc, a, X1, X2, N1, N2)
 
         # # Drop the first and last columns and rows due to finite differences at border
+        # custom_functions_EM.plotEtotalwavefield(E_inc[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+        # custom_functions_EM.plotEtotalwavefield(ZH_inc[[2, 2], 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
         # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-        # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
         # E_val = custom_functions_EM.E(E_inc, E_sct)
-        # custom_functions_EM.plotEtotalwavefield(E_val, a, X1, X2, N1, N2)
+        # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 tic_total_end = time.time() - tic_total_start
 print("Total Running Time: ", tic_total_end)
 print("Initial guess of running time was ", time_estimate_inital, " so (tic_total_end - time_estimate_inital): ", tic_total_end - time_estimate_inital)
