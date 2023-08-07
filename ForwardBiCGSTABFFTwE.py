@@ -26,7 +26,7 @@ guess_model = 'True'
 guess_model = 'False'
 # Number of samples to generate and where you stopped last time
 seed_count = 10000
-seedling = 14455
+seedling = 15702
 # Where should the outputs be saved?
 folder_outputs = "F:\\instances"
 # INPUTS: END

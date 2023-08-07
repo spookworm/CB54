@@ -19,6 +19,7 @@ from IPython import get_ipython
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.utils import normalize
+import time
 
 get_ipython().run_line_magic('clear', '-sf')
 keras.backend.clear_session()
@@ -39,9 +40,9 @@ batch_size = int(max_batch_size/32)
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances" in f]
 selected_folders = folders
 selected_folders = ["instances_1000"]
-selected_folders = ["instances_5000"]
 selected_folders = ["instances_X"]
 selected_folders = ["instances_500"]
+selected_folders = ["instances_5000"]
 
 X_array = np.load('F:\\instances\\X_array.npy')
 X1 = X_array[:, :, 0]
@@ -93,6 +94,46 @@ print("number of layers: ", len(model.layers))
 # write to disk
 visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras_EM.png', legend=True)
 plot_model(model, to_file='.\\doc\\code_doc\\model_plot_EM.png', show_shapes=True, show_dtype=True, show_layer_names=True, rankdir="TB", expand_nested=True, dpi=96, layer_range=None, show_layer_activations=True)
+
+
+def edge_loss(y_true, y_pred):
+    from keras.losses import mean_squared_error
+    # ssim_loss = 1 - tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0))
+    # ssim_loss = tf.abs(tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0)))
+
+    # Compute Sobel edges of y_true
+    y_true_float = tf.cast(tf.abs(y_true), dtype=tf.float32)
+    y_pred_float = tf.cast(tf.abs(y_pred), dtype=tf.float32)
+
+    y_true_edges = tf.image.sobel_edges(tf.abs(y_true_float))
+    y_pred_edges = tf.image.sobel_edges(tf.abs(y_pred_float))
+
+    # scharr_filter = tf.constant([[3, 0, -3], [10, 0, -10], [3, 0, -3]], dtype=tf.float32)
+    # scharr_filter = tf.reshape(scharr_filter, [3, 3, 1, 1])
+    # scharr_edges_true = tf.nn.conv2d(tf.abs(y_true_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
+    # scharr_edges_pred = tf.nn.conv2d(tf.abs(y_pred_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
+
+    # # Normalize the output
+    # scharr_edges_true = tf.abs(scharr_edges_true)
+    # y_true_edges = tf.reduce_max(scharr_edges_true, axis=3)
+    # scharr_edges_pred = tf.abs(scharr_edges_pred)
+    # y_pred_edges = tf.reduce_max(scharr_edges_pred, axis=3)
+
+    # Compute squared difference between y_true_edges and y_pred
+    squared_diff = tf.square(y_true_edges - y_pred_edges)
+
+    mse_loss = mean_squared_error(y_true, y_pred)
+    # Apply emphasis to Sobel edges (e.g., multiply by a factor)
+    edge_weight = 10.0  # Adjust this weight as needed
+    mean_loss = tf.reduce_mean(squared_diff)
+    weighted_loss = mse_loss + edge_weight*mean_loss
+    # weighted_loss = mse_loss
+    # weighted_loss = mse_loss
+    # weighted_loss = (edge_weight * mean_loss) + 10 * ssim_loss
+
+    # Compute mean of the emphasized loss
+    return weighted_loss
+
 
 # folder = selected_folders
 for folder in selected_folders:
@@ -219,8 +260,8 @@ for folder in selected_folders:
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
     # model.compile(optimizer=SGD(learning_rate=0.001), loss='mean_squared_error', metrics=MeanSquaredError())
-    # model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+    # model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
 
     len(model.layers)
     # Load the training history
@@ -239,6 +280,11 @@ for folder in selected_folders:
     #     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
     from keras.callbacks import ReduceLROnPlateau
     reduce_lr = ReduceLROnPlateau(factor=0.1, patience=5)
+
+    tic_fit_start = time.time()
+    tic_fit_end = time.time() - tic_fit_start
+    print("Fitting Time: ", tic_fit_end)
+
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history, reduce_lr])
 
     custom_architectures_EM.plot_prediction_EM(model, x_train[0], y_train[0])
@@ -250,7 +296,7 @@ for folder in selected_folders:
     history_file = "training_history.pkl"
     with open(history_file, 'rb') as file:
         history = pickle.load(file)
-    ignore_entries = 10
+    ignore_entries = 20
     result_dict = custom_functions_EM.plot_history_ignore(history, ignore_entries)
     custom_functions_EM.plot_loss(result_dict)
     del x_train, y_train, x_val, y_val
@@ -320,3 +366,4 @@ print(history.keys())
 ignore_entries = 10
 result_dict = custom_functions_EM.plot_history_ignore(history, ignore_entries)
 custom_functions_EM.plot_loss(result_dict)
+print("Fitting Time: ", tic_fit_end)
