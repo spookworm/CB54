@@ -41,17 +41,22 @@ folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(direct
 selected_folders = folders
 selected_folders = ["instances_1000"]
 selected_folders = ["instances_X"]
-selected_folders = ["instances_500"]
 selected_folders = ["instances_5000"]
+selected_folders = ["instances_500"]
 
 X_array = np.load('F:\\instances\\X_array.npy')
 X1 = X_array[:, :, 0]
 X2 = X_array[:, :, 1]
 
-sample = np.squeeze(np.load('F:\\instances\\instance_0000000000_o.npy'))
+
+# Filter files that end with ".npy" and do not contain "info"
+file_list = os.listdir(directory + selected_folders[0])
+filtered_files = [file for file in file_list if file.endswith(".npy") and "info" not in file]
+sample = np.squeeze(np.load(directory + selected_folders[0] + "\\" + random.choice(filtered_files)))
+# sample = np.squeeze(np.load('F:\\instances\\instance_0000000001_o.npy'))
 N1 = sample.shape[0]
 N2 = sample.shape[1]
-input_shape = (N1, N2, 2)
+input_shape = (N1, N2, 4)
 
 # 00: np.real(CHI_eps)
 # 01: real complex_separation(E_inc[0, :, :]),
@@ -96,47 +101,47 @@ visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras_EM.png', 
 plot_model(model, to_file='.\\doc\\code_doc\\model_plot_EM.png', show_shapes=True, show_dtype=True, show_layer_names=True, rankdir="TB", expand_nested=True, dpi=96, layer_range=None, show_layer_activations=True)
 
 
-def edge_loss(y_true, y_pred):
-    from keras.losses import mean_squared_error
-    # ssim_loss = 1 - tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0))
-    # ssim_loss = tf.abs(tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0)))
+# def edge_loss(y_true, y_pred):
+#     from keras.losses import mean_squared_error
+#     # ssim_loss = 1 - tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0))
+#     # ssim_loss = tf.abs(tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0)))
 
-    # Compute Sobel edges of y_true
-    y_true_float = tf.cast(tf.abs(y_true), dtype=tf.float32)
-    y_pred_float = tf.cast(tf.abs(y_pred), dtype=tf.float32)
+#     # Compute Sobel edges of y_true
+#     y_true_float = tf.cast(tf.abs(y_true), dtype=tf.float32)
+#     y_pred_float = tf.cast(tf.abs(y_pred), dtype=tf.float32)
 
-    y_true_edges = tf.image.sobel_edges(tf.abs(y_true_float))
-    y_pred_edges = tf.image.sobel_edges(tf.abs(y_pred_float))
+#     y_true_edges = tf.image.sobel_edges(tf.abs(y_true_float))
+#     y_pred_edges = tf.image.sobel_edges(tf.abs(y_pred_float))
 
-    # scharr_filter = tf.constant([[3, 0, -3], [10, 0, -10], [3, 0, -3]], dtype=tf.float32)
-    # scharr_filter = tf.reshape(scharr_filter, [3, 3, 1, 1])
-    # scharr_edges_true = tf.nn.conv2d(tf.abs(y_true_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
-    # scharr_edges_pred = tf.nn.conv2d(tf.abs(y_pred_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
+#     # scharr_filter = tf.constant([[3, 0, -3], [10, 0, -10], [3, 0, -3]], dtype=tf.float32)
+#     # scharr_filter = tf.reshape(scharr_filter, [3, 3, 1, 1])
+#     # scharr_edges_true = tf.nn.conv2d(tf.abs(y_true_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
+#     # scharr_edges_pred = tf.nn.conv2d(tf.abs(y_pred_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
 
-    # # Normalize the output
-    # scharr_edges_true = tf.abs(scharr_edges_true)
-    # y_true_edges = tf.reduce_max(scharr_edges_true, axis=3)
-    # scharr_edges_pred = tf.abs(scharr_edges_pred)
-    # y_pred_edges = tf.reduce_max(scharr_edges_pred, axis=3)
+#     # # Normalize the output
+#     # scharr_edges_true = tf.abs(scharr_edges_true)
+#     # y_true_edges = tf.reduce_max(scharr_edges_true, axis=3)
+#     # scharr_edges_pred = tf.abs(scharr_edges_pred)
+#     # y_pred_edges = tf.reduce_max(scharr_edges_pred, axis=3)
 
-    # Compute squared difference between y_true_edges and y_pred
-    squared_diff = tf.square(y_true_edges - y_pred_edges)
+#     # Compute squared difference between y_true_edges and y_pred
+#     squared_diff = tf.square(y_true_edges - y_pred_edges)
 
-    mse_loss = mean_squared_error(y_true, y_pred)
-    # Apply emphasis to Sobel edges (e.g., multiply by a factor)
-    edge_weight = 10.0  # Adjust this weight as needed
-    mean_loss = tf.reduce_mean(squared_diff)
-    weighted_loss = mse_loss + edge_weight*mean_loss
-    # weighted_loss = mse_loss
-    # weighted_loss = mse_loss
-    # weighted_loss = (edge_weight * mean_loss) + 10 * ssim_loss
+#     mse_loss = mean_squared_error(y_true, y_pred)
+#     # Apply emphasis to Sobel edges (e.g., multiply by a factor)
+#     edge_weight = 10.0  # Adjust this weight as needed
+#     mean_loss = tf.reduce_mean(squared_diff)
+#     weighted_loss = mse_loss + edge_weight*mean_loss
+#     # weighted_loss = mse_loss
+#     # weighted_loss = mse_loss
+#     # weighted_loss = (edge_weight * mean_loss) + 10 * ssim_loss
 
-    # Compute mean of the emphasized loss
-    return weighted_loss
-
+#     # Compute mean of the emphasized loss
+#     return weighted_loss
 
 # folder = selected_folders
 for folder in selected_folders:
+    # folder = 'instances_5000'
     keras.backend.clear_session()
     data_folder = directory + folder
     print("data_folder", data_folder)
@@ -178,10 +183,15 @@ for folder in selected_folders:
         y_test = np.load(data_folder + '_y_test.npy')
         print("sets loaded: test")
 
+    # CALCULATE THE SCALING TERMS
+    # mean = tf.reduce_mean(tf.reduce_mean(y_train, axis=(1, 2)), axis=(0))
+    # stddev = tf.reduce_mean(tf.math.reduce_std(y_train, axis=(1, 2)), axis=(0))
+    # reversed_image = (standardized_image * stddev) + mean
+
     # x_train = tf.image.per_image_standardization(x_train)
-    y_train = tf.image.per_image_standardization(y_train)
+    # y_train = tf.image.per_image_standardization(y_train)
     # x_val = tf.image.per_image_standardization(x_val)
-    y_val = tf.image.per_image_standardization(y_val)
+    # y_val = tf.image.per_image_standardization(y_val)
     # x_test = tf.image.per_image_standardization(x_test)
     # y_test = tf.image.per_image_standardization(y_test)
     # x_train = normalize(x_train, axis=-1)
@@ -230,7 +240,8 @@ for folder in selected_folders:
             self.history['loss'].append(logs.get('loss'))
             self.history['val_loss'].append(logs.get('val_loss'))
             self.save_model_and_history()
-            # self.plot()
+            if epoch % 10 == 0:
+                self.plot()
 
         def plot(self):
             plt.figure()
@@ -299,7 +310,8 @@ for folder in selected_folders:
     ignore_entries = 20
     result_dict = custom_functions_EM.plot_history_ignore(history, ignore_entries)
     custom_functions_EM.plot_loss(result_dict)
-    del x_train, y_train, x_val, y_val
+    if len(selected_folders) > 1:
+        del x_train, y_train, x_val, y_val
     # , x_test, y_test
 
 # visualkeras.layered_view(model, to_file='output.png').show() # write and show
@@ -333,6 +345,12 @@ first_channel = x_test[0, :, :, 0]
 plt.imshow(first_channel, cmap='gray', interpolation='none')
 plt.show()
 first_channel = x_test[0, :, :, 1]
+plt.imshow(first_channel, cmap='gray', interpolation='none')
+plt.show()
+first_channel = x_test[0, :, :, 2]
+plt.imshow(first_channel, cmap='gray', interpolation='none')
+plt.show()
+first_channel = x_test[0, :, :, 3]
 plt.imshow(first_channel, cmap='gray', interpolation='none')
 plt.show()
 first_channel = y_test[0, :, :, 0]

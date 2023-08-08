@@ -20,8 +20,8 @@ np.set_printoptions(precision=20)
 random.seed(42)
 # INPUTS: START
 # Would you like to validate the code?
-validation = 'False'
 validation = 'True'
+validation = 'False'
 # Would you like to validate that the Krylov Solver accepts correct final answer as a good initial guess?
 guess_validation_answer = 'True'
 guess_validation_answer = 'False'
@@ -29,10 +29,12 @@ guess_validation_answer = 'False'
 guess_model = 'True'
 guess_model = 'False'
 # Number of samples to generate and where you stopped last time
-seed_count = 25
-seedling = 0
+seed_count = 10000
+seedling = 18851
 # Where should the outputs be saved?
 folder_outputs = "F:\\single"
+folder_outputs = "F:\\instances_seed_play"
+folder_outputs = "F:\\instances_5000"
 folder_outputs = "F:\\instances"
 model_file = "model_checkpoint.h5"
 # INPUTS: END
@@ -47,8 +49,11 @@ tic_total_start = time.time()
 state = random.getstate()
 # random_steps is the number of random operations called in the geometery generation stage.
 random_steps = 2
+state_old = random.getstate()
 for _ in range(random_steps*seedling):
     random_num = random.uniform(0, 9)
+state_updated = random.getstate()
+print("state_old == state_updated", state_old == state_updated)
 os.makedirs(folder_outputs, exist_ok=True)
 
 _, _, _, _, _, _, _, _, _, _, _, X1, X2, _, _, _, _, _ = custom_functions_EM.initEM()
@@ -113,26 +118,40 @@ else:
                 break
 
         c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri = custom_functions_EM.initEM()
-
-        # Save visulistion of geometry for debugging reference
-        plt.imsave(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}_abs_m.png"), np.abs(CHI_eps), cmap='gray')
-        # custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
-
         E_inc, ZH_inc = custom_functions_EM.IncEMwave(gamma_0, xS, dx, X1, X2)
 
+        if guess_model != 'True':
+            plt.imsave(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}_abs_o.png"), np.abs(CHI_eps), cmap='gray')
+            # custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
+        else:
+            # # Save visulistion of geometry for debugging reference
+            # plt.imsave(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}_abs_m.png"), np.abs(CHI_eps), cmap='gray')
+            # # custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
+            # NEED TO EXTRACT EXISTING INFORMATION HERE TO REPLACE keras_stack items from init above as cannot trust seed method
+            file_name = f"instance_{str(seed).zfill(10)}.npy"
+            output_file_path = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_o.npy")
+            data = np.load(output_file_path)
+            CHI_eps = np.squeeze(data[:, :, :, 0])
+            E_inc[0, :, :] = np.squeeze(data[:, :, :, 1] + 1j*data[:, :, :, 2])
+            E_inc[1, :, :] = np.squeeze(data[:, :, :, 4] + 1j*data[:, :, :, 5])
+            E_inc[2, :, :] = E_inc[1, :, :]*0
+            ZH_inc[2, :, :] = np.squeeze(data[:, :, :, 7] + 1j*data[:, :, :, 8])
+            ZH_inc[1, :, :] = ZH_inc[2, :, :]*0
+            ZH_inc[0, :, :] = ZH_inc[2, :, :]*0
+
+        # MODEL INFERENCE
         tic0 = time.time()
         if guess_model == 'True':
             N = np.shape(CHI_eps)[0]*np.shape(CHI_eps)[1]
             x0 = np.zeros((2*N, 1), dtype=np.complex128, order='F')
-            x0[0:N, 0] = np.multiply(CHI_eps, E_inc[0, :, :]).flatten('F')
-            x0[N:2*N, 0] = np.multiply(CHI_eps, E_inc[1, :, :]).flatten('F')
+            # x0[0:N, 0] = np.multiply(CHI_eps, E_inc[0, :, :]).flatten('F')
+            # x0[N:2*N, 0] = np.multiply(CHI_eps, E_inc[1, :, :]).flatten('F')
 
-            # TO BE COMPLETED WHEN MODEL IS AVAILABLE
-            np.expand_dims(np.real(CHI_eps), axis=0).shape
-            custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :].shape
+            # np.expand_dims(np.real(CHI_eps), axis=0).shape
+            # custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :].shape
             keras_stack = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
                                           np.expand_dims(custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :], axis=0)], axis=0)
-            keras_stack.shape
+            # keras_stack.shape
             keras_stack_composed = custom_functions_EM.keras_format(keras_stack)
             input_data = keras_stack_composed.copy()
             # input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1)], axis=-1)
@@ -142,16 +161,37 @@ else:
             # output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
             # y_list.append(output_data)
 
-            predicted_output = model.predict(input_data)/100
+            # predicted_output = model.predict(input_data)
+            predicted_output = model.predict(input_data)
             predicted_output = np.squeeze(predicted_output)
             predicted_output = np.transpose(predicted_output, (2, 0, 1))
-            E_sct = E_inc.copy()
-            E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
-            E_sct[1, :, :] = (predicted_output[0, :, :] + 1j*predicted_output[1, :, :])*0.0
-            custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            E_val = custom_functions_EM.E(E_inc, E_sct)
-            custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # # ACTUAL SCATTERED FIELD
+            # E_sct = E_inc.copy()
+            # E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
+            # E_sct[1, :, :] = (predicted_output[0, :, :] + 1j*predicted_output[1, :, :])*0.0
+            # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # E_val = custom_functions_EM.E(E_inc, E_sct)
+            # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # w_E = E_inc.copy()
+            # w_E[0, :, :] = CHI_eps * E_val[0, :, :]
+            # w_E[1, :, :] = CHI_eps * E_val[1, :, :]
+
+            # STRAIGHT W_E
             w_E = E_inc.copy()
+            mean_0 = -2.2173656426948133e-05
+            stddev_0 = 1/np.sqrt(128)
+            stddev_0 = 0.0006650975763151054
+            mean_1 = 1.3913159190904659e-05
+            stddev_1 = 1/np.sqrt(128)
+            stddev_1 = 0.000765477575766568
+            # seed = 0
+            # w_E[0, :, :] = ((predicted_output[0, :, :] * stddev_0) + mean_0) + 1j*((predicted_output[0, :, :] * stddev_1) + mean_1)
+            w_E[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
+            w_E[1, :, :] = np.multiply(CHI_eps, E_inc[1, :, :])
+            # w_E_old = w_E.copy()
+
+            E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
+            E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
             w_E[1, :, :] = CHI_eps * E_val[1, :, :]
             custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
@@ -207,13 +247,13 @@ else:
             N = np.shape(CHI_eps)[0]*np.shape(CHI_eps)[1]
             tic1 = time.time()
             x0 = np.zeros((2*N, 1), dtype=np.complex128, order='F')
-            # w_E_old = w_E
+            w_E_old = w_E
             E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
             E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
             w_E[1, :, :] = CHI_eps * E_val[1, :, :]
             custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            # print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_old - w_E))
+            print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_old - w_E))
             x0[0:N, 0] = w_E[0, :, :].flatten('F')
             x0[N:2*N, 0] = w_E[1, :, :].flatten('F')
             w_E_m, exit_code_m, information_m = custom_functions_EM.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=x0)
