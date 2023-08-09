@@ -42,6 +42,7 @@ selected_folders = folders
 selected_folders = ["instances_1000"]
 selected_folders = ["instances_X"]
 selected_folders = ["instances_5000"]
+selected_folders = ["instances"]
 selected_folders = ["instances_500"]
 
 X_array = np.load('F:\\instances\\X_array.npy')
@@ -147,38 +148,44 @@ for folder in selected_folders:
     print("data_folder", data_folder)
 
     # Split the dataset into training and validation sets
+    print("Creating Data Splits")
+    files_list = [f for f in os.listdir(data_folder) if f.endswith('o.npy') and "_info" not in f and f.startswith("instance_")]
+    print("len(files_list)", len(files_list))
+    file_list = files_list
+    # file_list = random.sample(files_list, sample_count)
+    print("len(file_list)", len(file_list))
+
+    train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
+    train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
     if not os.path.exists(data_folder + "_x_train.npy"):
-        print("Creating Data Splits")
-        files_list = [f for f in os.listdir(data_folder) if f.endswith('o.npy') and "_info" not in f and f.startswith("instance_")]
-        print("len(files_list)", len(files_list))
-        file_list = files_list
-        # file_list = random.sample(files_list, sample_count)
-        print("len(file_list)", len(file_list))
-        train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
-        train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
-        # len(train_list)
-        # len(test_list)
-        # len(val_list)
         x_train, y_train = custom_architectures_EM.prescient2DL_data(data_folder, train_list, N1, N2)
         np.save(data_folder + '_x_train', x_train)
         np.save(data_folder + '_y_train', y_train)
         print("sets created: training")
+    else:
+        print("Loading Training Data Splits")
+        x_train = np.load(data_folder + '_x_train.npy')
+        y_train = np.load(data_folder + '_y_train.npy')
+        print("sets loaded: train")
+
+    if not os.path.exists(data_folder + "_x_val.npy"):
         x_val, y_val = custom_architectures_EM.prescient2DL_data(data_folder, test_list, N1, N2)
         np.save(data_folder + '_x_val', x_val)
         np.save(data_folder + '_y_val', y_val)
         print("sets created: validation")
+    else:
+        print("Loading Validation Data Splits")
+        x_val = np.load(data_folder + '_x_val.npy')
+        y_val = np.load(data_folder + '_y_val.npy')
+        print("sets loaded: validation")
+
+    if not os.path.exists(data_folder + "_x_test.npy"):
         x_test, y_test = custom_architectures_EM.prescient2DL_data(data_folder, val_list, N1, N2)
         np.save(data_folder + '_x_test', x_test)
         np.save(data_folder + '_y_test', y_test)
         print("sets created: test")
     else:
-        print("Loading Data Splits")
-        x_train = np.load(data_folder + '_x_train.npy')
-        y_train = np.load(data_folder + '_y_train.npy')
-        print("sets loaded: train")
-        x_val = np.load(data_folder + '_x_val.npy')
-        y_val = np.load(data_folder + '_y_val.npy')
-        print("sets loaded: validation")
+        print("Loading Testing Data Splits")
         x_test = np.load(data_folder + '_x_test.npy')
         y_test = np.load(data_folder + '_y_test.npy')
         print("sets loaded: test")
@@ -189,11 +196,11 @@ for folder in selected_folders:
     # reversed_image = (standardized_image * stddev) + mean
 
     # x_train = tf.image.per_image_standardization(x_train)
-    # y_train = tf.image.per_image_standardization(y_train)
+    y_train = tf.image.per_image_standardization(y_train)
     # x_val = tf.image.per_image_standardization(x_val)
-    # y_val = tf.image.per_image_standardization(y_val)
+    y_val = tf.image.per_image_standardization(y_val)
     # x_test = tf.image.per_image_standardization(x_test)
-    # y_test = tf.image.per_image_standardization(y_test)
+    y_test = tf.image.per_image_standardization(y_test)
     # x_train = normalize(x_train, axis=-1)
     # y_train = normalize(y_train, axis=-1)
     # x_val = normalize(x_val, axis=-1)
@@ -206,6 +213,14 @@ for folder in selected_folders:
     # y_val = y_val / 0.08475
     # x_test = x_test / 0.08475
     # y_test = y_test / 0.08475
+
+    y_train_mean = np.mean(y_train)
+    y_train_mean = 5.284164e-11
+    y_train_std = np.std(y_train)
+    y_train_std = 0.13386196
+    # Apply per-image standardization to y_test
+    y_test_standardized = (y_test - y_train_mean) / y_train_std
+
 
     # Determine the total number of samples in the training dataset
     total_samples = len(x_train)
@@ -298,10 +313,11 @@ for folder in selected_folders:
     print("Fitting Time: ", tic_fit_end)
 
     custom_architectures_EM.plot_prediction_EM(model, x_train[0], y_train[0])
+    # custom_architectures_EM.plot_prediction_EM(model, tf.image.per_image_standardization(x_train[0]), y_train[0])
 
     score = model.evaluate(x_test, y_test, verbose=0)
     print("score", score)
-    custom_architectures_EM.plot_prediction_EM(model, x_test[0], tf.image.per_image_standardization(y_test[0]))
+    custom_architectures_EM.plot_prediction_EM(model, x_test[0], y_test[0])
 
     # Load the training history from the pickle file
     history_file = "training_history.pkl"

@@ -23,19 +23,20 @@ random.seed(42)
 validation = 'True'
 validation = 'False'
 # Would you like to validate that the Krylov Solver accepts correct final answer as a good initial guess?
-guess_validation_answer = 'True'
 guess_validation_answer = 'False'
+guess_validation_answer = 'True'
 # Would you like to use a model to provide an initial guess?
-guess_model = 'True'
 guess_model = 'False'
+guess_model = 'True'
 # Number of samples to generate and where you stopped last time
-seed_count = 10000
-seedling = 18851
+seed_count = 1
+seedling = 0
 # Where should the outputs be saved?
 folder_outputs = "F:\\single"
 folder_outputs = "F:\\instances_seed_play"
 folder_outputs = "F:\\instances_5000"
 folder_outputs = "F:\\instances"
+folder_outputs = "F:\\instances_500"
 model_file = "model_checkpoint.h5"
 # INPUTS: END
 
@@ -150,7 +151,8 @@ else:
             # np.expand_dims(np.real(CHI_eps), axis=0).shape
             # custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :].shape
             keras_stack = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
-                                          np.expand_dims(custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :], axis=0)], axis=0)
+                                          custom_functions_EM.complex_separation(E_inc[0, :, :])], axis=0)
+                                          # np.expand_dims(custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :], axis=0)], axis=0)
             # keras_stack.shape
             keras_stack_composed = custom_functions_EM.keras_format(keras_stack)
             input_data = keras_stack_composed.copy()
@@ -165,6 +167,10 @@ else:
             predicted_output = model.predict(input_data)
             predicted_output = np.squeeze(predicted_output)
             predicted_output = np.transpose(predicted_output, (2, 0, 1))
+
+            y_train_mean = 5.284164e-11
+            y_train_std = 0.13386196
+            predicted_output = predicted_output*y_train_std + y_train_mean
             # # ACTUAL SCATTERED FIELD
             # E_sct = E_inc.copy()
             # E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
