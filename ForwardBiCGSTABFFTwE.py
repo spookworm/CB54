@@ -179,21 +179,21 @@ else:
             # OPTION A: E_sct
             E_sct = E_inc.copy()
             E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
-            E_sct[1, :, :] = E_inc[1, :, :].copy()
+            E_sct[1, :, :] = 0*E_inc[1, :, :].copy()
+            E_val = custom_functions_EM.E(E_inc, E_sct)
+            w_E[0, :, :] = CHI_eps * E_val[0, :, :]
+            w_E[1, :, :] = CHI_eps * E_val[1, :, :]
             ###
 
             # OPTION B: STRAIGHT W_E
             # w_E[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
-            # w_E[1, :, :] = np.multiply(CHI_eps, 2*E_inc[1, :, :])
+            # w_E[1, :, :] = np.multiply(CHI_eps, E_inc[1, :, :])
             # w_E_old = w_E.copy()
             # E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
             ###
 
-            custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            E_val = custom_functions_EM.E(E_inc, E_sct)
-            w_E[0, :, :] = CHI_eps * E_val[0, :, :]
-            w_E[1, :, :] = CHI_eps * E_val[1, :, :]
             # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             # print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_old - w_E))
             x0[0:N, 0] = w_E[0, :, :].flatten('F')
             x0[N:2*N, 0] = w_E[1, :, :].flatten('F')
