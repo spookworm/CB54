@@ -156,20 +156,24 @@ for folder in selected_folders:
 
     # CALCULATE THE STANDARDIZATION TERMS
     mean_per_channel = tf.reduce_mean(y_train, axis=[0, 1, 2])
-    # tf.print(mean_per_channel)
+    tf.print(mean_per_channel)
     std_per_channel = tf.math.reduce_std(y_train, axis=[0, 1, 2])
     adjusted_stddev_per_channel = tf.maximum(std_per_channel, 1.0/np.sqrt(N1*N2))
-    # tf.print(adjusted_stddev)
+    tf.print(adjusted_stddev_per_channel)
     np.save(data_folder + "\\mean_per_channel", mean_per_channel.numpy())
     np.save(data_folder + "\\adjusted_stddev_per_channel", adjusted_stddev_per_channel.numpy())
 
     y_train = tf.image.per_image_standardization(y_train)
+    # # For y_val, even though we can standardize seperately to y_train, it is perhaps safer to treat it as independant and use the y_train parameters since this is what the predict will have access to at time of inference.
+    # for channel in range(y_val.shape[-1]):
+    #     y_val[:, :, :, channel] = (y_val[:, :, :, channel] - mean_per_channel[channel])/adjusted_stddev_per_channel[channel]
+    # y_val = tf.convert_to_tensor(y_val, dtype=tf.float64)
     y_val = tf.image.per_image_standardization(y_val)
-    # For y_test, the same standardization process must be used as training since this is what the predict will have access to at time of inference.
-    # y_test = tf.image.per_image_standardization(y_test)
-    for channel in range(y_test.shape[-1]):
-        y_test[:, :, :, channel] = (y_test[:, :, :, channel] - mean_per_channel[channel])/adjusted_stddev_per_channel[channel]
-    y_test = tf.convert_to_tensor(y_test, dtype=tf.float64)
+    # # For y_test, the same standardization process must be used as training since this is what the predict will have access to at time of inference.
+    # for channel in range(y_test.shape[-1]):
+    #     y_test[:, :, :, channel] = (y_test[:, :, :, channel] - mean_per_channel[channel])/adjusted_stddev_per_channel[channel]
+    # y_test = tf.convert_to_tensor(y_test, dtype=tf.float64)
+    y_test = tf.image.per_image_standardization(y_test)
 
     # Determine the total number of samples in the training dataset
     total_samples = len(x_train)
@@ -235,7 +239,9 @@ for folder in selected_folders:
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
     # model.compile(optimizer=SGD(learning_rate=0.001), loss='mean_squared_error', metrics=MeanSquaredError())
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+    # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+    model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
+    # model.compile(optimizer='adam', loss='MeanAbsolutePercentageError', metrics=MeanAbsolutePercentageError())
     # model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
 
     len(model.layers)
@@ -262,11 +268,9 @@ for folder in selected_folders:
     print("Fitting Time: ", tic_fit_end)
     model.save('model_checkpoint.h5')
 
-    custom_architectures_EM.plot_prediction_EM(model, x_train[0], y_train[0])
-
     score = model.evaluate(x_test, y_test, verbose=0)
     print("score", score)
-    custom_architectures_EM.plot_prediction_EM(model, x_test[0], y_test[0])
+    custom_architectures_EM.plot_prediction_EM(data_folder, model, x_test[0], y_test[0])
 
     # Load the training history from the pickle file
     history_file = "training_history.pkl"
@@ -294,7 +298,9 @@ model = load_model('model_checkpoint.h5')
 # model = load_model('model_checkpoint.h5', custom_objects={'edge_loss': edge_loss})
 # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 # model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+# model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
+model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
+# model.compile(optimizer='adam', loss='MeanAbsolutePercentageError', metrics=MeanAbsolutePercentageError())
 
 # Evaluate the model using your test dataset
 score = model.evaluate(x_test, y_test, verbose=0)
@@ -303,8 +309,8 @@ print('Test loss:', score[0])
 print('Test mean absolute error:', score[1])
 
 # Select an input from the test set
-custom_architectures_EM.plot_prediction_EM(model, x_test[0], y_test[0])
-# custom_architectures_EM.plot_prediction_EM(model, x_test[2], y_test[2])
+custom_architectures_EM.plot_prediction_EM(data_folder, model, x_test[0], y_test[0])
+# custom_architectures_EM.plot_prediction_EM(data_folder, model, x_test[2], y_test[2])
 
 first_channel = x_test[0, :, :, 0]
 plt.imshow(first_channel, cmap='gray', interpolation='none')
@@ -328,14 +334,6 @@ plt.show()
 # first_channel = np.abs(y_test[0, :, :, 0] + 1j*y_test[0, :, :, 1])
 # plt.imshow(first_channel, cmap='gray', interpolation='none')
 # plt.show()
-
-# input_data = x_test[0].copy()
-# predicted_output = model.predict(np.expand_dims(input_data, axis=0))
-# print("predicted_output.shape", predicted_output.shape)
-# predicted_output = np.squeeze(predicted_output)
-# print("predicted_output.shape", predicted_output.shape)
-# predicted_output = np.transpose(predicted_output, (2, 0, 1))
-# print("predicted_output.shape", predicted_output.shape)
 
 # Load the training history from the pickle file
 history_file = "training_history.pkl"

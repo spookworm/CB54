@@ -728,7 +728,9 @@ def plot_history_ignore(history, ignore_entries):
 def plot_loss(history):
     # Plot the loss
     plt.plot(history['loss'], label='Training Loss')
+    # plt.yscale('log')
     plt.plot(history['val_loss'], label='Validation Loss')
+    # plt.yscale('log')
     plt.title('Loss over Epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')

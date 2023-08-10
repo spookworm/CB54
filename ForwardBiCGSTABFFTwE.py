@@ -26,8 +26,8 @@ validation = 'False'
 guess_validation_answer = 'True'
 guess_validation_answer = 'False'
 # Would you like to use a model to provide an initial guess?
-guess_model = 'True'
 guess_model = 'False'
+guess_model = 'True'
 # Number of samples to generate and where you stopped last time
 seed_count = 100
 seedling = 0
@@ -174,12 +174,13 @@ else:
             adjusted_stddev_per_channel = np.load(folder_outputs + "\\adjusted_stddev_per_channel.npy")
             for channel in range(predicted_output.shape[0]):
                 predicted_output[channel, :, :] = predicted_output[channel, :, :] * adjusted_stddev_per_channel[channel] + mean_per_channel[channel]
-            w_E = E_inc.copy()
+            w_E = np.zeros((2, N1, N2), dtype=np.complex128, order='F')
 
             # OPTION A: E_sct
             E_sct = E_inc.copy()
             E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
             E_sct[1, :, :] = 0*E_inc[1, :, :].copy()
+            E_sct_pred = E_sct.copy()
             E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
             w_E[1, :, :] = CHI_eps * E_val[1, :, :]
@@ -188,21 +189,23 @@ else:
             # OPTION B: STRAIGHT W_E
             # w_E[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
             # w_E[1, :, :] = np.multiply(CHI_eps, E_inc[1, :, :])
-            # w_E_old = w_E.copy()
             # E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
+            # E_sct_pred = E_sct.copy()
             ###
 
             # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            # print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_old - w_E))
             x0[0:N, 0] = w_E[0, :, :].flatten('F')
             x0[N:2*N, 0] = w_E[1, :, :].flatten('F')
+            w_E_pred = w_E.copy()
+            # print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_pred - w_E))
+            custom_functions_EM.plotEtotalwavefield(w_E_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            custom_functions_EM.plotEtotalwavefield(E_sct_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             w_E, exit_code, information = custom_functions_EM.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=x0)
         else:
             w_E, exit_code, information = custom_functions_EM.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None)
         toc0 = time.time() - tic0
         print("toc", toc0)
-        # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
         if exit_code == 0:
             E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
@@ -210,7 +213,11 @@ else:
             # Set the first row, last row, first column, and last column to zeros due to gradient calculation
             # This may make assisting the solver worse but should make training the model easier!
             E_sct[:, [0, -1], :] = E_sct[:, :, [0, -1]] = 0
+
             custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+
+            # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             E_val = custom_functions_EM.E(E_inc, E_sct)
             # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
@@ -246,7 +253,7 @@ else:
             N = np.shape(CHI_eps)[0]*np.shape(CHI_eps)[1]
             tic1 = time.time()
             x0 = np.zeros((2*N, 1), dtype=np.complex128, order='F')
-            w_E_old = w_E
+            w_E_old = w_E.copy()
             E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
             E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
