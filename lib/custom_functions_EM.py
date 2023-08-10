@@ -133,7 +133,7 @@ def EMsctCircle():
     arg0 = gamma_0 * a
     args = gam_sct*a
     # increase M for more accuracy
-    M = 50
+    M = 100
 
     A = np.zeros((1, M), dtype=np.complex128)
     for m in range(1, M+1):
@@ -236,8 +236,7 @@ def initEM(bessel=None):
     # wave speed in embedding
     # relative permittivity of scatterer
     eps_sct = 1.75
-    eps_sct = 8
-    eps_sct = 50
+    # eps_sct = 50
     # print("eps_sct: ", eps_sct)
     eps_d = eps_sct*eps_0
     # relative permeability of scatterer
@@ -249,10 +248,10 @@ def initEM(bessel=None):
 
     # temporal frequency
     f = 10e6
-    f = 10e6*50
+    # f = 10e6*50
     # wavelength
-    # wavelength_0 = c_0 / f
-    # print("wavelength_0", wavelength_0)
+    wavelength_0 = c_0 / f
+    print("wavelength_0", wavelength_0)
     wavelength_d = c_d / f
     print("wavelength_d", wavelength_d)
     # Laplace parameter
@@ -277,13 +276,14 @@ def initEM(bessel=None):
     else:
         a, CHI_eps, CHI_mu = initEMContrastOrig(eps_sct, mu_sct, X1, X2)
 
-    Errcri = 1e-10
+    Errcri = 1e-18
     return c_0, eps_sct, mu_sct, gamma_0, xS, NR, rcvr_phi, xR, N1, N2, dx, X1, X2, FFTG, a, CHI_eps, CHI_mu, Errcri
 
 
 def initEMContrastOrig(eps_sct, mu_sct, X1, X2):
     # half width slab / radius circle cylinder / radius sphere
-    a = 40*(0.5**10)
+    a = 40
+    # a = 40*(0.5**10)
 
     R = np.sqrt(X1**2 + X2**2)
     # Bessel-Approach Validation Cancer only
@@ -301,12 +301,15 @@ def initEMContrast(eps_sct, mu_sct, X1, X2, dx):
     R = np.sqrt(X1**2 + X2**2)
 
     # half width slab / radius circle cylinder / radius sphere
-    a = 40*(0.5**10)
+    a = 40
+    a = 8.94427
+    # a = 40*(0.5**10)
     a_normal = a*np.sqrt(1/0.05)
     a_cancer = a
 
     # (1) Compute permittivity contrast
     eps_normal = 8
+    eps_normal = 1.25
     eps_cancer = eps_sct
 
     CHI_eps_0 = (1-eps_normal) * (R < a_normal)
@@ -492,7 +495,7 @@ def initGrid():
     N2 = 128
     # with meshsize dx
     dx = 2
-    dx = 2*(0.5**8.38)
+    # dx = 2*(0.5**8.38)
 
     # print("lamda_0", wavelength_0/dx)
     # print("lamda_d", wavelength_d/dx)
@@ -521,7 +524,8 @@ def initSourceReceiver():
 
     # Receiver Positions
     NR = 180
-    reciever_source_coefficient = (0.25/17)
+    reciever_source_coefficient = (15/17)
+    # reciever_source_coefficient = (0.25/17)
     rcvr_phi = np.zeros((1, NR), dtype=np.float64, order='F')
     # rcvr_phi[0, :] = np.linspace(1, NR, num=NR)*(2*np.pi)/NR
     rcvr_phi[0, 0:NR] = np.arange(1, NR+1, 1) * 2.0 * np.pi / NR
