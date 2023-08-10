@@ -39,11 +39,13 @@ batch_size = int(max_batch_size/32)
 # file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and "_info_" not in f and f.startswith("instance_")]
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances" in f]
 selected_folders = folders
-selected_folders = ["instances_1000"]
 selected_folders = ["instances_X"]
 selected_folders = ["instances_5000"]
 selected_folders = ["instances"]
+selected_folders = ["instances_500", "instances_1000"]
 selected_folders = ["instances_500"]
+selected_folders = ["instances_1500", "instances_2000", "instances_2500"]
+selected_folders = ["generic"]
 
 X_array = np.load('F:\\instances\\X_array.npy')
 X1 = X_array[:, :, 0]
@@ -102,44 +104,6 @@ visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras_EM.png', 
 plot_model(model, to_file='.\\doc\\code_doc\\model_plot_EM.png', show_shapes=True, show_dtype=True, show_layer_names=True, rankdir="TB", expand_nested=True, dpi=96, layer_range=None, show_layer_activations=True)
 
 
-# def edge_loss(y_true, y_pred):
-#     from keras.losses import mean_squared_error
-#     # ssim_loss = 1 - tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0))
-#     # ssim_loss = tf.abs(tf.reduce_mean(tf.image.ssim(y_true, y_pred, 1.0)))
-
-#     # Compute Sobel edges of y_true
-#     y_true_float = tf.cast(tf.abs(y_true), dtype=tf.float32)
-#     y_pred_float = tf.cast(tf.abs(y_pred), dtype=tf.float32)
-
-#     y_true_edges = tf.image.sobel_edges(tf.abs(y_true_float))
-#     y_pred_edges = tf.image.sobel_edges(tf.abs(y_pred_float))
-
-#     # scharr_filter = tf.constant([[3, 0, -3], [10, 0, -10], [3, 0, -3]], dtype=tf.float32)
-#     # scharr_filter = tf.reshape(scharr_filter, [3, 3, 1, 1])
-#     # scharr_edges_true = tf.nn.conv2d(tf.abs(y_true_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
-#     # scharr_edges_pred = tf.nn.conv2d(tf.abs(y_pred_float), scharr_filter, strides=[1, 1, 1, 1], padding='SAME')
-
-#     # # Normalize the output
-#     # scharr_edges_true = tf.abs(scharr_edges_true)
-#     # y_true_edges = tf.reduce_max(scharr_edges_true, axis=3)
-#     # scharr_edges_pred = tf.abs(scharr_edges_pred)
-#     # y_pred_edges = tf.reduce_max(scharr_edges_pred, axis=3)
-
-#     # Compute squared difference between y_true_edges and y_pred
-#     squared_diff = tf.square(y_true_edges - y_pred_edges)
-
-#     mse_loss = mean_squared_error(y_true, y_pred)
-#     # Apply emphasis to Sobel edges (e.g., multiply by a factor)
-#     edge_weight = 10.0  # Adjust this weight as needed
-#     mean_loss = tf.reduce_mean(squared_diff)
-#     weighted_loss = mse_loss + edge_weight*mean_loss
-#     # weighted_loss = mse_loss
-#     # weighted_loss = mse_loss
-#     # weighted_loss = (edge_weight * mean_loss) + 10 * ssim_loss
-
-#     # Compute mean of the emphasized loss
-#     return weighted_loss
-
 # folder = selected_folders
 for folder in selected_folders:
     # folder = 'instances_5000'
@@ -190,37 +154,22 @@ for folder in selected_folders:
         y_test = np.load(data_folder + '_y_test.npy')
         print("sets loaded: test")
 
-    # CALCULATE THE SCALING TERMS
-    # mean = tf.reduce_mean(tf.reduce_mean(y_train, axis=(1, 2)), axis=(0))
-    # stddev = tf.reduce_mean(tf.math.reduce_std(y_train, axis=(1, 2)), axis=(0))
-    # reversed_image = (standardized_image * stddev) + mean
+    # CALCULATE THE STANDARDIZATION TERMS
+    mean_per_channel = tf.reduce_mean(y_train, axis=[0, 1, 2])
+    # tf.print(mean_per_channel)
+    std_per_channel = tf.math.reduce_std(y_train, axis=[0, 1, 2])
+    adjusted_stddev_per_channel = tf.maximum(std_per_channel, 1.0/np.sqrt(N1*N2))
+    # tf.print(adjusted_stddev)
+    np.save(data_folder + "\\mean_per_channel", mean_per_channel.numpy())
+    np.save(data_folder + "\\adjusted_stddev_per_channel", adjusted_stddev_per_channel.numpy())
 
-    # x_train = tf.image.per_image_standardization(x_train)
     y_train = tf.image.per_image_standardization(y_train)
-    # x_val = tf.image.per_image_standardization(x_val)
     y_val = tf.image.per_image_standardization(y_val)
-    # x_test = tf.image.per_image_standardization(x_test)
-    y_test = tf.image.per_image_standardization(y_test)
-    # x_train = normalize(x_train, axis=-1)
-    # y_train = normalize(y_train, axis=-1)
-    # x_val = normalize(x_val, axis=-1)
-    # y_val = normalize(y_val, axis=-1)
-    # x_test = normalize(x_test, axis=-1)
-    # y_test = normalize(y_test, axis=-1)
-    # x_train = x_train / 0.08475
-    # y_train = y_train / 0.08475
-    # x_val = x_val / 0.08475
-    # y_val = y_val / 0.08475
-    # x_test = x_test / 0.08475
-    # y_test = y_test / 0.08475
-
-    y_train_mean = np.mean(y_train)
-    y_train_mean = 5.284164e-11
-    y_train_std = np.std(y_train)
-    y_train_std = 0.13386196
-    # Apply per-image standardization to y_test
-    y_test_standardized = (y_test - y_train_mean) / y_train_std
-
+    # For y_test, the same standardization process must be used as training since this is what the predict will have access to at time of inference.
+    # y_test = tf.image.per_image_standardization(y_test)
+    for channel in range(y_test.shape[-1]):
+        y_test[:, :, :, channel] = (y_test[:, :, :, channel] - mean_per_channel[channel])/adjusted_stddev_per_channel[channel]
+    y_test = tf.convert_to_tensor(y_test, dtype=tf.float64)
 
     # Determine the total number of samples in the training dataset
     total_samples = len(x_train)
@@ -254,8 +203,8 @@ for folder in selected_folders:
             self.val_losses.append(logs.get('val_loss'))
             self.history['loss'].append(logs.get('loss'))
             self.history['val_loss'].append(logs.get('val_loss'))
-            self.save_model_and_history()
             if epoch % 10 == 0:
+                self.save_model_and_history()
                 self.plot()
 
         def plot(self):
@@ -311,9 +260,9 @@ for folder in selected_folders:
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history, reduce_lr])
     tic_fit_end = time.time() - tic_fit_start
     print("Fitting Time: ", tic_fit_end)
+    model.save('model_checkpoint.h5')
 
     custom_architectures_EM.plot_prediction_EM(model, x_train[0], y_train[0])
-    # custom_architectures_EM.plot_prediction_EM(model, tf.image.per_image_standardization(x_train[0]), y_train[0])
 
     score = model.evaluate(x_test, y_test, verbose=0)
     print("score", score)
@@ -387,8 +336,6 @@ plt.show()
 # print("predicted_output.shape", predicted_output.shape)
 # predicted_output = np.transpose(predicted_output, (2, 0, 1))
 # print("predicted_output.shape", predicted_output.shape)
-
-
 
 # Load the training history from the pickle file
 history_file = "training_history.pkl"

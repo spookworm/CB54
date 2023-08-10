@@ -23,13 +23,13 @@ random.seed(42)
 validation = 'True'
 validation = 'False'
 # Would you like to validate that the Krylov Solver accepts correct final answer as a good initial guess?
-guess_validation_answer = 'False'
 guess_validation_answer = 'True'
+guess_validation_answer = 'False'
 # Would you like to use a model to provide an initial guess?
-guess_model = 'False'
 guess_model = 'True'
+guess_model = 'False'
 # Number of samples to generate and where you stopped last time
-seed_count = 1
+seed_count = 100
 seedling = 0
 # Where should the outputs be saved?
 folder_outputs = "F:\\single"
@@ -37,12 +37,14 @@ folder_outputs = "F:\\instances_seed_play"
 folder_outputs = "F:\\instances_5000"
 folder_outputs = "F:\\instances"
 folder_outputs = "F:\\instances_500"
+folder_outputs = "F:\\generic"
 model_file = "model_checkpoint.h5"
 # INPUTS: END
 
 # Estimate the time to run and the time remaining
 # Initial guess is based on it takes roughly 1 second to establish scene and roughly 5.8 per instance to solve
 toc0_1 = (1.0 + 5.8)
+toc0_1 = (1.1 * 0.85)
 time_estimate = seed_count*toc0_1
 time_estimate_inital = time_estimate
 print("time_estimate", time_estimate_inital, "seconds")
@@ -168,39 +170,30 @@ else:
             predicted_output = np.squeeze(predicted_output)
             predicted_output = np.transpose(predicted_output, (2, 0, 1))
 
-            y_train_mean = 5.284164e-11
-            y_train_std = 0.13386196
-            predicted_output = predicted_output*y_train_std + y_train_mean
-            # # ACTUAL SCATTERED FIELD
-            # E_sct = E_inc.copy()
-            # E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
-            # E_sct[1, :, :] = (predicted_output[0, :, :] + 1j*predicted_output[1, :, :])*0.0
-            # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            # E_val = custom_functions_EM.E(E_inc, E_sct)
-            # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            # w_E = E_inc.copy()
-            # w_E[0, :, :] = CHI_eps * E_val[0, :, :]
-            # w_E[1, :, :] = CHI_eps * E_val[1, :, :]
-
-            # STRAIGHT W_E
+            mean_per_channel = np.load(folder_outputs + "\\mean_per_channel.npy")
+            adjusted_stddev_per_channel = np.load(folder_outputs + "\\adjusted_stddev_per_channel.npy")
+            for channel in range(predicted_output.shape[0]):
+                predicted_output[channel, :, :] = predicted_output[channel, :, :] * adjusted_stddev_per_channel[channel] + mean_per_channel[channel]
             w_E = E_inc.copy()
-            mean_0 = -2.2173656426948133e-05
-            stddev_0 = 1/np.sqrt(128)
-            stddev_0 = 0.0006650975763151054
-            mean_1 = 1.3913159190904659e-05
-            stddev_1 = 1/np.sqrt(128)
-            stddev_1 = 0.000765477575766568
-            # seed = 0
-            # w_E[0, :, :] = ((predicted_output[0, :, :] * stddev_0) + mean_0) + 1j*((predicted_output[0, :, :] * stddev_1) + mean_1)
-            w_E[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
-            w_E[1, :, :] = np.multiply(CHI_eps, E_inc[1, :, :])
-            # w_E_old = w_E.copy()
 
-            E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
+            # OPTION A: E_sct
+            E_sct = E_inc.copy()
+            E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
+            E_sct[1, :, :] = E_inc[1, :, :].copy()
+            ###
+
+            # OPTION B: STRAIGHT W_E
+            # w_E[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
+            # w_E[1, :, :] = np.multiply(CHI_eps, 2*E_inc[1, :, :])
+            # w_E_old = w_E.copy()
+            # E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
+            ###
+
+            custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
             w_E[1, :, :] = CHI_eps * E_val[1, :, :]
-            custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             # print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_old - w_E))
             x0[0:N, 0] = w_E[0, :, :].flatten('F')
             x0[N:2*N, 0] = w_E[1, :, :].flatten('F')
@@ -209,7 +202,7 @@ else:
             w_E, exit_code, information = custom_functions_EM.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None)
         toc0 = time.time() - tic0
         print("toc", toc0)
-        custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+        # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
         if exit_code == 0:
             E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
@@ -219,7 +212,7 @@ else:
             E_sct[:, [0, -1], :] = E_sct[:, :, [0, -1]] = 0
             custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             E_val = custom_functions_EM.E(E_inc, E_sct)
-            custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
             # Save incident fields to allow for data augmentation
             # Not including any fields that are totally constant such as CHI_mu and the dead fields E3, ZH1, ZH2
@@ -258,7 +251,7 @@ else:
             E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
             w_E[1, :, :] = CHI_eps * E_val[1, :, :]
-            custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_old - w_E))
             x0[0:N, 0] = w_E[0, :, :].flatten('F')
             x0[N:2*N, 0] = w_E[1, :, :].flatten('F')
