@@ -15,7 +15,7 @@ from tensorflow.keras.layers import Input, Lambda
 from sklearn.preprocessing import normalize
 from tensorflow.keras import initializers
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
-
+import sys
 
 def batch_size_max(model, x_train, y_train):
     # Determine the maximum batch size
@@ -47,16 +47,7 @@ def plot_prediction_EM(folder_outputs, model, input_data, output_data):
 
     input_field = input_transpose[0, :, :]
     output_field_1 = output_transpose[0, :, :] + 1j*output_transpose[1, :, :]
-
-    # mean_per_channel = np.load(folder_outputs + "\\mean_per_channel.npy")
-    # adjusted_stddev_per_channel = np.load(folder_outputs + "\\adjusted_stddev_per_channel.npy")
-    # for channel in range(predicted_transpose.shape[0]):
-    #     predicted_transpose[channel, :, :] = predicted_transpose[channel, :, :] * adjusted_stddev_per_channel[channel] + mean_per_channel[channel]
-
     predicted_field_1 = predicted_transpose[0, :, :] + 1j*predicted_transpose[1, :, :]
-
-    # output_field_2 = output_data_squeeze[2] + 1j*output_data_squeeze[3]
-    # predicted_field_2 = predicted_output[2] + 1j*predicted_output[3]
 
     def plot_examples(input_data, output_data, predicted_output):
         from matplotlib.ticker import StrMethodFormatter
@@ -98,10 +89,9 @@ def plot_prediction_EM(folder_outputs, model, input_data, output_data):
         plt.show()
 
     plot_examples(np.abs(input_field), np.abs(output_field_1), np.abs(predicted_field_1))
-    # plot_examples(np.abs(input_field), np.abs(output_field_2), np.abs(predicted_field_2))
 
 
-def prescient2DL_data(data_folder, sample_list, N1, N2):
+def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
     # 00: np.real(CHI_eps)
     # 01: real complex_separation(E_inc[0, :, :]),
     # 02: imag complex_separation(E_inc[0, :, :]),
@@ -128,16 +118,22 @@ def prescient2DL_data(data_folder, sample_list, N1, N2):
         # input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1)], axis=-1)
         # input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1), np.expand_dims(data[:, :, :, 2], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1)], axis=-1)
 
-        input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1), np.expand_dims(data[:, :, :, 2], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1)], axis=-1)
-        # input_data_0 = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1)], axis=-1)
-        # input_data_1 = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 2], axis=-1)], axis=-1)
-        # input_data = np.concatenate([tf.reduce_prod(input_data_0, axis=-1, keepdims=True), tf.reduce_prod(input_data_1, axis=-1, keepdims=True)], axis=-1)
-        x_list.append(input_data)
+        if field_name == "E1":
+            input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1), np.expand_dims(data[:, :, :, 2], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1)], axis=-1)
+            output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
+        elif field_name == "E2":
+            input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 4], axis=-1), np.expand_dims(data[:, :, :, 5], axis=-1), np.expand_dims(data[:, :, :, 6], axis=-1)], axis=-1)
+            output_data = np.concatenate([np.expand_dims(data[:, :, :, 13], axis=-1), np.expand_dims(data[:, :, :, 14], axis=-1)], axis=-1)
+        else:
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            print("WHAT FIELD ARE YOU TRYING TO PREDICT?")
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            sys.exit(1)
 
-        # output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
-        output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
+        x_list.append(input_data)
         y_list.append(output_data)
 
+        # # Source Contrast
         # CHI_eps = data[:, :, :, 0]
         # E_inc = np.zeros((2, data[:, :, :, 1].shape[1], data[:, :, :, 2].shape[2]), dtype=np.complex128, order='F')
         # E_inc[0, :, :] = np.squeeze(data[:, :, :, 1] + 1j*data[:, :, :, 2])

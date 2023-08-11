@@ -6,7 +6,7 @@ import random
 import matplotlib.pyplot as plt
 import os
 import tensorflow as tf
-from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
+from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError, MeanSquaredLogarithmicError
 from keras.models import load_model
 from lib import custom_functions_EM
 from lib import custom_architectures_EM
@@ -29,16 +29,18 @@ guess_validation_answer = 'False'
 guess_model = 'False'
 guess_model = 'True'
 # Number of samples to generate and where you stopped last time
-seed_count = 100
-seedling = 0
+seed_count = 1
+seedling = 7000
 # Where should the outputs be saved?
-folder_outputs = "F:\\single"
-folder_outputs = "F:\\instances_seed_play"
-folder_outputs = "F:\\instances_5000"
-folder_outputs = "F:\\instances"
-folder_outputs = "F:\\instances_500"
-folder_outputs = "F:\\generic"
-model_file = "model_checkpoint.h5"
+directory = "F:\\"
+folder_outputs = "F:\\generic_7000"
+# Load the model parameters...
+model_file_1 = "model_checkpoint_model_scattered_fieldUP_E1.h5"
+model_file_2 = "model_checkpoint_model_scattered_fieldUP_E2.h5"
+mean_1 = "mean_per_channel_E1.npy"
+mean_2 = "mean_per_channel_E2.npy"
+stddev_1 = "adjusted_stddev_per_channel_E1.npy"
+stddev_2 = "adjusted_stddev_per_channel_E2.npy"
 # INPUTS: END
 
 # Estimate the time to run and the time remaining
@@ -85,19 +87,22 @@ if validation == 'True':
     E_sct[:, [0, -1], :] = E_sct[:, :, [0, -1]] = 0
 
     # Drop the first and last columns and rows due to finite differences at border
-    custom_functions_EM.plotEtotalwavefield(E_inc[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-    custom_functions_EM.plotEtotalwavefield(ZH_inc[[2, 2], 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-    custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+    custom_functions_EM.plotEtotalwavefield("E_inc", E_inc[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+    custom_functions_EM.plotEtotalwavefield("ZH_inc", ZH_inc[[2, 2], 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+    custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
     E_val = custom_functions_EM.E(E_inc, E_sct)
-    custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+    custom_functions_EM.plotEtotalwavefield("E_val", E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
 else:
     # START OF ForwardBiCGSTABFFTwE
     if guess_model == 'True':
-        if os.path.exists(model_file):
+        if os.path.exists(model_file_1) and os.path.exists(model_file_2):
             # model = load_model(model_file, custom_objects={'edge_loss': edge_loss})
-            model = load_model(model_file)
-            model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError()])
+            model_1 = load_model(model_file_1)
+            model_2 = load_model(model_file_2)
+            # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError()])
+            model_1.compile(optimizer='adam', loss='MeanSquaredLogarithmicError', metrics=MeanSquaredLogarithmicError())
+            model_2.compile(optimizer='adam', loss='MeanSquaredLogarithmicError', metrics=MeanSquaredLogarithmicError())
         else:
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             print("No model file found!")
@@ -147,60 +152,61 @@ else:
         if guess_model == 'True':
             N = np.shape(CHI_eps)[0]*np.shape(CHI_eps)[1]
             x0 = np.zeros((2*N, 1), dtype=np.complex128, order='F')
-            # x0[0:N, 0] = np.multiply(CHI_eps, E_inc[0, :, :]).flatten('F')
-            # x0[N:2*N, 0] = np.multiply(CHI_eps, E_inc[1, :, :]).flatten('F')
-
-            # np.expand_dims(np.real(CHI_eps), axis=0).shape
-            # custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :].shape
-            keras_stack = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
-                                          custom_functions_EM.complex_separation(E_inc[0, :, :])], axis=0)
-                                          # np.expand_dims(custom_functions_EM.complex_separation(E_inc[0, :, :])[0, :, :], axis=0)], axis=0)
-            # keras_stack.shape
-            keras_stack_composed = custom_functions_EM.keras_format(keras_stack)
-            input_data = keras_stack_composed.copy()
-            # input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1)], axis=-1)
-            # x_list.append(input_data)
-
-            # # output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
-            # output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
-            # y_list.append(output_data)
-
-            # predicted_output = model.predict(input_data)
-            predicted_output = model.predict(input_data)
-            predicted_output = np.squeeze(predicted_output)
-            predicted_output = np.transpose(predicted_output, (2, 0, 1))
-
-            mean_per_channel = np.load(folder_outputs + "\\mean_per_channel.npy")
-            adjusted_stddev_per_channel = np.load(folder_outputs + "\\adjusted_stddev_per_channel.npy")
-            for channel in range(predicted_output.shape[0]):
-                predicted_output[channel, :, :] = predicted_output[channel, :, :] * adjusted_stddev_per_channel[channel] + mean_per_channel[channel]
             w_E = np.zeros((2, N1, N2), dtype=np.complex128, order='F')
 
+            keras_stack_1 = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
+                                            custom_functions_EM.complex_separation(E_inc[0, :, :])], axis=0)
+            keras_stack_2 = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
+                                            custom_functions_EM.complex_separation(E_inc[1, :, :])], axis=0)
+
+            input_data_1 = custom_functions_EM.keras_format(keras_stack_1)
+            input_data_2 = custom_functions_EM.keras_format(keras_stack_2)
+
+            predicted_output_1 = model_1.predict(input_data_1)
+            predicted_output_1 = np.squeeze(predicted_output_1)
+            predicted_output_1 = np.transpose(predicted_output_1, (2, 0, 1))
+
+            predicted_output_2 = model_2.predict(input_data_2)
+            predicted_output_2 = np.squeeze(predicted_output_2)
+            predicted_output_2 = np.transpose(predicted_output_2, (2, 0, 1))
+
+            mean_per_channel_1 = np.load(directory + mean_1)
+            adjusted_stddev_per_channel_1 = np.load(directory + stddev_1)
+            for channel in range(predicted_output_1.shape[0]):
+                predicted_output_1[channel, :, :] = predicted_output_1[channel, :, :] * adjusted_stddev_per_channel_1[channel] + mean_per_channel_1[channel]
+
+            mean_per_channel_2 = np.load(directory + mean_2)
+            adjusted_stddev_per_channel_2 = np.load(directory + stddev_2)
+            for channel in range(predicted_output_2.shape[0]):
+                predicted_output_2[channel, :, :] = predicted_output_2[channel, :, :] * adjusted_stddev_per_channel_2[channel] + mean_per_channel_2[channel]
+
             # OPTION A: E_sct
-            E_sct = E_inc.copy()
-            E_sct[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
-            E_sct[1, :, :] = 0*E_inc[1, :, :].copy()
-            E_sct_pred = E_sct.copy()
+            E_sct = E_inc.copy()*0
+            E_sct[0, :, :] = predicted_output_1[0, :, :] + 1j*predicted_output_1[1, :, :]
+            E_sct[1, :, :] = predicted_output_2[0, :, :] + 1j*predicted_output_2[1, :, :]
+            # E_sct[1, :, :] = E_sct[1, :, :].copy()*0
+            E_sct_pred = E_sct[0:2, :, :].copy()
             E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
             w_E[1, :, :] = CHI_eps * E_val[1, :, :]
             ###
 
-            # OPTION B: STRAIGHT W_E
-            # w_E[0, :, :] = predicted_output[0, :, :] + 1j*predicted_output[1, :, :]
-            # w_E[1, :, :] = np.multiply(CHI_eps, E_inc[1, :, :])
+            # # OPTION B: STRAIGHT W_E
+            # w_E[0, :, :] = predicted_output_1[0, :, :] + 1j*predicted_output_1[1, :, :]
+            # w_E[1, :, :] = predicted_output_2[0, :, :] + 1j*predicted_output_2[1, :, :]
+            # # w_E[1, :, :] = np.multiply(CHI_eps, E_inc[1, :, :])
             # E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
             # E_sct_pred = E_sct.copy()
-            ###
+            # ###
 
-            # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             x0[0:N, 0] = w_E[0, :, :].flatten('F')
             x0[N:2*N, 0] = w_E[1, :, :].flatten('F')
             w_E_pred = w_E.copy()
             # print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_pred - w_E))
-            custom_functions_EM.plotEtotalwavefield(w_E_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            custom_functions_EM.plotEtotalwavefield(E_sct_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+
+            custom_functions_EM.plotEtotalwavefield("w_E_pred", w_E_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            custom_functions_EM.plotEtotalwavefield("E_sct_pred", E_sct_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+
             w_E, exit_code, information = custom_functions_EM.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=x0)
         else:
             w_E, exit_code, information = custom_functions_EM.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=None)
@@ -214,12 +220,14 @@ else:
             # This may make assisting the solver worse but should make training the model easier!
             E_sct[:, [0, -1], :] = E_sct[:, :, [0, -1]] = 0
 
-            custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            custom_functions_EM.plotEtotalwavefield("w_E", w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
-            # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             E_val = custom_functions_EM.E(E_inc, E_sct)
-            # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield("E_val", E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+
+            # As soon as E_val is calculated, drop the third channel as it is all zeros
+            E_sct = E_sct[:2, :, :]
 
             # Save incident fields to allow for data augmentation
             # Not including any fields that are totally constant such as CHI_mu and the dead fields E3, ZH1, ZH2
@@ -238,6 +246,8 @@ else:
 
             file_name = f"instance_{str(seed).zfill(10)}.npy"
             if guess_model == 'True':
+                custom_functions_EM.plotEtotalwavefield("np.abs(w_E-w_E_pred)", np.abs(w_E-w_E_pred)[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+                custom_functions_EM.plotEtotalwavefield("np.abs(E_sct-E_sct_pred)", np.abs(E_sct-E_sct_pred)[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
                 output_file_path = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_m")
                 np.save(output_file_path, keras_stack_composed)
                 output_file_path_info = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_info_m")
@@ -258,7 +268,7 @@ else:
             E_val = custom_functions_EM.E(E_inc, E_sct)
             w_E[0, :, :] = CHI_eps * E_val[0, :, :]
             w_E[1, :, :] = CHI_eps * E_val[1, :, :]
-            # custom_functions_EM.plotEtotalwavefield(w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield("w_E", w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_old - w_E))
             x0[0:N, 0] = w_E[0, :, :].flatten('F')
             x0[N:2*N, 0] = w_E[1, :, :].flatten('F')
@@ -272,14 +282,14 @@ else:
         print("remaining time_estimate: ", time_estimate/3600, " in hours")
         print("remaining seeds: ", (seedling + seed_count - 1) - seed)
         # custom_functions_EM.plotContrastSourcewE(w_E, X1, X2)
-        # custom_functions_EM.plotEtotalwavefield(E_inc, a, X1, X2, N1, N2)
+        # custom_functions_EM.plotEtotalwavefield("E_inc", E_inc, a, X1, X2, N1, N2)
 
         # # Drop the first and last columns and rows due to finite differences at border
-        # custom_functions_EM.plotEtotalwavefield(E_inc[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-        # custom_functions_EM.plotEtotalwavefield(ZH_inc[[2, 2], 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-        # custom_functions_EM.plotEtotalwavefield(E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+        # custom_functions_EM.plotEtotalwavefield("E_inc", E_inc[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+        # custom_functions_EM.plotEtotalwavefield("ZH_inc", ZH_inc[[2, 2], 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+        # custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
         # E_val = custom_functions_EM.E(E_inc, E_sct)
-        # custom_functions_EM.plotEtotalwavefield(E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+        # custom_functions_EM.plotEtotalwavefield("E_val", E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 tic_total_end = time.time() - tic_total_start
 print("Total Running Time: ", tic_total_end)
 print("Initial guess of running time was ", time_estimate_inital, " so (tic_total_end - time_estimate_inital): ", tic_total_end - time_estimate_inital)

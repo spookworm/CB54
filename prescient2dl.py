@@ -7,7 +7,7 @@ from keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from lib import custom_functions_EM
 from lib import custom_architectures_EM
-from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError
+from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError, MeanSquaredLogarithmicError
 from keras.optimizers import SGD, Adam, RMSprop
 import keras.backend as K
 from keras.callbacks import Callback, ModelCheckpoint
@@ -20,6 +20,7 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.utils import normalize
 import time
+import glob
 
 get_ipython().run_line_magic('clear', '-sf')
 keras.backend.clear_session()
@@ -30,12 +31,14 @@ print(K.image_data_format())
 K.set_image_data_format('channels_last')
 print(K.image_data_format())
 
-directory = "F:\\"
+# CHOOSE FIELD TO TRAIN
+field_name = "E2"
 # Set the number of epochs
 num_epochs = 100
 max_batch_size = 64*32
 batch_size = int(max_batch_size/32)
 
+directory = "F:\\"
 # file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and "_info_" not in f and f.startswith("instance_")]
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances" in f]
 selected_folders = folders
@@ -46,8 +49,10 @@ selected_folders = ["instances_500", "instances_1000"]
 selected_folders = ["instances_500"]
 selected_folders = ["instances_1500", "instances_2000", "instances_2500"]
 selected_folders = ["generic"]
+selected_folders = ["generic_0000"]
+selected_folders = ["generic_0000", "generic_1000", "generic_2000", "generic_3000", "generic_4000", "generic_5000", "generic_6000", "generic_7000"]
 
-X_array = np.load('F:\\instances\\X_array.npy')
+X_array = np.load('F:\\generic_0000\\X_array.npy')
 X1 = X_array[:, :, 0]
 X2 = X_array[:, :, 1]
 
@@ -104,7 +109,6 @@ visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras_EM.png', 
 plot_model(model, to_file='.\\doc\\code_doc\\model_plot_EM.png', show_shapes=True, show_dtype=True, show_layer_names=True, rankdir="TB", expand_nested=True, dpi=96, layer_range=None, show_layer_activations=True)
 
 
-# folder = selected_folders
 for folder in selected_folders:
     # folder = 'instances_5000'
     keras.backend.clear_session()
@@ -121,38 +125,16 @@ for folder in selected_folders:
 
     train_val_list, test_list = train_test_split(file_list, test_size=0.2, random_state=42)
     train_list, val_list = train_test_split(train_val_list, test_size=0.2, random_state=42)
-    if not os.path.exists(data_folder + "_x_train.npy"):
-        x_train, y_train = custom_architectures_EM.prescient2DL_data(data_folder, train_list, N1, N2)
-        np.save(data_folder + '_x_train', x_train)
-        np.save(data_folder + '_y_train', y_train)
+    if not os.path.exists(directory + field_name + "_" + folder + "_x_train.npy"):
+        x_train, y_train = custom_architectures_EM.prescient2DL_data(field_name, data_folder, train_list, N1, N2)
+        np.save(directory + field_name + "_" + folder + "_x_train", x_train)
+        np.save(directory + field_name + "_" + folder + "_y_train", y_train)
         print("sets created: training")
     else:
         print("Loading Training Data Splits")
-        x_train = np.load(data_folder + '_x_train.npy')
-        y_train = np.load(data_folder + '_y_train.npy')
+        x_train = np.load(directory + field_name + "_" + folder + "_x_train.npy")
+        y_train = np.load(directory + field_name + "_" + folder + "_y_train.npy")
         print("sets loaded: train")
-
-    if not os.path.exists(data_folder + "_x_val.npy"):
-        x_val, y_val = custom_architectures_EM.prescient2DL_data(data_folder, test_list, N1, N2)
-        np.save(data_folder + '_x_val', x_val)
-        np.save(data_folder + '_y_val', y_val)
-        print("sets created: validation")
-    else:
-        print("Loading Validation Data Splits")
-        x_val = np.load(data_folder + '_x_val.npy')
-        y_val = np.load(data_folder + '_y_val.npy')
-        print("sets loaded: validation")
-
-    if not os.path.exists(data_folder + "_x_test.npy"):
-        x_test, y_test = custom_architectures_EM.prescient2DL_data(data_folder, val_list, N1, N2)
-        np.save(data_folder + '_x_test', x_test)
-        np.save(data_folder + '_y_test', y_test)
-        print("sets created: test")
-    else:
-        print("Loading Testing Data Splits")
-        x_test = np.load(data_folder + '_x_test.npy')
-        y_test = np.load(data_folder + '_y_test.npy')
-        print("sets loaded: test")
 
     # CALCULATE THE STANDARDIZATION TERMS
     mean_per_channel = tf.reduce_mean(y_train, axis=[0, 1, 2])
@@ -160,26 +142,39 @@ for folder in selected_folders:
     std_per_channel = tf.math.reduce_std(y_train, axis=[0, 1, 2])
     adjusted_stddev_per_channel = tf.maximum(std_per_channel, 1.0/np.sqrt(N1*N2))
     tf.print(adjusted_stddev_per_channel)
-    np.save(data_folder + "\\mean_per_channel", mean_per_channel.numpy())
-    np.save(data_folder + "\\adjusted_stddev_per_channel", adjusted_stddev_per_channel.numpy())
+    np.save(directory + "\\mean_per_channel_" + field_name + "_" + folder, mean_per_channel.numpy())
+    np.save(directory + "\\adjusted_stddev_per_channel_" + field_name + "_" + folder, adjusted_stddev_per_channel.numpy())
 
+    if not os.path.exists(directory + field_name + "_" + folder + "_x_val.npy"):
+        x_val, y_val = custom_architectures_EM.prescient2DL_data(field_name, data_folder, test_list, N1, N2)
+        np.save(directory + field_name + "_" + folder + '_x_val', x_val)
+        np.save(directory + field_name + "_" + folder + '_y_val', y_val)
+        print("sets created: validation")
+    else:
+        print("Loading Validation Data Splits")
+        x_val = np.load(directory + field_name + "_" + folder + '_x_val.npy')
+        y_val = np.load(directory + field_name + "_" + folder + '_y_val.npy')
+        print("sets loaded: validation")
+
+    if not os.path.exists(directory + field_name + "_" + folder + "_x_test.npy"):
+        x_test, y_test = custom_architectures_EM.prescient2DL_data(field_name, data_folder, val_list, N1, N2)
+        np.save(directory + field_name + "_" + folder + '_x_test', x_test)
+        np.save(directory + field_name + "_" + folder + '_y_test', y_test)
+        print("sets created: test")
+    else:
+        print("Loading Testing Data Splits")
+        x_test = np.load(directory + field_name + "_" + folder + '_x_test.npy')
+        y_test = np.load(directory + field_name + "_" + folder + '_y_test.npy')
+        print("sets loaded: test")
+
+    # PERFORM STANDARDIZATION
     y_train = tf.image.per_image_standardization(y_train)
-    # # For y_val, even though we can standardize seperately to y_train, it is perhaps safer to treat it as independant and use the y_train parameters since this is what the predict will have access to at time of inference.
-    # for channel in range(y_val.shape[-1]):
-    #     y_val[:, :, :, channel] = (y_val[:, :, :, channel] - mean_per_channel[channel])/adjusted_stddev_per_channel[channel]
-    # y_val = tf.convert_to_tensor(y_val, dtype=tf.float64)
     y_val = tf.image.per_image_standardization(y_val)
-    # # For y_test, the same standardization process must be used as training since this is what the predict will have access to at time of inference.
-    # for channel in range(y_test.shape[-1]):
-    #     y_test[:, :, :, channel] = (y_test[:, :, :, channel] - mean_per_channel[channel])/adjusted_stddev_per_channel[channel]
-    # y_test = tf.convert_to_tensor(y_test, dtype=tf.float64)
     y_test = tf.image.per_image_standardization(y_test)
 
     # Determine the total number of samples in the training dataset
     total_samples = len(x_train)
-
     # max_batch_size = custom_architectures_EM.batch_size_max(model, x_train, y_train)
-
     # Calculate the number of steps per epoch
     steps_per_epoch = total_samples // batch_size
     print('steps_per_epoch:', steps_per_epoch)
@@ -240,7 +235,8 @@ for folder in selected_folders:
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
     # model.compile(optimizer=SGD(learning_rate=0.001), loss='mean_squared_error', metrics=MeanSquaredError())
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
-    model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
+    # model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
+    model.compile(optimizer='adam', loss='MeanSquaredLogarithmicError', metrics=MeanSquaredLogarithmicError())
     # model.compile(optimizer='adam', loss='MeanAbsolutePercentageError', metrics=MeanAbsolutePercentageError())
     # model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
 
@@ -251,14 +247,6 @@ for folder in selected_folders:
         with open('training_history.pkl', 'rb') as file:
             history = pickle.load(file)
         initial_epoch = len(history['loss'])
-
-    # if os.path.exists('model_checkpoint.h5') and os.path.exists('training_history.pkl'):
-    #     if num_epochs < len(history['loss']):
-    #         history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, initial_epoch=len(history['loss']), callbacks=[checkpoint, plot_history])
-    #         print("Running with history!")
-    #     print("Already complete epochs!")
-    # else:
-    #     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history])
     from keras.callbacks import ReduceLROnPlateau
     reduce_lr = ReduceLROnPlateau(factor=0.1, patience=5)
 
@@ -283,6 +271,30 @@ for folder in selected_folders:
         del x_train, y_train, x_val, y_val
     # , x_test, y_test
 
+# GET GLOBAL MEAN FROM ALL TRAINING SAMPLES
+mean_list_real = []
+mean_list_imag = []
+pattern_mean = directory + "\\mean_per_channel_" + field_name + "_" + "*" + ".npy"
+matched_files_mean = glob.glob(pattern_mean)
+for file_mean in matched_files_mean:
+    array = np.load(file_mean)
+    mean_list_real.append(array[0])
+    mean_list_imag.append(array[1])
+np.save(directory + "\\mean_per_channel_" + field_name, np.array([np.mean(mean_list_real), np.mean(mean_list_imag)]))
+###
+
+# GET GLOBAL STD DEV FROM ALL TRAINING SAMPLES
+stddev_list_real = []
+stddev_list_imag = []
+pattern_stddev = directory + "\\adjusted_stddev_per_channel_" + field_name + "_" + "*" + ".npy"
+matched_files_stddev = glob.glob(pattern_stddev)
+for file_stddev in matched_files_stddev:
+    array = np.load(file_stddev)
+    stddev_list_real.append(array[0])
+    stddev_list_imag.append(array[1])
+np.save(directory + "\\adjusted_stddev_per_channel_" + field_name, np.array([np.mean(stddev_list_real), np.mean(stddev_list_imag)]))
+###
+
 # visualkeras.layered_view(model, to_file='output.png').show() # write and show
 # # visualkeras.layered_view(model).show() # display using your system viewer
 model = custom_architectures_EM.DL_model(input_shape)
@@ -299,7 +311,8 @@ model = load_model('model_checkpoint.h5')
 # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
 # model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
 # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
-model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
+# model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
+model.compile(optimizer='adam', loss='MeanSquaredLogarithmicError', metrics=MeanSquaredLogarithmicError())
 # model.compile(optimizer='adam', loss='MeanAbsolutePercentageError', metrics=MeanAbsolutePercentageError())
 
 # Evaluate the model using your test dataset

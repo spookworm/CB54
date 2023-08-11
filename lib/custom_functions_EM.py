@@ -697,21 +697,21 @@ def plotEMContrast(CHI_eps, CHI_mu, X1, X2):
     plt.show()
 
 
-def plotEtotalwavefield(E, a, X1, X2, N1, N2):
+def plotEtotalwavefield(field_name, field, a, X1, X2, N1, N2):
     phi = np.arange(0, 2*np.pi, 0.01)
     import matplotlib.pyplot as plt
     # Plot wave fields in two-dimensional space
     fig, axs = plt.subplots(1, 2, figsize=(18, 12))
-    im1 = axs[0].imshow(abs(E[0]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
+    im1 = axs[0].imshow(np.abs(field[0]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
     axs[0].set_xlabel('x$_2$ $\\rightarrow$')
     axs[0].set_ylabel('$\\leftarrow$ x$_1$')
-    axs[0].set_title('2D Electric field E1', fontsize=13)
+    axs[0].set_title('2D Electric field E1\n' + field_name, fontsize=13)
     fig.colorbar(im1, ax=axs[0], orientation='horizontal')
     # axs[0].plot(a*np.cos(phi), a*np.sin(phi), 'w')
-    im2 = axs[1].imshow(abs(E[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
+    im2 = axs[1].imshow(np.abs(field[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
     axs[1].set_xlabel('x$_2$ $\\rightarrow$')
     axs[1].set_ylabel('$\\leftarrow$ x$_1$')
-    axs[1].set_title('2D Electric field E2', fontsize=13)
+    axs[1].set_title('2D Electric field E2\n' + field_name, fontsize=13)
     fig.colorbar(im2, ax=axs[1], orientation='horizontal')
     # axs[1].plot(a*np.cos(phi), a*np.sin(phi), 'w')
     plt.show()
