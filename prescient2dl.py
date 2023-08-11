@@ -35,22 +35,15 @@ print(K.image_data_format())
 field_name = "E2"
 # Set the number of epochs
 num_epochs = 100
-max_batch_size = 64*32
+max_batch_size = 128*32
 batch_size = int(max_batch_size/32)
 
 directory = "F:\\"
 # file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and "_info_" not in f and f.startswith("instance_")]
 folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances" in f]
 selected_folders = folders
-selected_folders = ["instances_X"]
-selected_folders = ["instances_5000"]
-selected_folders = ["instances"]
-selected_folders = ["instances_500", "instances_1000"]
-selected_folders = ["instances_500"]
-selected_folders = ["instances_1500", "instances_2000", "instances_2500"]
-selected_folders = ["generic"]
-selected_folders = ["generic_0000"]
 selected_folders = ["generic_0000", "generic_1000", "generic_2000", "generic_3000", "generic_4000", "generic_5000", "generic_6000", "generic_7000"]
+selected_folders = ["generic_0000"]
 
 X_array = np.load('F:\\generic_0000\\X_array.npy')
 X1 = X_array[:, :, 0]
