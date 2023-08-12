@@ -248,6 +248,54 @@ else:
             if guess_model == 'True':
                 custom_functions_EM.plotEtotalwavefield("np.abs(w_E-w_E_pred)", np.abs(w_E-w_E_pred)[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
                 custom_functions_EM.plotEtotalwavefield("np.abs(E_sct-E_sct_pred)", np.abs(E_sct-E_sct_pred)[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+
+                # # Try to establish if the DL is having problem with a physically interpreptable component of the field
+                # # This might be a good loss function too? Helmholtz-Hodge decomposition
+                # # Use as illustration
+                # vector_field = E_sct[:, 1:-1, 1:-1][0].copy() - E_sct_pred[:, 1:-1, 1:-1][0].copy()
+                # vector_field = E_sct[:, 1:-1, 1:-1][1].copy() - E_sct_pred[:, 1:-1, 1:-1][1].copy()
+                # vector_field = E_sct[:, 1:-1, 1:-1][1]
+
+                # # Compute the gradient of the vector field
+                # gradient = np.gradient(vector_field)
+
+                # # Compute the divergence of the vector field
+                # divergence = np.real(gradient[0] + gradient[1])
+
+                # # Compute the irrotational component
+                # irrotational = np.gradient(divergence)
+
+                # # # Compute the solenoidal component
+                # # solenoidal = gradient - irrotational
+
+                # # Plot the vector field
+                # plt.figure(figsize=(8, 6))
+                # plt.subplot(2, 2, 1)
+                # plt.imshow(np.abs(vector_field))
+                # plt.title("Vector Field Magnitude")
+
+                # # Plot the gradient magnitude
+                # plt.subplot(2, 2, 2)
+                # plt.imshow(np.abs(gradient[0]), cmap='jet')
+                # plt.title("Gradient Magnitude")
+                # plt.colorbar()
+
+                # # Plot the divergence
+                # plt.subplot(2, 2, 3)
+                # plt.imshow(divergence, cmap='jet')
+                # plt.title("Divergence")
+                # plt.colorbar()
+
+                # # Plot the irrotational component magnitude
+                # plt.subplot(2, 2, 4)
+                # plt.imshow(np.abs(irrotational[0]), cmap='jet')
+                # plt.title("Irrotational Component Magnitude")
+                # plt.colorbar()
+
+                # plt.tight_layout()
+                # plt.show()
+                # # No indication that there is a bias in with component
+
                 output_file_path = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_m")
                 np.save(output_file_path, keras_stack_composed)
                 output_file_path_info = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_info_m")

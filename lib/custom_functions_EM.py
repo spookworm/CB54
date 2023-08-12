@@ -698,7 +698,7 @@ def plotEMContrast(CHI_eps, CHI_mu, X1, X2):
 
 
 def plotEtotalwavefield(field_name, field, a, X1, X2, N1, N2):
-    phi = np.arange(0, 2*np.pi, 0.01)
+    # phi = np.arange(0, 2*np.pi, 0.01)
     import matplotlib.pyplot as plt
     # Plot wave fields in two-dimensional space
     fig, axs = plt.subplots(1, 2, figsize=(18, 12))
