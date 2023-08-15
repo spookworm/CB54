@@ -1,54 +1,83 @@
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-import keras
-from keras.models import load_model
-from tensorflow.keras.utils import plot_model
-from lib import custom_functions_EM
-from lib import custom_architectures_EM
-from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError, MeanSquaredLogarithmicError
-from keras.optimizers import SGD, Adam, RMSprop
-import keras.backend as K
-from keras.callbacks import Callback, ModelCheckpoint
-import pickle
-import random
-import visualkeras
-from PIL import ImageFont
 from IPython import get_ipython
-import tensorflow as tf
+from keras.callbacks import Callback, ModelCheckpoint
+from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSquaredError, MeanSquaredLogarithmicError
+from keras.models import load_model
+from keras.optimizers import SGD, Adam, RMSprop
+from lib import custom_architectures_EM
+from lib import custom_functions_EM
+from lib import custom_tensorboard
+from PIL import ImageFont
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.utils import normalize
-import time
+from tensorflow.keras.utils import plot_model
+import datetime
 import glob
+import keras
+import keras.backend as K
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import pickle
+import random
+import shutil
+import subprocess
+import sys
+import tensorflow as tf
+import time
+import visualkeras
+import webbrowser
+import winsound
 
 get_ipython().run_line_magic('clear', '-sf')
+custom_functions_EM.plot_red_square()
 keras.backend.clear_session()
 
-# print current format
 print(K.image_data_format())
-# set format
 K.set_image_data_format('channels_last')
 print(K.image_data_format())
+# tf.keras.backend.set_floatx('float64')
+# tf.keras.backend.set_floatx('float32')
 
-# CHOOSE FIELD TO TRAIN
-field_name = "E2"
+# USER INPUTS: START
+# Choose field to train
+field_name = "E1"
 # Set the number of epochs
 num_epochs = 100
-max_batch_size = 128*32
-batch_size = int(max_batch_size/32)
+max_batch_size = 256*32
 
 directory = "F:\\"
 # file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and "_info_" not in f and f.startswith("instance_")]
-folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "instances" in f]
+folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "generic" in f]
 selected_folders = folders
-selected_folders = ["generic_0000", "generic_1000", "generic_2000", "generic_3000", "generic_4000", "generic_5000", "generic_6000", "generic_7000"]
-selected_folders = ["generic_0000"]
+# selected_folders = ["generic_00000"]
+# selected_folders = ["generic_00000", "generic_01000", "generic_02000", "generic_03000"]
 
-X_array = np.load('F:\\generic_0000\\X_array.npy')
+# Tensorboard Settings
+pid_name = "tensorboard.exe"
+mydir = "C:\\Users\\antho\\AppData\\Local\\Temp\\.tensorboard-info\\"
+url = "http://localhost:6006/?darkMode=true"
+logdir = 'logs/fit'
+# USER INPUTS: END
+
+# Tensorboard session: START
+custom_tensorboard.kill_processes_by_name(pid_name)
+# Try to remove the tree; if it fails, throw an error using try...except.
+try:
+    shutil.rmtree(mydir)
+except OSError as e:
+    print("Error: %s - %s." % (e.filename, e.strerror))
+command = f"tensorboard --logdir {logdir}"
+subprocess.Popen(command.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+# Open the URL in the default browser
+webbrowser.open(url)
+# Tensorboard session: END
+
+
+batch_size = int(max_batch_size/32)
+X_array = np.load('F:\\generic_00000\\X_array.npy')
 X1 = X_array[:, :, 0]
 X2 = X_array[:, :, 1]
-
 
 # Filter files that end with ".npy" and do not contain "info"
 file_list = os.listdir(directory + selected_folders[0])
@@ -85,13 +114,14 @@ input_shape = (N1, N2, 4)
 # print(np.linalg.norm(np.abs(sample[:, :, 13] + 1j*sample[:, :, 14]) - np.abs(sample[:, :, 15])))
 
 # result_array = np.stack([sample[:, :, 1] + 1j*sample[:, :, 2], sample[:, :, 4] + 1j*sample[:, :, 5]])
-# custom_functions_EM.plotEtotalwavefield(result_array, 0.0001, X1, X2, N1, N2)
+# custom_functions_EM.plotEtotalwavefield("result_array", result_array, 0.0001, X1, X2, N1, N2)
 
 # result_array = np.stack([sample[:, :, 7] + 1j*sample[:, :, 8], sample[:, :, 7] + 1j*sample[:, :, 8]])
-# custom_functions_EM.plotEtotalwavefield(result_array, 0.0001, X1, X2, N1, N2)
+# custom_functions_EM.plotEtotalwavefield("result_array", result_array, 0.0001, X1, X2, N1, N2)
 
 # result_array = np.stack([sample[:, :, 10] + 1j*sample[:, :, 11], sample[:, :, 13] + 1j*sample[:, :, 14]])
 # custom_functions_EM.plotContrastSourcewE(result_array, X1, X2)
+
 
 # Create the U-Net model
 model = custom_architectures_EM.DL_model(input_shape)
@@ -131,11 +161,15 @@ for folder in selected_folders:
 
     # CALCULATE THE STANDARDIZATION TERMS
     mean_per_channel = tf.reduce_mean(y_train, axis=[0, 1, 2])
+    min_per_channel = tf.reduce_min(y_train, axis=[0, 1, 2])
+    max_per_channel = tf.reduce_max(y_train, axis=[0, 1, 2])
     tf.print(mean_per_channel)
     std_per_channel = tf.math.reduce_std(y_train, axis=[0, 1, 2])
     adjusted_stddev_per_channel = tf.maximum(std_per_channel, 1.0/np.sqrt(N1*N2))
     tf.print(adjusted_stddev_per_channel)
     np.save(directory + "\\mean_per_channel_" + field_name + "_" + folder, mean_per_channel.numpy())
+    np.save(directory + "\\min_per_channel_" + field_name + "_" + folder, min_per_channel.numpy())
+    np.save(directory + "\\max_per_channel_" + field_name + "_" + folder, max_per_channel.numpy())
     np.save(directory + "\\adjusted_stddev_per_channel_" + field_name + "_" + folder, adjusted_stddev_per_channel.numpy())
 
     if not os.path.exists(directory + field_name + "_" + folder + "_x_val.npy"):
@@ -160,10 +194,20 @@ for folder in selected_folders:
         y_test = np.load(directory + field_name + "_" + folder + '_y_test.npy')
         print("sets loaded: test")
 
-    # PERFORM STANDARDIZATION
-    y_train = tf.image.per_image_standardization(y_train)
-    y_val = tf.image.per_image_standardization(y_val)
-    y_test = tf.image.per_image_standardization(y_test)
+    # # PERFORM STANDARDIZATION
+    # y_train = tf.image.per_image_standardization(y_train)
+    # y_val = tf.image.per_image_standardization(y_val)
+    # y_test = tf.image.per_image_standardization(y_test)
+
+    # PERFORM STANDARDIZATION TO 0 AND 1
+    min_1 = "min_per_channel_" + field_name + ".npy"
+    min_per_channel_1 = np.load(directory + min_1)
+    max_1 = "max_per_channel_" + field_name + ".npy"
+    max_per_channel_1 = np.load(directory + max_1)
+    for channel in range(min_per_channel_1.shape[0]):
+        y_train[:, :, :, channel] = (y_train[:, :, :, channel] - min_per_channel_1[channel]) / (max_per_channel_1[channel] - min_per_channel_1[channel])
+        y_val[:, :, :, channel] = (y_val[:, :, :, channel] - min_per_channel_1[channel]) / (max_per_channel_1[channel] - min_per_channel_1[channel])
+        y_test[:, :, :, channel] = (y_test[:, :, :, channel] - min_per_channel_1[channel]) / (max_per_channel_1[channel] - min_per_channel_1[channel])
 
     # Determine the total number of samples in the training dataset
     total_samples = len(x_train)
@@ -200,12 +244,16 @@ for folder in selected_folders:
                 self.plot()
 
         def plot(self):
+            ignore = 0
+            if len(self.losses) < ignore:
+                ignore = 0
             plt.figure()
-            plt.plot(self.losses, label='train_loss')
-            plt.plot(self.val_losses, label='val_loss')
+            plt.semilogy(self.losses[ignore:], label='loss')
+            plt.semilogy(self.val_losses[ignore:], label='val_loss')
             plt.title('Training History')
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
+            # plt.ylabel('Mean Squared Logarithmic Error')
             plt.legend()
             plt.show()
 
@@ -213,6 +261,17 @@ for folder in selected_folders:
             self.model.save('model_checkpoint.h5')
             with open('training_history.pkl', 'wb') as file:
                 pickle.dump(self.history, file)
+
+    # # Define your custom loss function with scaling
+    # def scaled_loss(y_true, y_pred):
+    #     scaling_factor = 1e10  # Define the scaling factor
+    #     scaled_loss_value = scaling_factor * keras.losses.mean_squared_error(y_true, y_pred)  # Scale the loss
+    #     return scaled_loss_value
+
+    # def mean_squared_error_percentage(y_true, y_pred):
+    #     mse = tf.reduce_mean(tf.square(y_true - y_pred))
+    #     mse_percentage = (mse / tf.reduce_mean(tf.square(y_true))) * 100
+    #     return mse_percentage
 
     # Define the checkpoint callback
     checkpoint = ModelCheckpoint('model_checkpoint.h5', monitor='val_loss', save_best_only=True)
@@ -222,18 +281,25 @@ for folder in selected_folders:
     if os.path.exists(os.getcwd() + '\\' + 'model_checkpoint.h5'):
         print("Model checkpoint file exists!")
         model = load_model('model_checkpoint.h5')
-        # model = load_model('model_checkpoint.h5', custom_objects={'edge_loss': edge_loss})
+        # model = load_model('model_checkpoint.h5', custom_objects={'scaled_loss': scaled_loss})
+        # model = load_model('model_checkpoint.h5', custom_objects={'mean_squared_error_percentage': mean_squared_error_percentage})
 
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
     # model.compile(optimizer=SGD(learning_rate=0.001), loss='mean_squared_error', metrics=MeanSquaredError())
     # model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
     # model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
-    model.compile(optimizer='adam', loss='MeanSquaredLogarithmicError', metrics=MeanSquaredLogarithmicError())
+    # model.compile(optimizer='adam', loss='MeanSquaredLogarithmicError', metrics=MeanSquaredLogarithmicError())
+
+    model.compile(optimizer='adam', loss='mean_squared_logarithmic_error', metrics=['mean_squared_logarithmic_error'])
+
+    # model.compile(optimizer='adam', loss='mean_squared_logarithmic_error', metrics=['mean_squared_logarithmic_error'])
+    # model.compile(optimizer='adam', loss=scaled_loss, metrics=['mean_squared_logarithmic_error'])
+    # model.compile(optimizer='adam', loss=mean_squared_error_percentage, metrics=['mean_squared_logarithmic_error'])
     # model.compile(optimizer='adam', loss='MeanAbsolutePercentageError', metrics=MeanAbsolutePercentageError())
     # model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
+    # model.compile(optimizer='adam', loss=helmholtz_hodge_loss, metrics=MeanSquaredLogarithmicError())
 
-    len(model.layers)
     # Load the training history
     if os.path.exists(os.getcwd() + '\\' + 'training_history.pkl'):
         print("Training history file exists!")
@@ -243,8 +309,11 @@ for folder in selected_folders:
     from keras.callbacks import ReduceLROnPlateau
     reduce_lr = ReduceLROnPlateau(factor=0.1, patience=5)
 
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
     tic_fit_start = time.time()
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history, reduce_lr])
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=num_epochs, steps_per_epoch=steps_per_epoch, callbacks=[checkpoint, plot_history, reduce_lr, tensorboard_callback])
     tic_fit_end = time.time() - tic_fit_start
     print("Fitting Time: ", tic_fit_end)
     model.save('model_checkpoint.h5')
@@ -260,9 +329,10 @@ for folder in selected_folders:
     ignore_entries = 20
     result_dict = custom_functions_EM.plot_history_ignore(history, ignore_entries)
     custom_functions_EM.plot_loss(result_dict)
-    if len(selected_folders) > 1:
-        del x_train, y_train, x_val, y_val
+    # if len(selected_folders) > 1:
+    #     del x_train, y_train, x_val, y_val
     # , x_test, y_test
+    winsound.Beep(1000, 1000)
 
 # GET GLOBAL MEAN FROM ALL TRAINING SAMPLES
 mean_list_real = []
@@ -288,67 +358,28 @@ for file_stddev in matched_files_stddev:
 np.save(directory + "\\adjusted_stddev_per_channel_" + field_name, np.array([np.mean(stddev_list_real), np.mean(stddev_list_imag)]))
 ###
 
-# visualkeras.layered_view(model, to_file='output.png').show() # write and show
-# # visualkeras.layered_view(model).show() # display using your system viewer
-model = custom_architectures_EM.DL_model(input_shape)
-num_layers = len(model.layers)
-print("Number of layers:", num_layers)
-# visualkeras.layered_view(model, to_file='output.png', legend=True) # write to disk
-# font = ImageFont.truetype("arial.ttf", 32)  # using comic sans is strictly prohibited!
-# visualkeras.layered_view(model, legend=True, font=font).show()  # font is optional!
-# visualkeras.layered_view(model, draw_volume=False, legend=True).show()
-# plot_model(model, to_file='.\\doc\\code_doc\\model_plot.png', show_shapes=True, show_layer_names=True)
+# GET GLOBAL MIN FROM ALL TRAINING SAMPLES
+min_list_real = []
+min_list_imag = []
+pattern_min = directory + "\\min_per_channel_" + field_name + "_" + "*" + ".npy"
+matched_files_min = glob.glob(pattern_min)
+for file_min in matched_files_min:
+    array = np.load(file_min)
+    min_list_real.append(array[0])
+    min_list_imag.append(array[1])
+np.save(directory + "\\min_per_channel_" + field_name, np.array([np.min(min_list_real), np.min(min_list_imag)]))
+###
 
-model = load_model('model_checkpoint.h5')
-# model = load_model('model_checkpoint.h5', custom_objects={'edge_loss': edge_loss})
-# model.compile(optimizer='adam', loss='mean_squared_error', metrics=[MeanSquaredError(), MeanAbsoluteError(), MeanAbsolutePercentageError()])
-# model.compile(optimizer='adam', loss=edge_loss, metrics=MeanSquaredError())
-# model.compile(optimizer='adam', loss='mean_squared_error', metrics=MeanSquaredError())
-# model.compile(optimizer='adam', loss='MeanAbsoluteError', metrics=MeanAbsoluteError())
-model.compile(optimizer='adam', loss='MeanSquaredLogarithmicError', metrics=MeanSquaredLogarithmicError())
-# model.compile(optimizer='adam', loss='MeanAbsolutePercentageError', metrics=MeanAbsolutePercentageError())
+# GET GLOBAL MAX FROM ALL TRAINING SAMPLES
+max_list_real = []
+max_list_imag = []
+pattern_max = directory + "\\max_per_channel_" + field_name + "_" + "*" + ".npy"
+matched_files_max = glob.glob(pattern_max)
+for file_max in matched_files_max:
+    array = np.load(file_max)
+    max_list_real.append(array[0])
+    max_list_imag.append(array[1])
+np.save(directory + "\\max_per_channel_" + field_name, np.array([np.max(max_list_real), np.max(max_list_imag)]))
+###
 
-# Evaluate the model using your test dataset
-score = model.evaluate(x_test, y_test, verbose=0)
-# Print the evaluation results
-print('Test loss:', score[0])
-print('Test mean absolute error:', score[1])
-
-# Select an input from the test set
-custom_architectures_EM.plot_prediction_EM(data_folder, model, x_test[0], y_test[0])
-# custom_architectures_EM.plot_prediction_EM(data_folder, model, x_test[2], y_test[2])
-
-first_channel = x_test[0, :, :, 0]
-plt.imshow(first_channel, cmap='gray', interpolation='none')
-plt.show()
-first_channel = x_test[0, :, :, 1]
-plt.imshow(first_channel, cmap='gray', interpolation='none')
-plt.show()
-first_channel = x_test[0, :, :, 2]
-plt.imshow(first_channel, cmap='gray', interpolation='none')
-plt.show()
-first_channel = x_test[0, :, :, 3]
-plt.imshow(first_channel, cmap='gray', interpolation='none')
-plt.show()
-first_channel = y_test[0, :, :, 0]
-plt.imshow(first_channel, cmap='gray', interpolation='none')
-plt.show()
-first_channel = y_test[0, :, :, 1]
-plt.imshow(first_channel, cmap='gray', interpolation='none')
-plt.show()
-
-# first_channel = np.abs(y_test[0, :, :, 0] + 1j*y_test[0, :, :, 1])
-# plt.imshow(first_channel, cmap='gray', interpolation='none')
-# plt.show()
-
-# Load the training history from the pickle file
-history_file = "training_history.pkl"
-with open(history_file, 'rb') as file:
-    history = pickle.load(file)
-print(history.keys())
-# print(history.history.keys())
-
-ignore_entries = 10
-result_dict = custom_functions_EM.plot_history_ignore(history, ignore_entries)
-custom_functions_EM.plot_loss(result_dict)
-print("Fitting Time: ", tic_fit_end)
+print("Total Fitting Time: ", tic_fit_end)
