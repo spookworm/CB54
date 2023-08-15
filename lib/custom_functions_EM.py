@@ -273,6 +273,8 @@ def initEM(bessel=None):
     # print("bessel", bessel)
     if bessel is None:
         a, CHI_eps, CHI_mu = initEMContrast(eps_sct, mu_sct, X1, X2, dx)
+        # Run if wanting to create base scatter
+        # a, CHI_eps, CHI_mu = initEMContrastBase(eps_sct, mu_sct, X1, X2, dx)
     else:
         a, CHI_eps, CHI_mu = initEMContrastOrig(eps_sct, mu_sct, X1, X2)
 
@@ -293,6 +295,38 @@ def initEMContrastOrig(eps_sct, mu_sct, X1, X2):
     CHI_mu = (1-mu_sct) * (R < a)
 
     # return a, CHI_eps, CHI_mu
+    return a, CHI_eps, CHI_mu
+
+
+def initEMContrastBase(eps_sct, mu_sct, X1, X2, dx):
+    import random
+    R = np.sqrt(X1**2 + X2**2)
+
+    # half width slab / radius circle cylinder / radius sphere
+    a = 40
+    a = 8.94427
+    # a = 40*(0.5**10)
+    a_normal = a*np.sqrt(1/0.05)
+    a_cancer = a
+
+    # (1) Compute permittivity contrast
+    eps_normal = 8
+    eps_normal = 1.25
+    eps_cancer = eps_sct
+
+    CHI_eps_0 = (1-eps_normal) * (R < a_normal)
+    CHI_eps_1 = (1-eps_cancer+(eps_normal-1)) * (R < a_cancer)
+    radius_max_pix_b = int(np.floor(a_normal/dx - 0.5*a_cancer/dx))
+    CHI_eps_1 = np.roll(CHI_eps_1, shift=int(random.uniform(-radius_max_pix_b, radius_max_pix_b)), axis=0)
+    CHI_eps_1 = np.roll(CHI_eps_1, shift=int(random.uniform(-radius_max_pix_b, radius_max_pix_b)), axis=1)
+    CHI_eps = CHI_eps_0
+    CHI_eps[R > a_normal] = 0.0
+
+    # # Bessel-Approach Validation Cancer only
+    # CHI_eps = (1-eps_sct) * (R < a)
+
+    # (2) Compute permeability contrast
+    CHI_mu = (1-mu_sct) * (R < a)
     return a, CHI_eps, CHI_mu
 
 
@@ -727,14 +761,34 @@ def plot_history_ignore(history, ignore_entries):
 
 def plot_loss(history):
     # Plot the loss
-    plt.plot(history['loss'], label='Training Loss')
-    # plt.yscale('log')
-    plt.plot(history['val_loss'], label='Validation Loss')
-    # plt.yscale('log')
+    plt.semilogy(history['loss'], label='Training Loss')
+    plt.semilogy(history['val_loss'], label='Validation Loss')
     plt.title('Loss over Epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
+    plt.show()
+
+
+def plot_red_square():
+    # Create a new figure and axis
+    fig, ax = plt.subplots()
+
+    # Create a red square patch
+    square = plt.Rectangle((0, 0), 1, 1, fc='red')
+
+    # Add the square patch to the axis
+    ax.add_patch(square)
+
+    # Set the axis limits
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    # Remove the axis ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # Display the plot
     plt.show()
 
 

@@ -16,6 +16,14 @@ from sklearn.preprocessing import normalize
 from tensorflow.keras import initializers
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 import sys
+from keras.models import Model
+from keras.layers import Input, Activation, Concatenate
+from keras.layers import Dropout
+from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import GlobalAveragePooling2D
+from keras import regularizers
+from keras.layers import Lambda, Subtract
+
 
 def batch_size_max(model, x_train, y_train):
     # Determine the maximum batch size
@@ -91,6 +99,67 @@ def plot_prediction_EM(folder_outputs, model, input_data, output_data):
     plot_examples(np.abs(input_field), np.abs(output_field_1), np.abs(predicted_field_1))
 
 
+def plot_prediction_EM_Noise(folder_outputs, model, input_data, output_data):
+    # Predict the output
+    predicted_output = model.predict(np.expand_dims(input_data, axis=0))
+    print("predicted_output.shape", predicted_output.shape)
+    # Reshape the predicted output to match the original shape
+    predicted_output = np.squeeze(predicted_output)
+    print("predicted_output.shape", predicted_output.shape)
+
+    print("output_data.shape", output_data.shape)
+    print("input_data.shape", input_data.shape)
+    output_transpose = np.transpose(output_data, (2, 0, 1))
+    predicted_transpose = np.transpose(predicted_output, (2, 0, 1))
+    input_transpose = np.transpose(input_data, (2, 0, 1))
+    print("predicted_transpose.shape", predicted_transpose.shape)
+
+    input_field = input_transpose[0, :, :] + 1j*input_transpose[1, :, :]
+    output_field_1 = output_transpose[0, :, :] + 1j*output_transpose[1, :, :]
+    predicted_field_1 = predicted_transpose[0, :, :] + 1j*predicted_transpose[1, :, :]
+
+    def plot_examples(input_data, output_data, predicted_output):
+        from matplotlib.ticker import StrMethodFormatter
+
+        # Find the minimum and maximum values among the data
+        # vmin = np.min([output_data, np.abs(output_data-predicted_output), predicted_output])
+        # vmax = np.max([output_data, np.abs(output_data-predicted_output), predicted_output])
+        # vmin = np.min([output_data])
+        # vmax = np.max([output_data])
+
+        fig, axes = plt.subplots(nrows=2, ncols=2)
+
+        im1 = axes[0, 0].imshow(input_data, cmap='gray')
+        # im1.set_clim(0, 255)
+        fig.colorbar(im1, ax=axes[0, 0], format=StrMethodFormatter('{x:01.1f}'))
+        axes[0, 0].set_title('Geometry (minus 1)')
+        axes[0, 0].axis('off')
+
+        im2 = axes[0, 1].imshow(np.abs(output_data), cmap='jet', interpolation='none')
+        # im2.set_clim(vmin, vmax)
+        fig.colorbar(im2, ax=axes[0, 1], format=StrMethodFormatter('{x:01.2e}'))
+        axes[0, 1].set_title('Truth')
+        axes[0, 1].axis('off')
+
+        im3 = axes[1, 0].imshow(np.abs(output_data-predicted_output), cmap='jet', interpolation='none')
+        # im3.set_clim(vmin, vmax)
+        fig.colorbar(im3, ax=axes[1, 0], format=StrMethodFormatter('{x:01.2e}'))
+        axes[1, 0].set_title('Difference')
+        axes[1, 0].axis('off')
+
+        im4 = axes[1, 1].imshow(predicted_output, cmap='jet', interpolation='none')
+        # im4.set_clim(vmin, vmax)
+        fig.colorbar(im4, ax=axes[1, 1], format=StrMethodFormatter('{x:01.2e}'))
+        axes[1, 1].set_title('Predicted Output')
+        axes[1, 1].axis('off')
+
+        plt.subplots_adjust(wspace=0.05, hspace=0.2)
+
+        plt.show()
+
+    plot_examples(np.abs(input_field), np.abs(output_field_1), np.abs(predicted_field_1))
+
+
 def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
     # 00: np.real(CHI_eps)
     # 01: real complex_separation(E_inc[0, :, :]),
@@ -124,9 +193,27 @@ def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
         elif field_name == "E2":
             input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 4], axis=-1), np.expand_dims(data[:, :, :, 5], axis=-1), np.expand_dims(data[:, :, :, 6], axis=-1)], axis=-1)
             output_data = np.concatenate([np.expand_dims(data[:, :, :, 13], axis=-1), np.expand_dims(data[:, :, :, 14], axis=-1)], axis=-1)
+        elif field_name == "E1_noise":
+            # 00: E_sct_pred[0, :, :]
+            # 01: E_sct_pred[0, :, :]
+            # 02: E_sct_pred[0, :, :]
+            # 06: E_sct[0, :, :]
+            # 07: E_sct[0, :, :]
+            # 08: E_sct[0, :, :]
+            input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1)], axis=-1)
+            output_data = np.concatenate([np.expand_dims(data[:, :, :, 6], axis=-1), np.expand_dims(data[:, :, :, 7], axis=-1)], axis=-1)
+        elif field_name == "E2_noise":
+            # 03: E_sct_pred[1, :, :]
+            # 04: E_sct_pred[1, :, :]
+            # 05: E_sct_pred[1, :, :]
+            # 09: E_sct[1, :, :]
+            # 10: E_sct[1, :, :]
+            # 11: E_sct[1, :, :]
+            input_data = np.concatenate([np.expand_dims(data[:, :, :, 3], axis=-1), np.expand_dims(data[:, :, :, 4], axis=-1)], axis=-1)
+            output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
         else:
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            print("WHAT FIELD ARE YOU TRYING TO PREDICT?")
+            print("WHAT ARE YOU TRYING TO PREDICT?")
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             sys.exit(1)
 
@@ -152,7 +239,6 @@ def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
         # output_data = np.concatenate([np.transpose(np.expand_dims(w_E_00, axis=0), (1, 2, 0)), np.transpose(np.expand_dims(w_E_01, axis=0), (1, 2, 0))], axis=-1)
         # y_list.append(output_data)
 
-
         # DON'T AUGMENT HERE, TRY USING KERAS FUNCTIONS
         # for k in range(1, 4):
         #     x_list.append(np.rot90(input_data, k))
@@ -165,8 +251,12 @@ def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
     x_list = np.array(x_list)
     y_list = np.array(y_list)
     # Step 2: Reshape the data
-    x_list = x_list.reshape(-1, N1, N2, 4)
-    y_list = y_list.reshape(-1, N1, N2, 2)
+    if field_name == "E1" or field_name == "E2":
+        x_list = x_list.reshape(-1, N1, N2, 4)
+        y_list = y_list.reshape(-1, N1, N2, 2)
+    elif field_name == "E1_noise" or field_name == "E2_noise":
+        x_list = x_list.reshape(-1, N1, N2, 2)
+        y_list = y_list.reshape(-1, N1, N2, 2)
     return x_list, y_list
 
 
@@ -344,120 +434,86 @@ def model_scattered_field(input_shape):
     return model
 
 
-# def model_scattered_fieldUP(input_shape):
-def DL_model(input_shape):
+# def DL_model(input_shape):
+def DL_modelGATE(input_shape):
     # Input layer
     inputs = Input(input_shape)
 
     # Contracting path
     # conv0 = BatchNormalization()(inputs)
-    conv0 = Conv2D(filters=8, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(inputs)
-    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv0)
-    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv0)
-    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv0)
-    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv0)
-    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv0)
-    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv0)
-    # pool0 = MaxPooling2D(pool_size=(1, 1))(conv0)
+    conv0_in = Conv2D(filters=8, kernel_size=3, strides=2, padding='same', data_format="channels_last", use_bias=True)(inputs)
+    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv0_in)
+    conv0_lin = Conv2D(filters=8, kernel_size=3, strides=1, padding='same', data_format="channels_last", use_bias=True)(conv0)
+    conv0_gate = tf.keras.layers.Activation('sigmoid')(conv0_lin)
+    conv0 = tf.keras.layers.Add()([conv0_in, conv0_gate])
+    # pool0 = MaxPooling2D(pool_size=(2, 2))(conv0)
 
-    conv1 = BatchNormalization()(conv0)
-    conv1 = Conv2D(filters=16, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(conv1)
-    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv1)
-    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv1)
-    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv1)
-    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv1)
-    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv1)
-    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv1)
-    # pool1 = MaxPooling2D(pool_size=(1, 1))(conv1)
+    # conv1 = BatchNormalization()(conv0)
+    conv1_in = Conv2D(filters=16, kernel_size=3, strides=2, padding='same', data_format="channels_last", use_bias=True)(conv0)
+    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv1_in)
+    conv1_lin = Conv2D(filters=16, kernel_size=3, strides=1, padding='same', data_format="channels_last", use_bias=True)(conv1)
+    conv1_gate = tf.keras.layers.Activation('sigmoid')(conv1_lin)
+    conv1 = tf.keras.layers.Add()([conv1_in, conv1_gate])
+    # pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
-    conv2 = BatchNormalization()(conv1)
-    conv2 = Conv2D(filters=32, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(conv2)
-    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv2)
-    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv2)
-    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv2)
-    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv2)
-    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv2)
-    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv2)
-    # pool2 = MaxPooling2D(pool_size=(1, 1))(conv2)
+    # conv2 = BatchNormalization()(conv1)
+    conv2_in = Conv2D(filters=32, kernel_size=3, strides=2, padding='same', data_format="channels_last", use_bias=True)(conv1)
+    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv2_in)
+    conv2_lin = Conv2D(filters=32, kernel_size=3, strides=1, padding='same', data_format="channels_last", use_bias=True)(conv2)
+    conv2_gate = tf.keras.layers.Activation('sigmoid')(conv2_lin)
+    conv2 = tf.keras.layers.Add()([conv2_in, conv2_gate])
+    # pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
 
-    conv3 = BatchNormalization()(conv2)
-    conv3 = Conv2D(filters=64, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(conv3)
-    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv3)
-    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv3)
-    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv3)
-    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv3)
-    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv3)
-    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv3)
-    # pool3 = MaxPooling2D(pool_size=(1, 1))(conv3)
+    # conv3 = BatchNormalization()(conv2)
+    conv3_in = Conv2D(filters=64, kernel_size=3, strides=2, padding='same', data_format="channels_last", use_bias=True)(conv2)
+    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv3_in)
+    conv3_lin = Conv2D(filters=64, kernel_size=3, strides=1, padding='same', data_format="channels_last", use_bias=True)(conv3)
+    conv3_gate = tf.keras.layers.Activation('sigmoid')(conv3_lin)
+    conv3 = tf.keras.layers.Add()([conv3_in, conv3_gate])
+    # pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
 
-    conv4 = BatchNormalization()(conv3)
-    conv4 = Conv2D(filters=128, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(conv4)
-    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv4)
-    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv4)
-    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv4)
-    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv4)
-    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv4)
-    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(conv4)
-    # pool4 = MaxPooling2D(pool_size=(1, 1))(conv4)
+    # conv3 = BatchNormalization()(conv3)
+    conv4_in = Conv2D(filters=128, kernel_size=3, strides=2, padding='same', data_format="channels_last", use_bias=True)(conv3)
+    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv4_in)
+    conv4_lin = Conv2D(filters=128, kernel_size=3, strides=1, padding='same', data_format="channels_last", use_bias=True)(conv4)
+    conv4_gate = tf.keras.layers.Activation('sigmoid')(conv4_lin)
+    conv4 = tf.keras.layers.Add()([conv4_in, conv4_gate])
+    # pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
 
     # Bottom layer
-    conv5 = Conv2D(filters=256, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(conv4)
+    conv5 = Conv2D(filters=256, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv4)
     bottom = Conv2D(filters=256, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", name='bottom')(conv5)
+    # , activity_regularizer=regularizers.l2(0.01)
 
     # Expanding path
-    # up5 = Conv2DTranspose(filters=128, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(bottom)
-    up5 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(bottom)
-    up5 = Dropout(0.2, input_shape=(2,), seed=42)(up5)
-    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up5)
-    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up5)
-    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up5)
-    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up5)
-    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up5)
-    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up5)
+    up5 = Conv2DTranspose(filters=128, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(bottom)
+    # up5 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(bottom)
+    up5 = Dropout(0.01, seed=42)(up5)
+    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up5)
     merge5 = Concatenate(axis=-1)([conv4, up5])
     # merge5 = BatchNormalization()(merge5)
 
-    # up6 = Conv2DTranspose(filters=64, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge5)
-    up6 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge5)
-    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up6)
-    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up6)
-    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up6)
-    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up6)
-    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up6)
-    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up6)
+    up6 = Conv2DTranspose(filters=64, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge5)
+    # up6 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge5)
+    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up6)
     merge4 = Concatenate(axis=-1)([conv3, up6])
     # merge4 = BatchNormalization()(merge4)
 
-    # up7 = Conv2DTranspose(filters=32, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge4)
-    up7 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge4)
-    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up7)
-    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up7)
-    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up7)
-    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up7)
-    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up7)
-    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up7)
+    up7 = Conv2DTranspose(filters=32, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge4)
+    # up7 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge4)
+    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up7)
     merge3 = Concatenate(axis=-1)([conv2, up7])
     # merge3 = BatchNormalization()(merge3)
 
-    # up8 = Conv2DTranspose(filters=16, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge3)
-    up8 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge3)
-    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up8)
-    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up8)
-    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up8)
-    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up8)
-    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up8)
-    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up8)
+    up8 = Conv2DTranspose(filters=16, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge3)
+    # up8 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge3)
+    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up8)
     merge2 = Concatenate(axis=-1)([conv1, up8])
     # merge2 = BatchNormalization()(merge2)
 
-    # up9 = Conv2DTranspose(filters=8, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge2)
-    up9 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge2)
-    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up9)
-    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up9)
-    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up9)
-    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up9)
-    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up9)
-    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up9)
+    up9 = Conv2DTranspose(filters=8, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge2)
+    # up9 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge2)
+    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up9)
 
     # # Blurring layer
     # up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='linear', padding='same', data_format="channels_last")(up9)
@@ -466,13 +522,142 @@ def DL_model(input_shape):
     # merge1 = BatchNormalization()(merge1)
 
     # Output layer
-    up10 = Conv2DTranspose(filters=2, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge1)
-    up10 = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up10)
-    up10 = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up10)
-    up10 = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up10)
-    up10 = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up10)
-    up10 = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up10)
-    outputs = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(up10)
+    up10 = Conv2DTranspose(filters=8, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(merge1)
+    up10 = Conv2D(filters=4, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up10)
+    outputs = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up10)
+
+    # Create the model
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
+
+
+
+# def model_scattered_fieldUP(input_shape):
+def DL_model(input_shape):
+    # Input layer
+    inputs = Input(input_shape)
+
+    conv0 = BatchNormalization()(inputs)
+    conv0 = Conv2D(filters=8, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv0)
+    conv0 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv0)
+    # pool0 = MaxPooling2D(pool_size=(1, 1))(conv0)
+
+    # conv1 = BatchNormalization()(conv0)
+    conv1 = Conv2D(filters=16, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv0)
+    # conv1 = Conv2D(filters=16, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv0)
+    conv1 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv1)
+    # pool1 = MaxPooling2D(pool_size=(1, 1))(conv1)
+
+    # conv2 = BatchNormalization()(conv1)
+    conv2 = Conv2D(filters=32, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv1)
+    # conv2 = Conv2D(filters=32, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv1)
+    conv2 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv2)
+    # pool2 = MaxPooling2D(pool_size=(1, 1))(conv2)
+
+    # conv3 = BatchNormalization()(conv2)
+    conv3 = Conv2D(filters=64, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv2)
+    # conv3 = Conv2D(filters=64, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv2)
+    conv3 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv3)
+    # pool3 = MaxPooling2D(pool_size=(1, 1))(conv3)
+
+    # conv4 = BatchNormalization()(conv3)
+    conv4 = Conv2D(filters=128, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv3)
+    # conv4 = Conv2D(filters=128, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv3)
+    conv4 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv4)
+    # pool4 = MaxPooling2D(pool_size=(1, 1))(conv4)
+
+    # Bottom layer
+    conv5 = Conv2D(filters=256, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(conv4)
+    bottom = Conv2D(filters=256, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", name='bottom')(conv5)
+    # bottom = Dropout(0.01, seed=42)(bottom)
+    # , activity_regularizer=regularizers.l2(0.01)
+
+    # Expanding path
+    up5 = Conv2DTranspose(filters=128, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(bottom)
+    # up5 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(bottom)
+    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up5)
+    up5 = Conv2D(filters=128, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up5)
+    # up5 = BatchNormalization()(up5)
+    merge5 = Concatenate(axis=-1)([conv4, up5])
+
+    up6 = Conv2DTranspose(filters=64, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge5)
+    # up6 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge5)
+    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up6)
+    up6 = Conv2D(filters=64, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up6)
+    # up6 = BatchNormalization()(up6)
+    merge4 = Concatenate(axis=-1)([conv3, up6])
+
+    up7 = Conv2DTranspose(filters=32, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge4)
+    # up7 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge4)
+    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up7)
+    up7 = Conv2D(filters=32, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up7)
+    # up7 = BatchNormalization()(up7)
+    merge3 = Concatenate(axis=-1)([conv2, up7])
+
+    up8 = Conv2DTranspose(filters=16, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge3)
+    # up8 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge3)
+    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up8)
+    up8 = Conv2D(filters=16, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up8)
+    # up8 = BatchNormalization()(up8)
+    merge2 = Concatenate(axis=-1)([conv1, up8])
+
+    up9 = Conv2DTranspose(filters=8, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last")(merge2)
+    # up9 = UpSampling2D(size=2, interpolation="gaussian", data_format="channels_last")(merge2)
+    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up9)
+    up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up9)
+    # up9 = BatchNormalization()(up9)
+    merge1 = Concatenate(axis=-1)([conv0, up9])
+
+    # # Blurring layer
+    # up9 = Conv2D(filters=8, kernel_size=3, strides=1, activation='linear', padding='same', data_format="channels_last")(up9)
+
+    # Output layer
+    up10 = Conv2DTranspose(filters=8, kernel_size=3, strides=2, activation='elu', padding='same', data_format="channels_last", use_bias=True)(merge1)
+    up10 = Conv2D(filters=4, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up10)
+    outputs = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last", use_bias=True)(up10)
+
+    # # Denoising Encoder
+    # outputs_dn = Conv2D(4, (3, 3), activation="relu", padding="same", data_format="channels_last")(outputs)
+    # outputs_dn1 = MaxPooling2D((2, 2), padding="same", data_format="channels_last")(outputs_dn)
+    # outputs_dn2 = Conv2D(8, (3, 3), activation="relu", padding="same", data_format="channels_last")(outputs_dn1)
+    # outputs_dn3 = MaxPooling2D((2, 2), padding="same", data_format="channels_last")(outputs_dn2)
+    # outputs_dn4 = Conv2D(16, (3, 3), activation="relu", padding="same", data_format="channels_last")(outputs_dn3)
+    # outputs_dn5 = MaxPooling2D((2, 2), padding="same", data_format="channels_last")(outputs_dn4)
+    # outputs_dn6 = Conv2D(32, (3, 3), activation="relu", padding="same", data_format="channels_last")(outputs_dn5)
+    # outputs_dn7 = MaxPooling2D((2, 2), padding="same", data_format="channels_last")(outputs_dn6)
+    # outputs_dn8 = Conv2D(64, (3, 3), activation="relu", padding="same", data_format="channels_last")(outputs_dn7)
+    # outputs_dn9 = MaxPooling2D((2, 2), padding="same", data_format="channels_last")(outputs_dn8)
+    # outputs_dn10 = Conv2D(128, (3, 3), activation="relu", padding="same", data_format="channels_last")(outputs_dn9)
+    # outputs_dn11 = MaxPooling2D((2, 2), padding="same", data_format="channels_last")(outputs_dn10)
+
+    # # Denoising Decoder
+    # outputs_dn12 = Conv2DTranspose(128, (3, 3), strides=2, activation="relu", padding="same", data_format="channels_last")(outputs_dn11)
+    # outputs_dn12 = Concatenate(axis=-1)([outputs_dn10, outputs_dn12])
+    # outputs_dn13 = Conv2DTranspose(64, (3, 3), strides=2, activation="relu", padding="same", data_format="channels_last")(outputs_dn12)
+    # outputs_dn13 = Concatenate(axis=-1)([outputs_dn8, outputs_dn13])
+    # outputs_dn14 = Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", data_format="channels_last")(outputs_dn13)
+    # outputs_dn14 = Concatenate(axis=-1)([outputs_dn6, outputs_dn14])
+    # outputs_dn15 = Conv2DTranspose(16, (3, 3), strides=2, activation="relu", padding="same", data_format="channels_last")(outputs_dn14)
+    # outputs_dn15 = Concatenate(axis=-1)([outputs_dn4, outputs_dn15])
+    # outputs_dn16 = Conv2DTranspose(8, (3, 3), strides=2, activation="relu", padding="same", data_format="channels_last")(outputs_dn15)
+    # outputs_dn16 = Concatenate(axis=-1)([outputs_dn2, outputs_dn16])
+    # outputs_dn17 = Conv2DTranspose(4, (3, 3), strides=2, activation="relu", padding="same", data_format="channels_last")(outputs_dn16)
+    # outputs_dn17 = Concatenate(axis=-1)([outputs_dn, outputs_dn17])
+    # outputs_dn18 = Conv2DTranspose(2, (3, 3), strides=1, activation="relu", padding="same", data_format="channels_last")(outputs_dn17)
+    # outputs_dn18 = Concatenate(axis=-1)([outputs, outputs_dn18])
+    # outputs = Conv2DTranspose(2, (3, 3), strides=1, activation="relu", padding="same", data_format="channels_last")(outputs_dn18)
+
+    # # 1st layer, Conv+relu
+    # x = Conv2D(filters=2, kernel_size=(3, 3), strides=(1, 1), padding='same')(outputs)
+    # x = Activation('relu')(x)
+    # # 15 layers, Conv+BN+relu
+    # for i in range(2):
+    #     x = Conv2D(filters=16, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding='same')(x)
+    #     x = BatchNormalization(epsilon=1e-3)(x)
+    # # last layer, Conv
+    # x = Conv2D(filters=2, kernel_size=(3, 3), strides=(1, 1), padding='same')(x)
+    # outputs = Subtract()([outputs, x])   # input - noise
+    # # model = Model(inputs=outputs, outputs=x)
 
     # Create the model
     model = Model(inputs=inputs, outputs=outputs)
@@ -533,7 +718,7 @@ def DL_model(input_shape):
 
 
 # def DL_model(input_tensor):
-def DL_modelX(input_tensor):
+def DL_modelY(input_tensor):
     # Input layer
     inputs = Input(input_tensor)
 
@@ -683,7 +868,8 @@ def DL_modelX(input_tensor):
     return model
 
 
-def DL_modelx(input_tensor):
+# def DL_model(input_tensor):
+def DL_modeX(input_tensor):
     # Input layer
     inputs = Input(input_tensor)
 
@@ -887,4 +1073,121 @@ def DL_modelx(input_tensor):
     outputs = Conv2D(filters=2, kernel_size=3, strides=1, activation='elu', padding='same', data_format="channels_last")(outputs)
     # Create the model
     model = Model(inputs=inputs, outputs=outputs)
+    return model
+
+
+# def fire_module(input_fire, s1, e1, e3, weight_decay_l2, fireID):
+#     '''
+#     A wrapper to build fire module
+
+#     # Arguments
+#         input_fire: input activations
+#         s1: number of filters for squeeze step
+#         e1: number of filters for 1x1 expansion step
+#         e3: number of filters for 3x3 expansion step
+#         weight_decay_l2: weight decay for conv layers
+#         fireID: ID for the module
+
+#     # Return
+#         Output activations
+#     '''
+
+#     # Squezee step
+#     output_squeeze = Convolution2D(
+#         s1, (1, 1), activation='relu',
+#         kernel_initializer='glorot_uniform',
+#         kernel_regularizer=regularizers.l2(weight_decay_l2),
+#         padding='same', name='fire' + str(fireID) + '_squeeze',
+#         data_format="channels_last")(input_fire)
+#     # Expansion steps
+#     output_expand1 = Convolution2D(
+#         e1, (1, 1), activation='relu',
+#         kernel_initializer='glorot_uniform',
+#         kernel_regularizer=regularizers.l2(weight_decay_l2),
+#         padding='same', name='fire' + str(fireID) + '_expand1',
+#         data_format="channels_last")(output_squeeze)
+#     output_expand2 = Convolution2D(
+#         e3, (3, 3), activation='relu',
+#         kernel_initializer='glorot_uniform',
+#         kernel_regularizer=regularizers.l2(weight_decay_l2),
+#         padding='same', name='fire' + str(fireID) + '_expand2',
+#         data_format="channels_last")(output_squeeze)
+#     # Merge expanded activations
+#     output_fire = Concatenate(axis=3)([output_expand1, output_expand2])
+#     return output_fire
+
+
+# # def DL_model(input_tensor):
+# def SqueezeNet(num_classes, weight_decay_l2=0.0001, inputs=(128, 128, 4)):
+#     '''
+#     A wrapper to build SqueezeNet Model
+
+#     # Arguments
+#         num_classes: number of classes defined for classification task
+#         weight_decay_l2: weight decay for conv layers
+#         inputs: input image dimensions
+
+#     # Return
+#         A SqueezeNet Keras Model
+#     '''
+#     weight_decay_l2 = 0.0001
+#     # input_img = Input(shape=input_tensor)
+
+#     conv1 = Convolution2D(
+#         32, (7, 7), activation='relu', kernel_initializer='glorot_uniform',
+#         strides=(2, 2), padding='same', name='conv1',
+#         data_format="channels_last")(input_img)
+
+#     maxpool1 = MaxPooling2D(
+#         pool_size=(2, 2), strides=(2, 2), name='maxpool1',
+#         data_format="channels_last")(conv1)
+
+#     fire2 = fire_module(maxpool1, 8, 16, 16, weight_decay_l2, 2)
+#     fire3 = fire_module(fire2, 8, 16, 16, weight_decay_l2, 3)
+#     fire4 = fire_module(fire3, 16, 32, 32, weight_decay_l2, 4)
+
+#     maxpool4 = MaxPooling2D(
+#         pool_size=(2, 2), strides=(2, 2), name='maxpool4',
+#         data_format="channels_last")(fire4)
+
+#     fire5 = fire_module(maxpool4, 16, 32, 32, weight_decay_l2, 5)
+#     fire6 = fire_module(fire5, 32, 64, 64, weight_decay_l2, 6)
+#     fire7 = fire_module(fire6, 32, 64, 64, weight_decay_l2, 7)
+#     fire8 = fire_module(fire7, 64, 128, 128, weight_decay_l2, 8)
+
+#     maxpool8 = MaxPooling2D(
+#         pool_size=(2, 2), strides=(2, 2), name='maxpool8',
+#         data_format="channels_last")(fire8)
+
+#     fire9 = fire_module(maxpool8, 64, 128, 128, weight_decay_l2, 9)
+#     fire9_dropout = Dropout(0.5, name='fire9_dropout')(fire9)
+
+#     conv10 = Convolution2D(
+#         2, (1, 1), activation='relu', kernel_initializer='glorot_uniform',
+#         padding='valid', name='conv10',
+#         data_format="channels_last")(fire9_dropout)
+
+#     global_avgpool10 = GlobalAveragePooling2D(data_format='channels_last')(conv10)
+#     # softmax = Activation("softmax", name='softmax')(global_avgpool10)
+
+#     # return Model(inputs=input_img, outputs=softmax)
+#     return Model(inputs=input_img, outputs=global_avgpool10)
+
+
+def DnCNN(input_tensor):
+
+    inpt = Input(input_tensor)
+    # 1st layer, Conv+relu
+    x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same')(inpt)
+    x = Activation('relu')(x)
+    # 15 layers, Conv+BN+relu
+    for i in range(7):
+        x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same')(x)
+        x = BatchNormalization()(x)
+        x = Activation('relu')(x)
+    # last layer, Conv
+    x = Conv2D(filters=2, kernel_size=(3, 3), strides=(1, 1), padding='same')(x)
+    x = Subtract()([inpt, x])   # input - noise
+    model = Model(inputs=inpt, outputs=x)
+
     return model

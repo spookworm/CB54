@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['lib\\custom_functions_EM.py', 'lib\\custom_architectures_EM.py', 'ForwardBiCGSTABFFTwE.py', 'prescient2dl.py', 'denoising.py']
+recent_files = ['denoising.py', 'lib\\custom_functions_EM.py', 'lib\\custom_architectures_EM.py', 'lib\\custom_tensorboard.py', 'ForwardBiCGSTABFFTwE.py', 'prescient2dl.py', 'prescient2dl_noise.py']
 
 [main]
 version = 0.2.0

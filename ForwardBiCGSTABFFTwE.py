@@ -10,11 +10,12 @@ from keras.metrics import MeanAbsolutePercentageError, MeanAbsoluteError, MeanSq
 from keras.models import load_model
 from lib import custom_functions_EM
 from lib import custom_architectures_EM
+import winsound
 
 # Clear workspace
 get_ipython().run_line_magic('clear', '-sf')
 # get_ipython().run_line_magic('reset', '-sf')
-
+custom_functions_EM.plot_red_square()
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(precision=20)
 random.seed(42)
@@ -29,18 +30,26 @@ guess_validation_answer = 'False'
 guess_model = 'False'
 guess_model = 'True'
 # Number of samples to generate and where you stopped last time
-seed_count = 1
-seedling = 7000
+seedling = 1694
+seed_count = 306
 # Where should the outputs be saved?
 directory = "F:\\"
-folder_outputs = "F:\\generic_7000"
+folder_outputs = "F:\\generic_46000"
+folder_outputs = "F:\\generic_00000"
+folder_outputs = "F:\\generic_01000"
 # Load the model parameters...
 model_file_1 = "model_checkpoint_model_scattered_fieldUP_E1.h5"
+model_file_1 = "model_checkpoint_STAN_E1.h5"
 model_file_2 = "model_checkpoint_model_scattered_fieldUP_E2.h5"
+model_file_2 = "model_checkpoint_STAN_E2.h5"
 mean_1 = "mean_per_channel_E1.npy"
 mean_2 = "mean_per_channel_E2.npy"
 stddev_1 = "adjusted_stddev_per_channel_E1.npy"
 stddev_2 = "adjusted_stddev_per_channel_E2.npy"
+min_1 = "min_per_channel_E1.npy"
+min_2 = "min_per_channel_E2.npy"
+max_1 = "max_per_channel_E1.npy"
+max_2 = "max_per_channel_E2.npy"
 # INPUTS: END
 
 # Estimate the time to run and the time remaining
@@ -110,6 +119,7 @@ else:
             sys.exit(1)
     for seed in range(seedling, seedling+seed_count):
         file_name = f"instance_{str(seed).zfill(10)}.npy"
+        custom_functions_EM.plot_red_square()
         if guess_model == 'True':
             output_file_path = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_m" + ".npy")
             if os.path.exists(output_file_path):
@@ -130,11 +140,9 @@ else:
 
         if guess_model != 'True':
             plt.imsave(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}_abs_o.png"), np.abs(CHI_eps), cmap='gray')
-            # custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
         else:
             # # Save visulistion of geometry for debugging reference
             # plt.imsave(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}_abs_m.png"), np.abs(CHI_eps), cmap='gray')
-            # # custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
             # NEED TO EXTRACT EXISTING INFORMATION HERE TO REPLACE keras_stack items from init above as cannot trust seed method
             file_name = f"instance_{str(seed).zfill(10)}.npy"
             output_file_path = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_o.npy")
@@ -146,6 +154,7 @@ else:
             ZH_inc[2, :, :] = np.squeeze(data[:, :, :, 7] + 1j*data[:, :, :, 8])
             ZH_inc[1, :, :] = ZH_inc[2, :, :]*0
             ZH_inc[0, :, :] = ZH_inc[2, :, :]*0
+        custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
 
         # MODEL INFERENCE
         tic0 = time.time()
@@ -170,15 +179,26 @@ else:
             predicted_output_2 = np.squeeze(predicted_output_2)
             predicted_output_2 = np.transpose(predicted_output_2, (2, 0, 1))
 
-            mean_per_channel_1 = np.load(directory + mean_1)
-            adjusted_stddev_per_channel_1 = np.load(directory + stddev_1)
-            for channel in range(predicted_output_1.shape[0]):
-                predicted_output_1[channel, :, :] = predicted_output_1[channel, :, :] * adjusted_stddev_per_channel_1[channel] + mean_per_channel_1[channel]
+            # REVERSE STANDARDIZATION TO 0 AND 1
+            min_per_channel_1 = np.load(directory + min_1)
+            max_per_channel_1 = np.load(directory + max_1)
+            for channel in range(min_per_channel_1.shape[0]):
+                predicted_output_1[channel, :, :] = (predicted_output_1[channel, :, :]*(max_per_channel_1[channel] - min_per_channel_1[channel]) + min_per_channel_1[channel])
+            min_per_channel_2 = np.load(directory + min_2)
+            max_per_channel_2 = np.load(directory + max_2)
+            for channel in range(min_per_channel_2.shape[0]):
+                predicted_output_2[channel, :, :] = (predicted_output_2[channel, :, :]*(max_per_channel_2[channel] - min_per_channel_2[channel]) + min_per_channel_2[channel])
 
-            mean_per_channel_2 = np.load(directory + mean_2)
-            adjusted_stddev_per_channel_2 = np.load(directory + stddev_2)
-            for channel in range(predicted_output_2.shape[0]):
-                predicted_output_2[channel, :, :] = predicted_output_2[channel, :, :] * adjusted_stddev_per_channel_2[channel] + mean_per_channel_2[channel]
+            # # REVERSE STANDARDIZATION PER IMAGE
+            # mean_per_channel_1 = np.load(directory + mean_1)
+            # adjusted_stddev_per_channel_1 = np.load(directory + stddev_1)
+            # for channel in range(predicted_output_1.shape[0]):
+            #     predicted_output_1[channel, :, :] = predicted_output_1[channel, :, :] * adjusted_stddev_per_channel_1[channel] + mean_per_channel_1[channel]
+
+            # mean_per_channel_2 = np.load(directory + mean_2)
+            # adjusted_stddev_per_channel_2 = np.load(directory + stddev_2)
+            # for channel in range(predicted_output_2.shape[0]):
+            #     predicted_output_2[channel, :, :] = predicted_output_2[channel, :, :] * adjusted_stddev_per_channel_2[channel] + mean_per_channel_2[channel]
 
             # OPTION A: E_sct
             E_sct = E_inc.copy()*0
@@ -214,40 +234,38 @@ else:
         print("toc", toc0)
 
         if exit_code == 0:
+            custom_functions_EM.plotEtotalwavefield("w_E", w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
 
             # Set the first row, last row, first column, and last column to zeros due to gradient calculation
             # This may make assisting the solver worse but should make training the model easier!
             E_sct[:, [0, -1], :] = E_sct[:, :, [0, -1]] = 0
 
-            custom_functions_EM.plotEtotalwavefield("w_E", w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-
             E_val = custom_functions_EM.E(E_inc, E_sct)
             # custom_functions_EM.plotEtotalwavefield("E_val", E_val[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
             # As soon as E_val is calculated, drop the third channel as it is all zeros
             E_sct = E_sct[:2, :, :]
+            custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
 
             # Save incident fields to allow for data augmentation
             # Not including any fields that are totally constant such as CHI_mu and the dead fields E3, ZH1, ZH2
             # CHI_eps only has real part so CHI_eps has 1 field which will be cast as real for safety
-            keras_stack = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
-                                          custom_functions_EM.complex_separation(E_inc[0, :, :]),
-                                          custom_functions_EM.complex_separation(E_inc[1, :, :]),
-                                          custom_functions_EM.complex_separation(ZH_inc[2, :, :]),
-                                          custom_functions_EM.complex_separation(E_sct[0, :, :]),
-                                          custom_functions_EM.complex_separation(E_sct[1, :, :])], axis=0)
-
-            # Due to channel requirements in Keras, reorder arrays before saving to reduce loading time at deep learning stage.
-            keras_stack_composed = custom_functions_EM.keras_format(keras_stack)
-            # 16 dimensional array in format (:, N1, N2, channels)
-            # np.save(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}.npy"), keras_stack_composed)
 
             file_name = f"instance_{str(seed).zfill(10)}.npy"
             if guess_model == 'True':
                 custom_functions_EM.plotEtotalwavefield("np.abs(w_E-w_E_pred)", np.abs(w_E-w_E_pred)[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
                 custom_functions_EM.plotEtotalwavefield("np.abs(E_sct-E_sct_pred)", np.abs(E_sct-E_sct_pred)[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+
+                keras_stack = np.concatenate([custom_functions_EM.complex_separation(E_sct_pred[0, :, :]),
+                                              custom_functions_EM.complex_separation(E_sct_pred[1, :, :]),
+                                              custom_functions_EM.complex_separation(E_sct[0, :, :]),
+                                              custom_functions_EM.complex_separation(E_sct[1, :, :])], axis=0)
+
+                # Due to channel requirements in Keras, reorder arrays before saving to reduce loading time at deep learning stage.
+                keras_stack_composed = custom_functions_EM.keras_format(keras_stack)
+                # 16 dimensional array in format (:, N1, N2, channels)
+                # np.save(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}.npy"), keras_stack_composed)
 
                 # # Try to establish if the DL is having problem with a physically interpreptable component of the field
                 # # This might be a good loss function too? Helmholtz-Hodge decomposition
@@ -301,6 +319,18 @@ else:
                 output_file_path_info = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_info_m")
                 np.save(output_file_path_info, information)
             else:
+                keras_stack = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
+                                              custom_functions_EM.complex_separation(E_inc[0, :, :]),
+                                              custom_functions_EM.complex_separation(E_inc[1, :, :]),
+                                              custom_functions_EM.complex_separation(ZH_inc[2, :, :]),
+                                              custom_functions_EM.complex_separation(E_sct[0, :, :]),
+                                              custom_functions_EM.complex_separation(E_sct[1, :, :])], axis=0)
+
+                # Due to channel requirements in Keras, reorder arrays before saving to reduce loading time at deep learning stage.
+                keras_stack_composed = custom_functions_EM.keras_format(keras_stack)
+                # 16 dimensional array in format (:, N1, N2, channels)
+                # np.save(os.path.join(folder_outputs, f"instance_{str(seed).zfill(10)}.npy"), keras_stack_composed)
+
                 output_file_path = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_o")
                 np.save(output_file_path, keras_stack_composed)
                 output_file_path_info = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_info_o")
@@ -341,7 +371,9 @@ else:
 tic_total_end = time.time() - tic_total_start
 print("Total Running Time: ", tic_total_end)
 print("Initial guess of running time was ", time_estimate_inital, " so (tic_total_end - time_estimate_inital): ", tic_total_end - time_estimate_inital)
+winsound.Beep(1000, 1000)
 
 print("start stats")
 info_dataset = custom_functions_EM.info_data_harvest(folder_outputs)
 custom_functions_EM.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
+print("stats completed")
