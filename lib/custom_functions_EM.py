@@ -751,6 +751,80 @@ def plotEtotalwavefield(field_name, field, a, X1, X2, N1, N2):
     plt.show()
 
 
+def plotFieldComparisons(field_name_0, field_0, field_1, X1, X2, N1, N2):
+    from matplotlib.ticker import ScalarFormatter
+    # Plot wave fields in two-dimensional space
+    fig, axs = plt.subplots(1, 2, figsize=(10, 6), sharex=True, sharey=True)
+
+    # Calculate the minimum and maximum values for each row
+    row0_min = np.min([np.abs(field_0[0]), np.abs(field_1[0])])
+    row0_max = np.max([np.abs(field_0[0]), np.abs(field_1[0])])
+
+    # Plot each row and add a colorbar
+    im0 = axs[0].imshow(np.abs(field_0[0]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none', vmin=row0_min, vmax=row0_max)
+    axs[0].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[0].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[0].set_title('2D Electric field E1\n' + field_name_0 + " Truth", fontsize=13)
+
+    im1 = axs[1].imshow(np.abs(field_1[0]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none', vmin=row0_min, vmax=row0_max)
+    axs[1].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[1].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[1].set_title('2D Electric field E1\n' + field_name_0 + " Predicted", fontsize=13)
+
+    # Add colorbars for each row
+    cax0 = fig.add_axes([0.2, 0.1, 0.6, 0.03])  # Position of the colorbar for the first row
+    cbar0 = fig.colorbar(im1, cax=cax0, orientation='horizontal', format=ScalarFormatter(useMathText=True))
+    # plt.subplots_adjust(wspace=0.01)
+    plt.show()
+
+    ####
+    # Plot wave fields in two-dimensional space
+    fig, axs = plt.subplots(1, 2, figsize=(10, 6), sharex=True, sharey=True)
+    # Plot each row and add a colorbar
+    im0 = axs[0].imshow(np.abs(field_0[0]-field_1[0]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
+    axs[0].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[0].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[0].set_title('2D Electric field E1\n' + "|" + field_name_0 + " - " + field_name_0 + "_pred|", fontsize=13)
+    cbar0 = fig.colorbar(im0, ax=axs[0], orientation='horizontal', format=ScalarFormatter(useMathText=True))
+    # cbar0.formatter.set_powerlimits((-3, 3))  # Adjust the power limits for scientific notation
+    # cbar0.update_ticks()
+
+    im1 = axs[1].imshow(np.abs(field_0[1]-field_1[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none')
+    axs[1].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[1].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[1].set_title('2D Electric field E2\n' + "|" + field_name_0 + " - " + field_name_0 + "|", fontsize=13)
+    cbar1 = fig.colorbar(im1, ax=axs[1], orientation='horizontal', format=ScalarFormatter(useMathText=True))
+    # cbar1.formatter.set_powerlimits((-3, 3))  # Adjust the power limits for scientific notation
+    # cbar1.update_ticks()
+
+    plt.subplots_adjust(wspace=0.01, hspace=0.01)
+    plt.show()
+    ####
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 6), sharex=True, sharey=True)
+
+    # Calculate the minimum and maximum values for each row
+    row0_min = np.min([np.abs(field_0[1]), np.abs(field_1[1])])
+    row0_max = np.max([np.abs(field_0[1]), np.abs(field_1[1])])
+
+    # Plot each row and add a colorbar
+    im0 = axs[0].imshow(np.abs(field_0[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none', vmin=row0_min, vmax=row0_max)
+    axs[0].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[0].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[0].set_title('2D Electric field E2\n' + field_name_0 + " Truth", fontsize=13)
+
+    im1 = axs[1].imshow(np.abs(field_1[1]), extent=[X2.min(), X2.max(), X1.min(), X1.max()], cmap='jet', interpolation='none', vmin=row0_min, vmax=row0_max)
+    axs[1].set_xlabel('x$_2$ $\\rightarrow$')
+    axs[1].set_ylabel('$\\leftarrow$ x$_1$')
+    axs[1].set_title('2D Electric field E2\n' + field_name_0 + " Predicted", fontsize=13)
+
+    # Add colorbars for each row
+    cax0 = fig.add_axes([0.2, 0.1, 0.6, 0.03])  # Position of the colorbar for the first row
+    cbar0 = fig.colorbar(im1, cax=cax0, orientation='horizontal', format=ScalarFormatter(useMathText=True))
+    # plt.subplots_adjust(wspace=0.01)
+    plt.show()
+
+
 def plot_history_ignore(history, ignore_entries):
     # Ignore the first ignore_entries entries
     result_dict = {}

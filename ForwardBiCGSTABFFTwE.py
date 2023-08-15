@@ -30,13 +30,14 @@ guess_validation_answer = 'False'
 guess_model = 'False'
 guess_model = 'True'
 # Number of samples to generate and where you stopped last time
-seedling = 1694
-seed_count = 306
+seedling = 2000
+seed_count = 2
 # Where should the outputs be saved?
 directory = "F:\\"
 folder_outputs = "F:\\generic_46000"
-folder_outputs = "F:\\generic_00000"
 folder_outputs = "F:\\generic_01000"
+folder_outputs = "F:\\generic_00000"
+folder_outputs = "F:\\generic_02000"
 # Load the model parameters...
 model_file_1 = "model_checkpoint_model_scattered_fieldUP_E1.h5"
 model_file_1 = "model_checkpoint_STAN_E1.h5"
@@ -46,9 +47,13 @@ mean_1 = "mean_per_channel_E1.npy"
 mean_2 = "mean_per_channel_E2.npy"
 stddev_1 = "adjusted_stddev_per_channel_E1.npy"
 stddev_2 = "adjusted_stddev_per_channel_E2.npy"
+min_1 = "min_per_channel_E1_noise.npy"
 min_1 = "min_per_channel_E1.npy"
+min_2 = "min_per_channel_E2_noise.npy"
 min_2 = "min_per_channel_E2.npy"
+max_1 = "max_per_channel_E1_noise.npy"
 max_1 = "max_per_channel_E1.npy"
+max_2 = "max_per_channel_E2_noise.npy"
 max_2 = "max_per_channel_E2.npy"
 # INPUTS: END
 
@@ -377,3 +382,5 @@ print("start stats")
 info_dataset = custom_functions_EM.info_data_harvest(folder_outputs)
 custom_functions_EM.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
 print("stats completed")
+
+custom_functions_EM.plotFieldComparisons("E_sct", E_sct[:, 1:-1, 1:-1], E_sct_pred[:, 1:-1, 1:-1], X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
