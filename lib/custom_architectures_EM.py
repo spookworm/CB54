@@ -200,7 +200,7 @@ def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
             # 06: E_sct[0, :, :]
             # 07: E_sct[0, :, :]
             # 08: E_sct[0, :, :]
-            input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1)], axis=-1)
+            input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1), np.expand_dims(data[:, :, :, 4], axis=-1)], axis=-1)
             output_data = np.concatenate([np.expand_dims(data[:, :, :, 6], axis=-1), np.expand_dims(data[:, :, :, 7], axis=-1)], axis=-1)
         elif field_name == "E2_noise":
             # 03: E_sct_pred[1, :, :]
@@ -209,8 +209,8 @@ def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
             # 09: E_sct[1, :, :]
             # 10: E_sct[1, :, :]
             # 11: E_sct[1, :, :]
-            input_data = np.concatenate([np.expand_dims(data[:, :, :, 3], axis=-1), np.expand_dims(data[:, :, :, 4], axis=-1)], axis=-1)
-            output_data = np.concatenate([np.expand_dims(data[:, :, :, 10], axis=-1), np.expand_dims(data[:, :, :, 11], axis=-1)], axis=-1)
+            input_data = np.concatenate([np.expand_dims(data[:, :, :, 0], axis=-1), np.expand_dims(data[:, :, :, 1], axis=-1), np.expand_dims(data[:, :, :, 3], axis=-1), np.expand_dims(data[:, :, :, 4], axis=-1)], axis=-1)
+            output_data = np.concatenate([np.expand_dims(data[:, :, :, 9], axis=-1), np.expand_dims(data[:, :, :, 10], axis=-1)], axis=-1)
         else:
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             print("WHAT ARE YOU TRYING TO PREDICT?")
@@ -255,7 +255,7 @@ def prescient2DL_data(field_name, data_folder, sample_list, N1, N2):
         x_list = x_list.reshape(-1, N1, N2, 4)
         y_list = y_list.reshape(-1, N1, N2, 2)
     elif field_name == "E1_noise" or field_name == "E2_noise":
-        x_list = x_list.reshape(-1, N1, N2, 2)
+        x_list = x_list.reshape(-1, N1, N2, 4)
         y_list = y_list.reshape(-1, N1, N2, 2)
     return x_list, y_list
 
@@ -1178,15 +1178,14 @@ def DnCNN(input_tensor):
 
     inpt = Input(input_tensor)
     # 1st layer, Conv+relu
-    x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same')(inpt)
-    x = Activation('relu')(x)
-    # 15 layers, Conv+BN+relu
+    x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), activation='relu', data_format="channels_last", padding='same')(inpt)
+    # 15 layers, Conv+BN+elu
     for i in range(7):
-        x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='same')(x)
+        x = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), data_format="channels_last", padding='same')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
     # last layer, Conv
-    x = Conv2D(filters=2, kernel_size=(3, 3), strides=(1, 1), padding='same')(x)
+    x = Conv2D(filters=2, kernel_size=(3, 3), strides=(1, 1), data_format="channels_last", padding='same')(x)
     x = Subtract()([inpt, x])   # input - noise
     model = Model(inputs=inpt, outputs=x)
 
