@@ -29,20 +29,17 @@ guess_validation_answer = 'False'
 # Would you like to use a model to provide an initial guess?
 guess_model = 'False'
 guess_model = 'True'
+# WOULD YOU LIKE TO USE A MODEL ON DATA FROM OUTSIDE THE DEVELOPMENT DOMAIN (TEST CHANGE IN CONTRAST)?
+# If you do then change the if statement in the initEMContrastValidate command like in generating the base case.
 # Number of samples to generate and where you stopped last time
-seedling = 2000
-seed_count = 2
+seedling = 5068
+seed_count = 100-68
 # Where should the outputs be saved?
 directory = "F:\\"
-folder_outputs = "F:\\generic_46000"
-folder_outputs = "F:\\generic_01000"
-folder_outputs = "F:\\generic_00000"
-folder_outputs = "F:\\generic_02000"
+folder_outputs = "F:\\generic_validation_change_contrast_values"
 # Load the model parameters...
-model_file_1 = "model_checkpoint_model_scattered_fieldUP_E1.h5"
-model_file_1 = "model_checkpoint_STAN_E1.h5"
-model_file_2 = "model_checkpoint_model_scattered_fieldUP_E2.h5"
-model_file_2 = "model_checkpoint_STAN_E2.h5"
+model_file_1 = "model_checkpoint_E1.h5"
+model_file_2 = "model_checkpoint_E2.h5"
 mean_1 = "mean_per_channel_E1.npy"
 mean_2 = "mean_per_channel_E2.npy"
 stddev_1 = "adjusted_stddev_per_channel_E1.npy"
@@ -124,7 +121,9 @@ else:
             sys.exit(1)
     for seed in range(seedling, seedling+seed_count):
         file_name = f"instance_{str(seed).zfill(10)}.npy"
-        custom_functions_EM.plot_red_square()
+        ###
+        # custom_functions_EM.plot_red_square()
+        ###
         if guess_model == 'True':
             output_file_path = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_m" + ".npy")
             if os.path.exists(output_file_path):
@@ -159,7 +158,9 @@ else:
             ZH_inc[2, :, :] = np.squeeze(data[:, :, :, 7] + 1j*data[:, :, :, 8])
             ZH_inc[1, :, :] = ZH_inc[2, :, :]*0
             ZH_inc[0, :, :] = ZH_inc[2, :, :]*0
-        custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
+        ###
+        # custom_functions_EM.plotEMContrast(CHI_eps, CHI_mu, X1, X2)
+        ###
 
         # MODEL INFERENCE
         tic0 = time.time()
@@ -229,8 +230,10 @@ else:
             w_E_pred = w_E.copy()
             # print("np.linalg.norm(w_E_old - w_E): ", np.linalg.norm(w_E_pred - w_E))
 
-            custom_functions_EM.plotEtotalwavefield("w_E_pred", w_E_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
-            custom_functions_EM.plotEtotalwavefield("E_sct_pred", E_sct_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            ###
+            # custom_functions_EM.plotEtotalwavefield("w_E_pred", w_E_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield("E_sct_pred", E_sct_pred[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            ###
 
             w_E, exit_code, information = custom_functions_EM.ITERBiCGSTABwE(E_inc, CHI_eps, Errcri, N1, N2, dx, FFTG, gamma_0, x0=x0)
         else:
@@ -239,7 +242,9 @@ else:
         print("toc", toc0)
 
         if exit_code == 0:
-            custom_functions_EM.plotEtotalwavefield("w_E", w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            ###
+            # custom_functions_EM.plotEtotalwavefield("w_E", w_E[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            ###
             E_sct = custom_functions_EM.KopE(w_E, gamma_0, N1, N2, dx, FFTG)
 
             # Set the first row, last row, first column, and last column to zeros due to gradient calculation
@@ -251,7 +256,9 @@ else:
 
             # As soon as E_val is calculated, drop the third channel as it is all zeros
             E_sct = E_sct[:2, :, :]
+            ###
             custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            ###
 
             # Save incident fields to allow for data augmentation
             # Not including any fields that are totally constant such as CHI_mu and the dead fields E3, ZH1, ZH2
@@ -323,6 +330,8 @@ else:
                 np.save(output_file_path, keras_stack_composed)
                 output_file_path_info = os.path.join(folder_outputs, os.path.splitext(file_name)[0] + "_info_m")
                 np.save(output_file_path_info, information)
+
+                custom_functions_EM.plotFieldComparisons("E_sct", E_sct[:, 1:-1, 1:-1], E_sct_pred[:, 1:-1, 1:-1], X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             else:
                 keras_stack = np.concatenate([np.expand_dims(np.real(CHI_eps), axis=0),
                                               custom_functions_EM.complex_separation(E_inc[0, :, :]),
@@ -382,5 +391,3 @@ print("start stats")
 info_dataset = custom_functions_EM.info_data_harvest(folder_outputs)
 custom_functions_EM.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
 print("stats completed")
-
-custom_functions_EM.plotFieldComparisons("E_sct", E_sct[:, 1:-1, 1:-1], E_sct_pred[:, 1:-1, 1:-1], X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)

@@ -272,9 +272,14 @@ def initEM(bessel=None):
     # add contrast distribution
     # print("bessel", bessel)
     if bessel is None:
-        a, CHI_eps, CHI_mu = initEMContrast(eps_sct, mu_sct, X1, X2, dx)
+        # WRONG AS TOO FEW COMBINATIONS LEADS TO DUPLICATES
+        # This is the geometry generator that is used to develop the model
+        # a, CHI_eps, CHI_mu = initEMContrast(eps_sct, mu_sct, X1, X2, dx)
         # Run if wanting to create base scatter
         # a, CHI_eps, CHI_mu = initEMContrastBase(eps_sct, mu_sct, X1, X2, dx)
+
+        # Run if wanting to create geometry that has moved away from the model development distribution
+        a, CHI_eps, CHI_mu = initEMContrastValidate(eps_sct, mu_sct, X1, X2, dx)
     else:
         a, CHI_eps, CHI_mu = initEMContrastOrig(eps_sct, mu_sct, X1, X2)
 
@@ -353,6 +358,43 @@ def initEMContrast(eps_sct, mu_sct, X1, X2, dx):
     CHI_eps_1 = np.roll(CHI_eps_1, shift=int(random.uniform(-radius_max_pix_b, radius_max_pix_b)), axis=1)
     CHI_eps = CHI_eps_0 + CHI_eps_1
     CHI_eps[R > a_normal] = 0.0
+
+    # # Bessel-Approach Validation Cancer only
+    # CHI_eps = (1-eps_sct) * (R < a)
+
+    # (2) Compute permeability contrast
+    CHI_mu = (1-mu_sct) * (R < a)
+    return a, CHI_eps, CHI_mu
+
+
+def initEMContrastValidate(eps_sct, mu_sct, X1, X2, dx):
+    import random
+    R = np.sqrt(X1**2 + X2**2)
+
+    # half width slab / radius circle cylinder / radius sphere
+    a = 40
+    a = 8.94427
+    # a = 40*(0.5**10)
+    a_normal = a*np.sqrt(1/0.05)
+    a_cancer = a
+
+    # (1) Compute permittivity contrast
+    eps_normal = 1.25
+    eps_normal = eps_sct
+    eps_cancer = 1.0
+    eps_cancer = eps_sct
+    # Change this if testing out of distribution
+
+    CHI_eps_0 = (1-eps_normal) * (R < a_normal)
+    CHI_eps_1 = (1-eps_cancer+(eps_normal-1)) * (R < a_cancer)
+    radius_max_pix_b = int(np.floor(a_normal/dx - 0.5*a_cancer/dx))
+    CHI_eps_1 = np.roll(CHI_eps_1, shift=int(random.uniform(-radius_max_pix_b, radius_max_pix_b)), axis=0)
+    CHI_eps_1 = np.roll(CHI_eps_1, shift=int(random.uniform(-radius_max_pix_b, radius_max_pix_b)), axis=1)
+    CHI_eps = CHI_eps_0 + CHI_eps_1
+    CHI_eps[R > a_normal] = 0.0
+
+    CHI_eps = np.roll(CHI_eps, shift=int(random.uniform(-a_normal, a_normal)), axis=0)
+    CHI_eps = np.roll(CHI_eps, shift=int(random.uniform(-a_normal, a_normal)), axis=1)
 
     # # Bessel-Approach Validation Cancer only
     # CHI_eps = (1-eps_sct) * (R < a)

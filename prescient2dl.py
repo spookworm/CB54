@@ -41,17 +41,29 @@ print(K.image_data_format())
 
 # USER INPUTS: START
 # Choose field to train
-field_name = "E1"
+field_name = "E2"
 # Set the number of epochs
 num_epochs = 100
-max_batch_size = 256*32
+max_batch_size = 16*32
 
 directory = "F:\\"
 # file_list = [f for f in os.listdir(data_folder) if f.endswith(".npy") and "_info_" not in f and f.startswith("instance_")]
-folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "generic" in f]
+folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f)) and "generic_validation_" in f]
 selected_folders = folders
-# selected_folders = ["generic_00000"]
-# selected_folders = ["generic_00000", "generic_01000", "generic_02000", "generic_03000"]
+selected_folders.remove("generic_validation_duplicates")
+
+###
+# REMOVE ALL DUPLICATE FILES
+png_files = [file for file in os.listdir(directory + "\\generic_validation_duplicates") if file.endswith('.png')]
+npy_files_1 = [file.replace('_abs_o.png', '_info_o.npy') for file in png_files]
+npy_files_2 = [file.replace('_abs_o.png', '_o.npy') for file in png_files]
+npy_files = npy_files_1 + npy_files_2
+for file in npy_files:
+    source_path = os.path.join(directory + "generic_validation", file)
+    destination_path = os.path.join(directory + "\\generic_validation_duplicates", file)
+    if os.path.exists(source_path):
+        shutil.move(source_path, destination_path)
+###
 
 # Tensorboard Settings
 pid_name = "tensorboard.exe"
@@ -75,7 +87,7 @@ webbrowser.open(url)
 
 
 batch_size = int(max_batch_size/32)
-X_array = np.load('F:\\generic_00000\\X_array.npy')
+X_array = np.load('F:\\generic_validation\\X_array.npy')
 X1 = X_array[:, :, 0]
 X2 = X_array[:, :, 1]
 
@@ -131,7 +143,7 @@ print("number of layers: ", len(model.layers))
 visualkeras.layered_view(model, to_file='.\\doc\\code_doc\\visualkeras_EM.png', legend=True)
 plot_model(model, to_file='.\\doc\\code_doc\\model_plot_EM.png', show_shapes=True, show_dtype=True, show_layer_names=True, rankdir="TB", expand_nested=True, dpi=96, layer_range=None, show_layer_activations=True)
 
-
+tic_fit_total_start = time.time()
 for folder in selected_folders:
     # folder = 'instances_5000'
     keras.backend.clear_session()
@@ -198,6 +210,55 @@ for folder in selected_folders:
     # y_train = tf.image.per_image_standardization(y_train)
     # y_val = tf.image.per_image_standardization(y_val)
     # y_test = tf.image.per_image_standardization(y_test)
+
+    # GET GLOBAL MEAN FROM ALL TRAINING SAMPLES
+    mean_list_real = []
+    mean_list_imag = []
+    pattern_mean = directory + "\\mean_per_channel_" + field_name + "_" + "*" + ".npy"
+    matched_files_mean = glob.glob(pattern_mean)
+    for file_mean in matched_files_mean:
+        array = np.load(file_mean)
+        mean_list_real.append(array[0])
+        mean_list_imag.append(array[1])
+    np.save(directory + "\\mean_per_channel_" + field_name, np.array([np.mean(mean_list_real), np.mean(mean_list_imag)]))
+    ###
+
+    # GET GLOBAL STD DEV FROM ALL TRAINING SAMPLES
+    stddev_list_real = []
+    stddev_list_imag = []
+    pattern_stddev = directory + "\\adjusted_stddev_per_channel_" + field_name + "_" + "*" + ".npy"
+    matched_files_stddev = glob.glob(pattern_stddev)
+    for file_stddev in matched_files_stddev:
+        array = np.load(file_stddev)
+        stddev_list_real.append(array[0])
+        stddev_list_imag.append(array[1])
+    np.save(directory + "\\adjusted_stddev_per_channel_" + field_name, np.array([np.mean(stddev_list_real), np.mean(stddev_list_imag)]))
+    ###
+
+    # GET GLOBAL MIN FROM ALL TRAINING SAMPLES
+    min_list_real = []
+    min_list_imag = []
+    pattern_min = directory + "\\min_per_channel_" + field_name + "_" + "*" + ".npy"
+    matched_files_min = glob.glob(pattern_min)
+    for file_min in matched_files_min:
+        array = np.load(file_min)
+        min_list_real.append(array[0])
+        min_list_imag.append(array[1])
+    np.save(directory + "\\min_per_channel_" + field_name, np.array([np.min(min_list_real), np.min(min_list_imag)]))
+    ###
+
+    # GET GLOBAL MAX FROM ALL TRAINING SAMPLES
+    max_list_real = []
+    max_list_imag = []
+    pattern_max = directory + "\\max_per_channel_" + field_name + "_" + "*" + ".npy"
+    matched_files_max = glob.glob(pattern_max)
+    for file_max in matched_files_max:
+        array = np.load(file_max)
+        max_list_real.append(array[0])
+        max_list_imag.append(array[1])
+    np.save(directory + "\\max_per_channel_" + field_name, np.array([np.max(max_list_real), np.max(max_list_imag)]))
+    ###
+
 
     # PERFORM STANDARDIZATION TO 0 AND 1
     min_1 = "min_per_channel_" + field_name + ".npy"
@@ -334,52 +395,6 @@ for folder in selected_folders:
     # , x_test, y_test
     winsound.Beep(1000, 1000)
 
-# GET GLOBAL MEAN FROM ALL TRAINING SAMPLES
-mean_list_real = []
-mean_list_imag = []
-pattern_mean = directory + "\\mean_per_channel_" + field_name + "_" + "*" + ".npy"
-matched_files_mean = glob.glob(pattern_mean)
-for file_mean in matched_files_mean:
-    array = np.load(file_mean)
-    mean_list_real.append(array[0])
-    mean_list_imag.append(array[1])
-np.save(directory + "\\mean_per_channel_" + field_name, np.array([np.mean(mean_list_real), np.mean(mean_list_imag)]))
-###
+tic_fit_total_end = time.time() - tic_fit_total_start
+print("Total Fitting Time: ", tic_fit_total_end)
 
-# GET GLOBAL STD DEV FROM ALL TRAINING SAMPLES
-stddev_list_real = []
-stddev_list_imag = []
-pattern_stddev = directory + "\\adjusted_stddev_per_channel_" + field_name + "_" + "*" + ".npy"
-matched_files_stddev = glob.glob(pattern_stddev)
-for file_stddev in matched_files_stddev:
-    array = np.load(file_stddev)
-    stddev_list_real.append(array[0])
-    stddev_list_imag.append(array[1])
-np.save(directory + "\\adjusted_stddev_per_channel_" + field_name, np.array([np.mean(stddev_list_real), np.mean(stddev_list_imag)]))
-###
-
-# GET GLOBAL MIN FROM ALL TRAINING SAMPLES
-min_list_real = []
-min_list_imag = []
-pattern_min = directory + "\\min_per_channel_" + field_name + "_" + "*" + ".npy"
-matched_files_min = glob.glob(pattern_min)
-for file_min in matched_files_min:
-    array = np.load(file_min)
-    min_list_real.append(array[0])
-    min_list_imag.append(array[1])
-np.save(directory + "\\min_per_channel_" + field_name, np.array([np.min(min_list_real), np.min(min_list_imag)]))
-###
-
-# GET GLOBAL MAX FROM ALL TRAINING SAMPLES
-max_list_real = []
-max_list_imag = []
-pattern_max = directory + "\\max_per_channel_" + field_name + "_" + "*" + ".npy"
-matched_files_max = glob.glob(pattern_max)
-for file_max in matched_files_max:
-    array = np.load(file_max)
-    max_list_real.append(array[0])
-    max_list_imag.append(array[1])
-np.save(directory + "\\max_per_channel_" + field_name, np.array([np.max(max_list_real), np.max(max_list_imag)]))
-###
-
-print("Total Fitting Time: ", tic_fit_end)
