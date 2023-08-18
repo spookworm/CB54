@@ -387,6 +387,10 @@ print("Total Running Time: ", tic_total_end)
 print("Initial guess of running time was ", time_estimate_inital, " so (tic_total_end - time_estimate_inital): ", tic_total_end - time_estimate_inital)
 winsound.Beep(1000, 1000)
 
+
+# folder_outputs = "F:\\generic_validation_05000_DS1_test"
+# folder_outputs = "F:\\generic_validation_change_contrast_values_DS2"
+# folder_outputs = "F:\\generic_validation_change_contrast_values_DS3"
 print("start stats")
 info_dataset = custom_functions_EM.info_data_harvest(folder_outputs)
 custom_functions_EM.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
