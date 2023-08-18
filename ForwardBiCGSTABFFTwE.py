@@ -27,16 +27,16 @@ validation = 'False'
 guess_validation_answer = 'True'
 guess_validation_answer = 'False'
 # Would you like to use a model to provide an initial guess?
-guess_model = 'False'
 guess_model = 'True'
+guess_model = 'False'
 # WOULD YOU LIKE TO USE A MODEL ON DATA FROM OUTSIDE THE DEVELOPMENT DOMAIN (TEST CHANGE IN CONTRAST)?
 # If you do then change the if statement in the initEMContrastValidate command like in generating the base case.
 # Number of samples to generate and where you stopped last time
-seedling = 5068
-seed_count = 100-68
+seedling = 5100
+seed_count = 1
 # Where should the outputs be saved?
 directory = "F:\\"
-folder_outputs = "F:\\generic_validation_change_contrast_values"
+folder_outputs = "F:\\generic_validation_change_contrast_values_DS3"
 # Load the model parameters...
 model_file_1 = "model_checkpoint_E1.h5"
 model_file_2 = "model_checkpoint_E2.h5"
@@ -390,7 +390,7 @@ winsound.Beep(1000, 1000)
 
 # folder_outputs = "F:\\generic_validation_05000_DS1_test"
 # folder_outputs = "F:\\generic_validation_change_contrast_values_DS2"
-# folder_outputs = "F:\\generic_validation_change_contrast_values_DS3"
+folder_outputs = "F:\\generic_validation_change_contrast_values_DS3"
 print("start stats")
 info_dataset = custom_functions_EM.info_data_harvest(folder_outputs)
 custom_functions_EM.info_data_paired('.\\doc\\_stats\\dataset_instances_output.csv')
