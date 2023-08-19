@@ -21,21 +21,22 @@ np.set_printoptions(precision=20)
 random.seed(42)
 # INPUTS: START
 # Would you like to validate the code?
-validation = 'False'
 validation = 'True'
+validation = 'False'
 # Would you like to validate that the Krylov Solver accepts correct final answer as a good initial guess?
 guess_validation_answer = 'True'
 guess_validation_answer = 'False'
 # Would you like to use a model to provide an initial guess?
-guess_model = 'True'
 guess_model = 'False'
+guess_model = 'True'
 # WOULD YOU LIKE TO USE A MODEL ON DATA FROM OUTSIDE THE DEVELOPMENT DOMAIN (TEST CHANGE IN CONTRAST)?
 # If you do then change the if statement in the initEMContrastValidate command like in generating the base case.
 # Number of samples to generate and where you stopped last time
-seedling = 5100
+seedling = 5101
 seed_count = 1
 # Where should the outputs be saved?
 directory = "F:\\"
+folder_outputs = "F:\\generic_validation_05000_DS1_test"
 folder_outputs = "F:\\generic_validation_change_contrast_values_DS3"
 # Load the model parameters...
 model_file_1 = "model_checkpoint_E1.h5"

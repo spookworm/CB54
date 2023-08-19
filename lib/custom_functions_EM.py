@@ -379,8 +379,8 @@ def initEMContrastValidate(eps_sct, mu_sct, X1, X2, dx):
     a_cancer = a
 
     # (1) Compute permittivity contrast
-    eps_normal = 1.25
     eps_normal = eps_sct
+    eps_normal = 1.25
     eps_cancer = 1.0
     eps_cancer = eps_sct
     # Change this if testing out of distribution
