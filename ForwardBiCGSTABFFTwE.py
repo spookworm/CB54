@@ -32,13 +32,17 @@ guess_model = 'False'
 # WOULD YOU LIKE TO USE A MODEL ON DATA FROM OUTSIDE THE DEVELOPMENT DOMAIN (TEST CHANGE IN CONTRAST)?
 # If you do then change the if statement in the initEMContrastValidate command like in generating the base case.
 # Number of samples to generate and where you stopped last time
-seedling = 5102
-seed_count = 1
+seedling = 6035
+seed_count = 2000-35
 # Where should the outputs be saved?
 directory = "F:\\"
 folder_outputs = "F:\\generic_validation_05000_DS1_test"
+folder_outputs = "F:\\generic_validation_05000_DS1_test"
 folder_outputs = "F:\\generic_validation_change_contrast_values_DS3"
+folder_outputs = "F:\\generic_validation_06000"
 # Load the model parameters...
+model_file_1 = "model_checkpoint_E1_Extra.h5"
+model_file_2 = "model_checkpoint_E2_Extra.h5"
 model_file_1 = "model_checkpoint_E1.h5"
 model_file_2 = "model_checkpoint_E2.h5"
 mean_1 = "mean_per_channel_E1.npy"
@@ -258,7 +262,7 @@ else:
             # As soon as E_val is calculated, drop the third channel as it is all zeros
             E_sct = E_sct[:2, :, :]
             ###
-            custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
+            # custom_functions_EM.plotEtotalwavefield("E_sct", E_sct[:, 1:-1, 1:-1], a, X1[1:-1, 1:-1], X2[1:-1, 1:-1], N1-1, N2-1)
             ###
 
             # Save incident fields to allow for data augmentation

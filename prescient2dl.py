@@ -52,6 +52,7 @@ folders = [f for f in os.listdir(directory) if os.path.isdir(os.path.join(direct
 selected_folders = folders
 selected_folders.remove("generic_validation_duplicates")
 
+
 ###
 # REMOVE ALL DUPLICATE FILES
 png_files = [file for file in os.listdir(directory + "\\generic_validation_duplicates") if file.endswith('.png')]
