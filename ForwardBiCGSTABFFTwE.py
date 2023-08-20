@@ -21,8 +21,8 @@ np.set_printoptions(precision=20)
 random.seed(42)
 # INPUTS: START
 # Would you like to validate the code?
-validation = 'False'
 validation = 'True'
+validation = 'False'
 # Would you like to validate that the Krylov Solver accepts correct final answer as a good initial guess?
 guess_validation_answer = 'True'
 guess_validation_answer = 'False'
